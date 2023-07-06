@@ -35,11 +35,9 @@ class Generater:
                 logits, past_key_values = self.model(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
+                    past_key_values=None,
                     use_cache=True
                 )
-                print(logits.shape)
-                print(len(past_key_values))
-                print(len(past_key_values[0]))
                 quit()
             else:
                 logits, past_key_values = self.model(
