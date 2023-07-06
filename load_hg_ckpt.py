@@ -7,16 +7,23 @@ import torch
 # almost copied from https://github.com/pytorch/pytorch/blob/789b1437e945336f83c915ab2f2dd283ac472191/torch/nn/modules/module.py#L1919
 def load(module, state_dict, prefix='', debug=False):
     used_keys = set()
-    for name, child in module._modules.items():
+    params_and_buffers = list(module._modules.items())
+    params_and_buffers += list(module._buffers.items())
+    for name, child in params_and_buffers:
         if child is not None:
-            leaf = f'{prefix}{name}.weight'
-            if debug: print('loading param', leaf)
+            is_buffer = True if torch.is_tensor(child) else False
+            leaf = f'{prefix}{name}' if is_buffer else f'{prefix}{name}.weight'
+            if debug: print('loading param:', leaf)
             if leaf in state_dict:
                 t = state_dict[leaf]
                 with torch.no_grad():
-                    assert child.weight.shape == t.shape
-                    module._modules[name].to_empty(device='cpu')
-                    module._modules[name].weight.copy_(t)
+                    if is_buffer:
+                        assert child.shape == t.shape
+                        module.register_buffer(name, t, persistent=True)
+                    else:
+                        assert child.weight.shape == t.shape
+                        module._modules[name].to_empty(device='cpu')
+                        module._modules[name].weight.copy_(t)
                 used_keys.add(leaf)
             child_prefix = prefix + name + '.'
             child_state_dict = {
@@ -24,8 +31,10 @@ def load(module, state_dict, prefix='', debug=False):
                 for k, v in state_dict.items()
                 if k.startswith(child_prefix)
             }
+            if is_buffer: continue
             u = load(child, child_state_dict, child_prefix, debug)
             used_keys = used_keys.union(u)
+
     return used_keys
 
 
@@ -47,12 +56,14 @@ def load_hg_llama(path, debug=False):
         state_dict = torch.load(os.path.join(path, shard))
         src_state_dict.update(state_dict)
 
-    if debug: print(model.layers[30].mlp.gate_proj.weight)
+    if debug: print(model.model.layers[30].mlp.gate_proj.weight)
+    if debug: print(model.model.layers[30].self_attn.rotary_emb.inv_freq)
     used_keys = load(model, src_state_dict, '', debug=debug)
-    if debug: print(model.layers[30].mlp.gate_proj.weight)
+    if debug: print(model.model.layers[30].mlp.gate_proj.weight)
+    if debug: print(model.model.layers[30].self_attn.rotary_emb.inv_freq)
     all_keys = set(src_state_dict.keys())
     unused_keys = all_keys.difference(used_keys)
-    print('Unused keys:', unused_keys)
+    assert len(unused_keys) == 0, print('Unused keys:', unused_keys)
     return model
 
 
