@@ -30,13 +30,13 @@ def load(module, state_dict, prefix='', debug=False):
 
 
 def load_hg_llama(path, debug=False):
-    from llms.llama import LlamaModel
+    from llms.llama import LlamaForCausalLM
     from transformers import LlamaConfig
 
     config = LlamaConfig.from_pretrained(path)
     print('Creating model ...')
     with torch.device("meta"):
-        model = LlamaModel(config)
+        model = LlamaForCausalLM(config)
 
     with open(os.path.join(path, "pytorch_model.bin.index.json"), 'r') as f:
         index = json.load(f)
@@ -48,7 +48,7 @@ def load_hg_llama(path, debug=False):
         src_state_dict.update(state_dict)
 
     if debug: print(model.layers[30].mlp.gate_proj.weight)
-    used_keys = load(model, src_state_dict, 'model.', debug=debug)
+    used_keys = load(model, src_state_dict, '', debug=debug)
     if debug: print(model.layers[30].mlp.gate_proj.weight)
     all_keys = set(src_state_dict.keys())
     unused_keys = all_keys.difference(used_keys)

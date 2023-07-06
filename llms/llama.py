@@ -242,16 +242,9 @@ class LlamaModel(nn.Module):
         input_ids=None,
         attention_mask=None,
         position_ids=None,
-        past_key_values=None,
-        inputs_embeds=None):
-        if input_ids is not None and inputs_embeds is not None:
-            raise ValueError("You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time")
-        elif input_ids is not None:
-            batch_size, seq_length = input_ids.shape
-        elif inputs_embeds is not None:
-            batch_size, seq_length, _ = inputs_embeds.shape
-        else:
-            raise ValueError("You have to specify either decoder_input_ids or decoder_inputs_embeds")
+        past_key_values=None):
+
+        batch_size, seq_length = input_ids.shape
 
         seq_length_with_past = seq_length
         past_key_values_length = 0
@@ -261,7 +254,7 @@ class LlamaModel(nn.Module):
             seq_length_with_past = seq_length_with_past + past_key_values_length
 
         if position_ids is None:
-            device = input_ids.device if input_ids is not None else inputs_embeds.device
+            device = input_ids.device
             position_ids = torch.arange(
                 past_key_values_length, seq_length + past_key_values_length, dtype=torch.long, device=device
             )
@@ -269,8 +262,7 @@ class LlamaModel(nn.Module):
         else:
             position_ids = position_ids.view(-1, seq_length).long()
 
-        if inputs_embeds is None:
-            inputs_embeds = self.embed_tokens(input_ids)
+        inputs_embeds = self.embed_tokens(input_ids)
         if attention_mask is None:
             attention_mask = torch.ones(
                 (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
@@ -306,3 +298,45 @@ class LlamaModel(nn.Module):
         all_hidden_states += (hidden_states,)
 
         return hidden_states, all_hidden_states, all_self_attns
+
+
+class LlamaForCausalLM(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.model = LlamaModel(config)
+        self.lm_head = nn.Linear(
+            config.hidden_size, config.vocab_size, bias=False)
+
+    def forward(self,
+        input_ids=None,
+        attention_mask=None,
+        position_ids=None,
+        past_key_values=None,
+        labels=None,
+    ):
+
+        outputs = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+        )
+
+        hidden_states = outputs[0]
+        logits = self.lm_head(hidden_states)
+
+        loss = None
+        if labels is not None:
+            # Shift so that tokens < n predict n
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            shift_logits = shift_logits.view(-1, self.config.vocab_size)
+            shift_labels = shift_labels.view(-1)
+            # Enable model parallelism
+            shift_labels = shift_labels.to(shift_logits.device)
+            loss = loss_fct(shift_logits, shift_labels)
+
+        output = (logits,) + outputs[1:]
+        return loss, output
