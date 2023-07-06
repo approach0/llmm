@@ -1,3 +1,4 @@
+import math
 import torch
 from torch import nn
 from transformers import LlamaConfig
@@ -55,15 +56,25 @@ class LlamaRotaryEmbedding(torch.nn.Module):
         super().__init__()
         inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
         self.register_buffer("inv_freq", inv_freq)
-        self.max_seq_len_cached = max_position_embeddings
-        t = torch.arange(self.max_seq_len_cached, device=self.inv_freq.device, dtype=self.inv_freq.dtype)
+        self.max_seq_len_cached = None
+        self.register_sincos_buf(max_position_embeddings)
+
+    def register_sincos_buf(self, max_position_embeddings=None):
+        if max_position_embeddings is not None:
+            self.max_seq_len_cached = max_position_embeddings
+        t = torch.arange(self.max_seq_len_cached,
+            device=self.inv_freq.device, dtype=self.inv_freq.dtype)
         freqs = torch.einsum("i,j->ij", t, self.inv_freq)
         emb = torch.cat((freqs, freqs), dim=-1)
         dtype = torch.get_default_dtype()
-        self.register_buffer("cos_cached", emb.cos()[None, None, :, :].to(dtype), persistent=False)
-        self.register_buffer("sin_cached", emb.sin()[None, None, :, :].to(dtype), persistent=False)
+        cos = emb.cos()[None, None, :, :].to(dtype)
+        sin = emb.sin()[None, None, :, :].to(dtype)
+        self.register_buffer("cos_cached", cos, persistent=False)
+        self.register_buffer("sin_cached", sin, persistent=False)
 
     def forward(self, x, seq_len=None):
+        if self.cos_cached.is_meta:
+            self.register_sincos_buf()
         return (
             self.cos_cached[:, :, :seq_len, ...].to(dtype=x.dtype),
             self.sin_cached[:, :, :seq_len, ...].to(dtype=x.dtype),
@@ -76,7 +87,7 @@ class SiLUActivation(nn.Module):
 
 
 class LlamaMLP(nn.Module):
-    def __init__(self, hidden_size, intermediate_size, hidden_act):
+    def __init__(self, hidden_size, intermediate_size):
         super().__init__()
         self.gate_proj = nn.Linear(hidden_size, intermediate_size, bias=False)
         self.down_proj = nn.Linear(intermediate_size, hidden_size, bias=False)
@@ -96,11 +107,6 @@ class LlamaAttention(nn.Module):
         self.head_dim = self.hidden_size // self.num_heads
         self.max_position_embeddings = config.max_position_embeddings
 
-        if (self.head_dim * self.num_heads) != self.hidden_size:
-            raise ValueError(
-                f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
-                f" and `num_heads`: {self.num_heads})."
-            )
         self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.v_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
@@ -108,9 +114,10 @@ class LlamaAttention(nn.Module):
         self.rotary_emb = LlamaRotaryEmbedding(self.head_dim, max_position_embeddings=self.max_position_embeddings)
 
     def forward(self, hidden_states,
-        attention_mask = None,
-        position_ids = None,
-        past_key_value = None):
+        attention_mask=None,
+        position_ids=None,
+        past_key_value=None,
+        use_cache=False):
         bsz, q_len, _ = hidden_states.size()
 
         query_states = self.q_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
@@ -121,7 +128,8 @@ class LlamaAttention(nn.Module):
         if past_key_value is not None:
             kv_seq_len += past_key_value[0].shape[-2]
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        query_states, key_states = _apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+        query_states, key_states = _apply_rotary_pos_emb(
+            query_states, key_states, cos, sin, position_ids)
         # [bsz, nh, t, hd]
 
         if past_key_value is not None:
@@ -129,21 +137,12 @@ class LlamaAttention(nn.Module):
             key_states = torch.cat([past_key_value[0], key_states], dim=2)
             value_states = torch.cat([past_key_value[1], value_states], dim=2)
 
-        past_key_value = None
-
+        past_key_value = (key_states, value_states) if use_cache else None
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
 
-        if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
-            raise ValueError(
-                f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-                f" {attn_weights.size()}"
-            )
-
+        assert attn_weights.size() == (bsz, self.num_heads, q_len, kv_seq_len)
         if attention_mask is not None:
-            if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
-                raise ValueError(
-                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
-                )
+            assert attention_mask.size() == (bsz, 1, q_len, kv_seq_len)
             attn_weights = attn_weights + attention_mask
             dtype_min = torch.tensor(
                 torch.finfo(attn_weights.dtype).min, device=attn_weights.device, dtype=attn_weights.dtype
@@ -154,17 +153,12 @@ class LlamaAttention(nn.Module):
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_output = torch.matmul(attn_weights, value_states)
 
-        if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
-            raise ValueError(
-                f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
-                f" {attn_output.size()}"
-            )
-
+        assert attn_output.size() == (bsz, self.num_heads, q_len, self.head_dim)
         attn_output = attn_output.transpose(1, 2)
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
-
         attn_output = self.o_proj(attn_output)
-        return attn_output, attn_weights, past_key_value
+
+        return attn_output, past_key_value
 
 
 class LlamaDecoderLayer(nn.Module):
@@ -175,24 +169,26 @@ class LlamaDecoderLayer(nn.Module):
         self.mlp = LlamaMLP(
             hidden_size=self.hidden_size,
             intermediate_size=config.intermediate_size,
-            hidden_act=config.hidden_act,
         )
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def forward(self, hidden_states,
-        attention_mask=None, position_ids=None,
-        past_key_value=None):
-        residual = hidden_states
+        attention_mask=None,
+        position_ids=None,
+        past_key_value=None,
+        use_cache=False):
 
+        residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
 
         # Self Attention
-        hidden_states, self_attn_weights, present_key_value = self.self_attn(
+        hidden_states, present_key_value = self.self_attn(
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             position_ids=position_ids,
             past_key_value=past_key_value,
+            use_cache=use_cache,
         )
         hidden_states = residual + hidden_states
 
@@ -201,9 +197,9 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
-
         outputs = (hidden_states,)
-        outputs += (self_attn_weights,)
+        if use_cache:
+            outputs += (present_key_value,)
         return outputs
 
 
@@ -217,7 +213,7 @@ class LlamaModel(nn.Module):
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def _prepare_decoder_attention_mask(self, attention_mask, input_shape, inputs_embeds, past_key_values_length):
-        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+        # create causal mask: [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
         combined_attention_mask = None
         if input_shape[-1] > 1:
             combined_attention_mask = _make_causal_mask(
@@ -238,14 +234,13 @@ class LlamaModel(nn.Module):
 
         return combined_attention_mask
 
-    def forward(self,
-        input_ids=None,
+    def forward(self, input_ids,
         attention_mask=None,
         position_ids=None,
-        past_key_values=None):
+        past_key_values=None,
+        use_cache=None):
 
         batch_size, seq_length = input_ids.shape
-
         seq_length_with_past = seq_length
         past_key_values_length = 0
 
@@ -263,23 +258,15 @@ class LlamaModel(nn.Module):
             position_ids = position_ids.view(-1, seq_length).long()
 
         inputs_embeds = self.embed_tokens(input_ids)
-        if attention_mask is None:
-            attention_mask = torch.ones(
-                (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
-            )
+        # embed positions
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
         )
 
-        hidden_states = inputs_embeds
-
         # decoder layers
-        all_hidden_states = ()
-        all_self_attns = ()
-
+        hidden_states = inputs_embeds
+        next_decoder_cache = () if use_cache else None
         for idx, decoder_layer in enumerate(self.layers):
-            all_hidden_states += (hidden_states,)
-
             past_key_value = past_key_values[idx] if past_key_values is not None else None
 
             layer_outputs = decoder_layer(
@@ -287,17 +274,17 @@ class LlamaModel(nn.Module):
                 attention_mask=attention_mask,
                 position_ids=position_ids,
                 past_key_value=past_key_value,
+                use_cache=use_cache,
             )
 
             hidden_states = layer_outputs[0]
-            all_self_attns += (layer_outputs[1],)
+
+            if use_cache:
+                next_decoder_cache += (layer_outputs[1],)
 
         hidden_states = self.norm(hidden_states)
-
-        # add hidden states from the last decoder layer
-        all_hidden_states += (hidden_states,)
-
-        return hidden_states, all_hidden_states, all_self_attns
+        next_cache = next_decoder_cache if use_cache else None
+        return tuple(v for v in [hidden_states, next_cache] if v is not None)
 
 
 class LlamaForCausalLM(nn.Module):
@@ -313,30 +300,16 @@ class LlamaForCausalLM(nn.Module):
         position_ids=None,
         past_key_values=None,
         labels=None,
-    ):
+        use_cache=None):
 
         outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
             past_key_values=past_key_values,
+            use_cache=use_cache
         )
 
         hidden_states = outputs[0]
         logits = self.lm_head(hidden_states)
-
-        loss = None
-        if labels is not None:
-            # Shift so that tokens < n predict n
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            # Flatten the tokens
-            loss_fct = CrossEntropyLoss()
-            shift_logits = shift_logits.view(-1, self.config.vocab_size)
-            shift_labels = shift_labels.view(-1)
-            # Enable model parallelism
-            shift_labels = shift_labels.to(shift_logits.device)
-            loss = loss_fct(shift_logits, shift_labels)
-
-        output = (logits,) + outputs[1:]
-        return loss, output
+        return (logits,) + outputs[1:]
