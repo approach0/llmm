@@ -54,7 +54,10 @@ def load_hg_llama(path, debug=False):
     for shard in shards:
         print('Loading model shard:', shard)
         state_dict = torch.load(os.path.join(path, shard))
-        src_state_dict.update(state_dict)
+        for k, v in state_dict.items():
+            k = k.replace('input_layernorm', 'norm1')
+            k = k.replace('post_attention_layernorm', 'norm2')
+            src_state_dict[k] = v
 
     if debug: print(model.model.layers[30].mlp.gate_proj.weight)
     if debug: print(model.model.layers[30].self_attn.rotary_emb.inv_freq)

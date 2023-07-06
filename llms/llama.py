@@ -33,20 +33,6 @@ def _expand_mask(mask, dtype, tgt_len):
         inverted_mask.to(torch.bool), torch.finfo(dtype).min)
 
 
-def _apply_rotary_pos_emb(q, k, cos, sin, position_ids):
-    cos = cos.squeeze(1).squeeze(0)  # [seq_len, dim]
-    sin = sin.squeeze(1).squeeze(0)  # [seq_len, dim]
-    cos = cos[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
-    sin = sin[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
-    def rotate_half(x):
-        x1 = x[..., : x.shape[-1] // 2]
-        x2 = x[..., x.shape[-1] // 2 :]
-        return torch.cat((-x2, x1), dim=-1)
-    q_embed = (q * cos) + (rotate_half(q) * sin)
-    k_embed = (k * cos) + (rotate_half(k) * sin)
-    return q_embed, k_embed
-
-
 class LlamaRMSNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-6):
         super().__init__()
@@ -66,16 +52,17 @@ class LlamaRotaryEmbedding(torch.nn.Module):
         super().__init__()
         inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
         self.register_buffer("inv_freq", inv_freq)
-        self.max_seq_len_cached = None
-        self.register_sincos_buf(max_position_embeddings)
+        self.max_position_embeddings = max_position_embeddings
+        self.register_sincos_buf()
 
-    def register_sincos_buf(self, max_position_embeddings=None):
-        if max_position_embeddings is not None:
-            self.max_seq_len_cached = max_position_embeddings
-        t = torch.arange(self.max_seq_len_cached,
+    def register_sincos_buf(self, debug=False):
+        t = torch.arange(self.max_position_embeddings,
             device=self.inv_freq.device, dtype=self.inv_freq.dtype)
+        # t: [max_seq_len],  inv_freq: [head_hidden_dim // 2]
         freqs = torch.einsum("i,j->ij", t, self.inv_freq)
+        # freqs: [max_seq_len, head_hidden_dim // 2]
         emb = torch.cat((freqs, freqs), dim=-1)
+        # emb: [max_seq_len, head_hidden_dim]
         dtype = torch.get_default_dtype()
         cos = emb.cos()[None, None, :, :].to(dtype)
         sin = emb.sin()[None, None, :, :].to(dtype)
@@ -84,11 +71,25 @@ class LlamaRotaryEmbedding(torch.nn.Module):
 
     def forward(self, x, seq_len=None):
         if self.cos_cached.is_meta:
-            self.register_sincos_buf()
+            self.register_sincos_buf(debug=True)
         return (
             self.cos_cached[:, :, :seq_len, ...].to(dtype=x.dtype),
             self.sin_cached[:, :, :seq_len, ...].to(dtype=x.dtype),
         )
+
+    @staticmethod
+    def apply(q, k, cos, sin, position_ids):
+        cos = cos.squeeze(1).squeeze(0)  # [seq_len, dim]
+        sin = sin.squeeze(1).squeeze(0)  # [seq_len, dim]
+        cos = cos[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
+        sin = sin[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
+        def rotate_half(x):
+            x1 = x[..., : x.shape[-1] // 2]
+            x2 = x[..., x.shape[-1] // 2 :]
+            return torch.cat((-x2, x1), dim=-1)
+        q_embed = (q * cos) + (rotate_half(q) * sin)
+        k_embed = (k * cos) + (rotate_half(k) * sin)
+        return q_embed, k_embed
 
 
 class SiLUActivation(nn.Module):
@@ -130,44 +131,56 @@ class LlamaAttention(nn.Module):
         use_cache=False):
         bsz, q_len, _ = hidden_states.size()
 
+        # split into heads of [B, n_heads, seq_len, head_hidden_dim]
         query_states = self.q_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         key_states = self.k_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         value_states = self.v_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
 
-        kv_seq_len = key_states.shape[-2]
+        seq_len = key_states.shape[-2]
         if past_key_value is not None:
-            kv_seq_len += past_key_value[0].shape[-2]
-        cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        query_states, key_states = _apply_rotary_pos_emb(
+            seq_len += past_key_value[0].shape[-2]
+
+        cos, sin = self.rotary_emb(value_states, seq_len=seq_len)
+        # cos, sin: [1, 1, seq_len, head_hidden_dim]
+
+        query_states, key_states = LlamaRotaryEmbedding.apply(
             query_states, key_states, cos, sin, position_ids)
-        # [bsz, nh, t, hd]
+        # query_states, key_states: [B, n_heads, seq_len, head_hidden_dim]
 
         if past_key_value is not None:
             # reuse k, v, self_attention
-            key_states = torch.cat([past_key_value[0], key_states], dim=2)
-            value_states = torch.cat([past_key_value[1], value_states], dim=2)
-
+            past_key, past_val = past_key_value
+            key_states = torch.cat([past_key, key_states], dim=2)
+            value_states = torch.cat([past_val, value_states], dim=2)
         past_key_value = (key_states, value_states) if use_cache else None
-        attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
 
-        assert attn_weights.size() == (bsz, self.num_heads, q_len, kv_seq_len)
+        attn_weights = torch.matmul(
+            query_states, key_states.transpose(2, 3)
+        ) / math.sqrt(self.head_dim)
+        assert attn_weights.size() == (bsz, self.num_heads, q_len, seq_len)
+
         if attention_mask is not None:
-            assert attention_mask.size() == (bsz, 1, q_len, kv_seq_len)
+            assert attention_mask.size() == (bsz, 1, q_len, seq_len)
             attn_weights = attn_weights + attention_mask
-            dtype_min = torch.tensor(
-                torch.finfo(attn_weights.dtype).min, device=attn_weights.device, dtype=attn_weights.dtype
+            neg_infinity = torch.tensor(
+                torch.finfo(attn_weights.dtype).min,
+                device=attn_weights.device,
+                dtype=attn_weights.dtype
             )
-            attn_weights = torch.max(attn_weights, dtype_min)
+            attn_weights = torch.max(attn_weights, neg_infinity)
 
-        # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        # upcast to fp32 before softmax, and downcast back to orignal dtype
+        attn_weights = nn.functional.softmax(
+            attn_weights, dim=-1, dtype=torch.float32
+        ).to(query_states.dtype)
         attn_output = torch.matmul(attn_weights, value_states)
-
         assert attn_output.size() == (bsz, self.num_heads, q_len, self.head_dim)
+
+        # join heads
         attn_output = attn_output.transpose(1, 2)
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
-        attn_output = self.o_proj(attn_output)
 
+        attn_output = self.o_proj(attn_output)
         return attn_output, past_key_value
 
 
@@ -314,10 +327,10 @@ class LlamaModel(nn.Module):
             past_key_value = past_key_values[idx] if past_key_values is not None else None
 
             # layer_outputs = (hidden_states, decoder_cache)
-            # hidden_states: [B, seq_len, 4096]
+            # hidden_states: [B, seq_len, hidden_dim]
             # decoder_cache = (key_states, value_states)
-            # key_states: [B, n_heads, seq_len, hidden_dim]
-            # value_states: [B, n_heads, seq_len, hidden_dim]
+            # key_states: [B, n_heads, seq_len, head_hidden_dim]
+            # value_states: [B, n_heads, seq_len, head_hidden_dim]
             layer_outputs = decoder_layer(
                 hidden_states,
                 attention_mask=attention_mask,
