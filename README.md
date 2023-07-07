@@ -2,3 +2,15 @@
 
 * HF LLaMA: https://github.com/huggingface/transformers/tree/main/src/transformers/models/llama
 * Annotated BERT: https://github.com/w32zhong/annotated-bert
+
+## Usage
+```sh
+python inference.py ~/llama-models/7B-hgf-new/ --debug=False
+```
+```txt
+Creating model ...
+Loading model shard: pytorch_model-00002-of-00002.bin
+Loading model shard: pytorch_model-00001-of-00002.bin
+Prompt: My name is Mariama, my favorite
+2016 film is La La Land and my favorite food is chocolate chip cookies. I love being active and am always looking for new things to do around Chicago. I am currently a junior majoring in Communication with a focus in Strategic Communication and a minor in Spanish. After graduation, I plan to move to a city with a good public transportation system, get a job and enjoy life. I am so excited to be a part of the Communication Interns this summer and look forward to learning about the industry and developing skills that will help me in the future.
+```

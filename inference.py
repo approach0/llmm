@@ -4,11 +4,12 @@ from transformers import LlamaTokenizer
 from generate import Generater
 
 
-def main(path, prompt='My name is Mariama, my favorite '):
+def main(path, prompt='My name is Mariama, my favorite ', debug=True):
     tokenizer = LlamaTokenizer.from_pretrained(path)
-    model = load_hg_llama(path, debug=False)
+    model = load_hg_llama(path, debug=debug)
     model = Generater(model, tokenizer)
-    return model.generate([prompt], debug=True)
+    print('Prompt:', prompt)
+    return model.generate([prompt], debug=debug)
 
 
 if __name__ == '__main__':
