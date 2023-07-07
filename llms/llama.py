@@ -4,30 +4,32 @@ from torch import nn
 from transformers import LlamaConfig
 
 
-def _make_causal_mask(input_ids_shape, dtype, device, past_key_values_length):
-    bsz, tgt_len = input_ids_shape
+def _make_causal_mask(bsz, seq_len, past_seq_len, dtype, device):
     # make an infinity square-matrix mask
-    mask = torch.full((tgt_len, tgt_len), torch.tensor(torch.finfo(dtype).min, device=device), device=device)
-    # fill lower diagnoal by zeros
+    mask = torch.full(
+        (seq_len, seq_len),
+        torch.tensor(torch.finfo(dtype).min, device=device),
+    device=device)
+    # fill lower diagonal by zeros
     mask_cond = torch.arange(mask.size(-1), device=device)
     inverted_mask_cond = (mask_cond + 1).view(mask.size(-1), 1)
     mask.masked_fill_(mask_cond < inverted_mask_cond, 0)
     mask = mask.to(dtype)
-    # concate previous mask to a potentially rect mask
-    if past_key_values_length > 0:
-        prev_mask = torch.zeros(tgt_len, past_key_values_length,
+    # concatenate previous mask to a potentially rectangular mask
+    if past_seq_len > 0:
+        prev_mask = torch.zeros(seq_len, past_seq_len,
             dtype=dtype, device=device)
         mask = torch.cat([prev_mask, mask], dim=-1)
-    # Expanding a tensor does not allocate new memory,
-    # but only creates a new view on the existing tensor.
+    # Expanding a tensor to a desired dim. This does not allocate
+    # new memory, but only creates a new view on the existing tensor.
     return mask[None, None, :, :].expand(
-        bsz, 1, tgt_len, tgt_len + past_key_values_length)
+        bsz, 1, seq_len, seq_len + past_seq_len)
 
 
-def _expand_mask(mask, dtype, tgt_len):
+def _expand_mask(mask, dtype, seq_len):
     bsz, src_len = mask.size()
     expanded_mask = mask[:, None, None, :].expand(
-        bsz, 1, tgt_len, src_len).to(dtype)
+        bsz, 1, seq_len, src_len).to(dtype)
     inverted_mask = 1.0 - expanded_mask
     return inverted_mask.masked_fill(
         inverted_mask.to(torch.bool), torch.finfo(dtype).min)
@@ -39,18 +41,21 @@ class LlamaRMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
-    def forward(self, hidden_states):
-        input_dtype = hidden_states.dtype
-        variance = hidden_states.to(torch.float32).pow(2).mean(-1, keepdim=True)
+    def forward(self, states):
+        input_dtype = states.dtype
+        variance = states.to(torch.float32).pow(2).mean(-1, keepdim=True)
         rsqrt = torch.rsqrt(variance + self.variance_epsilon)
-        hidden_states = hidden_states * rsqrt
-        return (self.weight * hidden_states).to(input_dtype)
+        states = states * rsqrt
+        return (self.weight * states).to(input_dtype)
 
 
 class LlamaRotaryEmbedding(torch.nn.Module):
-    def __init__(self, dim, max_position_embeddings=2048, base=10000, device=None):
+    def __init__(self, dim,
+        max_position_embeddings=2048, base=10000, device=None):
         super().__init__()
-        inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
+        inv_freq = 1.0 / (base ** (
+            torch.arange(0, dim, 2).float().to(device) / dim)
+        )
         self.register_buffer("inv_freq", inv_freq)
         self.max_position_embeddings = max_position_embeddings
         self.register_sincos_buf()
@@ -58,23 +63,23 @@ class LlamaRotaryEmbedding(torch.nn.Module):
     def register_sincos_buf(self, debug=False):
         t = torch.arange(self.max_position_embeddings,
             device=self.inv_freq.device, dtype=self.inv_freq.dtype)
-        # t: [max_seq_len],  inv_freq: [head_hidden_dim // 2]
+        # t: [max_seq_len],  inv_freq: [head_H // 2]
         freqs = torch.einsum("i,j->ij", t, self.inv_freq)
-        # freqs: [max_seq_len, head_hidden_dim // 2]
+        # freqs: [max_seq_len, head_H // 2]
         emb = torch.cat((freqs, freqs), dim=-1)
-        # emb: [max_seq_len, head_hidden_dim]
+        # emb: [max_seq_len, head_H]
         dtype = torch.get_default_dtype()
         cos = emb.cos()[None, None, :, :].to(dtype)
         sin = emb.sin()[None, None, :, :].to(dtype)
         self.register_buffer("cos_cached", cos, persistent=False)
         self.register_buffer("sin_cached", sin, persistent=False)
 
-    def forward(self, x, seq_len=None):
+    def forward(self, x, tot_seq_len):
         if self.cos_cached.is_meta:
             self.register_sincos_buf(debug=True)
         return (
-            self.cos_cached[:, :, :seq_len, ...].to(dtype=x.dtype),
-            self.sin_cached[:, :, :seq_len, ...].to(dtype=x.dtype),
+            self.cos_cached[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
+            self.sin_cached[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
         )
 
     @staticmethod
@@ -113,75 +118,85 @@ class LlamaAttention(nn.Module):
     def __init__(self, config: LlamaConfig):
         super().__init__()
         self.config = config
-        self.hidden_size = config.hidden_size
+        self.hidden_size = config.hidden_size # H
         self.num_heads = config.num_attention_heads
-        self.head_dim = self.hidden_size // self.num_heads
-        self.max_position_embeddings = config.max_position_embeddings
-
-        self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.v_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
-        self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
-        self.rotary_emb = LlamaRotaryEmbedding(self.head_dim, max_position_embeddings=self.max_position_embeddings)
+        self.head_dim = self.hidden_size // self.num_heads # head_H
+        H = self.num_heads * self.head_dim
+        self.q_proj = nn.Linear(self.hidden_size, H, bias=False)
+        self.k_proj = nn.Linear(self.hidden_size, H, bias=False)
+        self.v_proj = nn.Linear(self.hidden_size, H, bias=False)
+        self.o_proj = nn.Linear(H, self.hidden_size, bias=False)
+        self.rotary_emb = LlamaRotaryEmbedding(
+            self.head_dim,
+            max_position_embeddings=config.max_position_embeddings
+        )
 
     def forward(self, hidden_states,
         attention_mask=None,
         position_ids=None,
-        past_key_value=None,
-        use_cache=False):
-        bsz, q_len, _ = hidden_states.size()
+        past_cache=None,
+        use_cache=False,
+        timestep=0):
+        bsz, seq_len, _ = hidden_states.size()
+        # split inputs into heads of dimension [B, heads, seq_len, head_H]
+        split_dim = (bsz, seq_len, self.num_heads, self.head_dim)
+        Q = self.q_proj(hidden_states).view(*split_dim).transpose(1, 2)
+        K = self.k_proj(hidden_states).view(*split_dim).transpose(1, 2)
+        V = self.v_proj(hidden_states).view(*split_dim).transpose(1, 2)
 
-        # split into heads of [B, n_heads, seq_len, head_hidden_dim]
-        query_states = self.q_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = self.k_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        value_states = self.v_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
+        tot_seq_len = seq_len
+        if past_cache is not None:
+            tot_seq_len += past_cache[0].shape[-2]
 
-        seq_len = key_states.shape[-2]
-        if past_key_value is not None:
-            seq_len += past_key_value[0].shape[-2]
+        # apply rotary embeddings to Value
+        cos, sin = self.rotary_emb(V, tot_seq_len=tot_seq_len)
+        # cos, sin: [1, 1, tot_seq_len, head_H]
+        Q, K = LlamaRotaryEmbedding.apply(
+            Q, K, cos, sin, position_ids)
+        # Q, K: [B, heads, tot_seq_len, head_H]
 
-        cos, sin = self.rotary_emb(value_states, seq_len=seq_len)
-        # cos, sin: [1, 1, seq_len, head_hidden_dim]
+        if past_cache is not None:
+            # reuse past K, V, self_attention
+            past_key, past_val = past_cache
+            # past_key or past_val: [B, heads, past_seq_len, head_H]
+            K = torch.cat([past_key, K], dim=2)
+            V = torch.cat([past_val, V], dim=2)
+            # new K or V: [B, heads, tot_seq_len, head_H]
+        past_cache = (K, V) if use_cache else None
 
-        query_states, key_states = LlamaRotaryEmbedding.apply(
-            query_states, key_states, cos, sin, position_ids)
-        # query_states, key_states: [B, n_heads, seq_len, head_hidden_dim]
-
-        if past_key_value is not None:
-            # reuse k, v, self_attention
-            past_key, past_val = past_key_value
-            key_states = torch.cat([past_key, key_states], dim=2)
-            value_states = torch.cat([past_val, value_states], dim=2)
-        past_key_value = (key_states, value_states) if use_cache else None
-
-        attn_weights = torch.matmul(
-            query_states, key_states.transpose(2, 3)
+        # apply scaled dot-product self-attention
+        attn_W = torch.matmul(
+            Q, K.transpose(2, 3)
         ) / math.sqrt(self.head_dim)
-        assert attn_weights.size() == (bsz, self.num_heads, q_len, seq_len)
+        assert attn_W.size() == (bsz, self.num_heads, seq_len, tot_seq_len)
 
+        # apply attention_mask!
         if attention_mask is not None:
-            assert attention_mask.size() == (bsz, 1, q_len, seq_len)
-            attn_weights = attn_weights + attention_mask
+            assert attention_mask.size() == (bsz, 1, seq_len, tot_seq_len)
+            attn_W = attn_W + attention_mask
             neg_infinity = torch.tensor(
-                torch.finfo(attn_weights.dtype).min,
-                device=attn_weights.device,
-                dtype=attn_weights.dtype
+                torch.finfo(attn_W.dtype).min,
+                device=attn_W.device,
+                dtype=attn_W.dtype
             )
-            attn_weights = torch.max(attn_weights, neg_infinity)
+            attn_W = torch.max(attn_W, neg_infinity)
 
-        # upcast to fp32 before softmax, and downcast back to orignal dtype
-        attn_weights = nn.functional.softmax(
-            attn_weights, dim=-1, dtype=torch.float32
-        ).to(query_states.dtype)
-        attn_output = torch.matmul(attn_weights, value_states)
-        assert attn_output.size() == (bsz, self.num_heads, q_len, self.head_dim)
+        # upcast to fp32 before softmax and downcast back to the original dtype
+        attn_W = nn.functional.softmax(
+            attn_W, dim=-1, dtype=torch.float32
+        ).to(Q.dtype)
+
+        # apply attention weights to Value
+        attn_out = torch.matmul(attn_W, V)
+        assert attn_out.size() == (bsz, self.num_heads, seq_len, self.head_dim)
 
         # join heads
-        attn_output = attn_output.transpose(1, 2)
-        attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
+        attn_out = attn_out.transpose(1, 2)
+        attn_out = attn_out.reshape(bsz, seq_len, self.hidden_size)
 
-        attn_output = self.o_proj(attn_output)
-        return attn_output, past_key_value
+        # attention output projection
+        attn_out = self.o_proj(attn_out)
+        return attn_out, past_cache
 
 
 class LlamaDecoderLayer(nn.Module):
@@ -199,8 +214,9 @@ class LlamaDecoderLayer(nn.Module):
     def forward(self, hidden_states,
         attention_mask=None,
         position_ids=None,
-        past_key_value=None,
-        use_cache=False):
+        past_cache=None,
+        use_cache=False,
+        timestep=0):
 
         # Background: https://arxiv.org/pdf/2002.04745.pdf
         #
@@ -233,8 +249,9 @@ class LlamaDecoderLayer(nn.Module):
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             position_ids=position_ids,
-            past_key_value=past_key_value,
+            past_cache=past_cache,
             use_cache=use_cache,
+            timestep=timestep
         )
         hidden_states = residual + hidden_states
 
@@ -253,25 +270,26 @@ class LlamaModel(nn.Module):
         super().__init__()
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
-        self.layers = nn.ModuleList([LlamaDecoderLayer(config) for _ in range(config.num_hidden_layers)])
+        self.embed_tokens = nn.Embedding(
+            config.vocab_size, config.hidden_size, self.padding_idx
+        )
+        self.layers = nn.ModuleList([
+            LlamaDecoderLayer(config) for _ in range(config.num_hidden_layers)
+        ])
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def _prepare_decoder_attention_mask(self,
-        attention_mask,
-        input_shape,
-        inputs_embeds,
-        past_key_values_length):
-        bsz, seq_len = input_shape
+        attention_mask, inputs_embeds, past_seq_len):
+        bsz, seq_len, _ = inputs_embeds.shape
+        # make a rectangular causal mask with past history
         combined_attention_mask = _make_causal_mask(
-            input_shape,
+            bsz, seq_len, past_seq_len,
             inputs_embeds.dtype,
-            device=inputs_embeds.device,
-            past_key_values_length=past_key_values_length,
+            inputs_embeds.device,
         )
 
         if attention_mask is not None:
-            # apply given attention_mask to causual mask
+            # add (expanded) attention_mask to causal mask
             expanded_mask = _expand_mask(
                 attention_mask,
                 inputs_embeds.dtype,
@@ -284,69 +302,78 @@ class LlamaModel(nn.Module):
     def forward(self, input_ids,
         attention_mask=None,
         position_ids=None,
-        past_key_values=None,
-        use_cache=None):
-
+        past_caches=None,
+        use_cache=None,
+        timestep=0):
+        # calculate various lengths
         batch_size, seq_length = input_ids.shape
-        seq_length_with_past = seq_length
-        past_key_values_length = 0
-
-        if past_key_values is not None:
-            past_key_values_length = past_key_values[0][0].shape[2]
-            seq_length_with_past += past_key_values_length
+        tot_seq_len = seq_length
+        past_seq_len = 0
+        if past_caches is not None:
+            # past_caches[layer][k/v]:
+            # [B, heads, past_seq_len, head_H]
+            past_seq_len = past_caches[0][0].shape[2]
+            tot_seq_len += past_seq_len
 
         if position_ids is None:
             position_ids = torch.arange(
-                past_key_values_length,
-                seq_length + past_key_values_length,
+                past_seq_len, tot_seq_len,
                 dtype=torch.long,
                 device=input_ids.device
             )
             position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
         else:
             position_ids = position_ids.view(-1, seq_length).long()
+        # position_ids: [B, seq_len] using this timestep as the start pos
 
+        # [B, seq_len, H] non-contextual work embeddings
         inputs_embeds = self.embed_tokens(input_ids)
 
+        assert attention_mask.shape == (batch_size, tot_seq_len)
+        # convert linear attention mask to causal (rectangular) attention
+        # print(attention_mask) # ones means unmasked
         attention_mask = self._prepare_decoder_attention_mask(
-            attention_mask, # [B, seq_len]
-            (batch_size, seq_length),
-            inputs_embeds, # [B, seq_len, 4096]
-            past_key_values_length
+            attention_mask, # [B, tot_seq_len]
+            inputs_embeds, # [B, seq_len, H]
+            past_seq_len
         )
-        # attention_mask (e.g., seq_length=3):
-        # | 0 inf inf |
-        # | 0  0  inf |
-        # | 0  0   0  |
-        assert attention_mask.shape == (batch_size, 1, seq_length, seq_length)
+        assert attention_mask.shape == (batch_size, 1,
+            seq_length, tot_seq_len)
+        # print(attention_mask) # zero means unmasked
+        # Example causal attention_mask (when seq_length = 3):
+        # | 0  0 ... 0 inf inf |
+        # | 0  0 ... 0  0  inf |
+        # | 0  0 ... 0  0   0  |
 
         # decoder layers
-        hidden_states = inputs_embeds
-        next_cache = () if use_cache else None
+        hidden_states = inputs_embeds # [B, seq_len, H]
+        new_cache = () if use_cache else None
         for idx, decoder_layer in enumerate(self.layers):
-            past_key_value = past_key_values[idx] if past_key_values is not None else None
+            # get "past_cache" at this idx-th layer
+            past_cache = (past_caches[idx]
+                if past_caches is not None else None)
 
-            # layer_outputs = (hidden_states, decoder_cache)
-            # hidden_states: [B, seq_len, hidden_dim]
-            # decoder_cache = (key_states, value_states)
-            # key_states: [B, n_heads, seq_len, head_hidden_dim]
-            # value_states: [B, n_heads, seq_len, head_hidden_dim]
+            # layer_outputs = (hidden_states, layer_cache)
+            #   hidden_states: [B, seq_len, H]
+            #   layer_cache = (K, V)
+            #     K: [B, heads, tot_seq_len, head_H]
+            #     V: [B, heads, tot_seq_len, head_H]
             layer_outputs = decoder_layer(
-                hidden_states,
-                attention_mask=attention_mask,
-                position_ids=position_ids,
-                past_key_value=past_key_value,
+                hidden_states,                 # [B, seq_len, H]
+                attention_mask=attention_mask, # [B, 1, seq_len, tot_seq_len]
+                position_ids=position_ids,     # [B, seq_len]
+                past_cache=past_cache,     # [B, heads, past_seq_len, head_H]
                 use_cache=use_cache,
+                timestep=timestep
             )
-
-            hidden_states = layer_outputs[0] # for recurrent inputs
-            decoder_cache = layer_outputs[1] # for saving and speedup
+            hidden_states = layer_outputs[0] # next recurrent states
             if use_cache:
-                next_cache += (decoder_cache,)
+                layer_cache = layer_outputs[1]
+                new_cache += (layer_cache,)
 
         hidden_states = self.norm(hidden_states)
-        next_cache = next_cache if use_cache else None
-        return hidden_states, next_cache
+        new_cache = new_cache if use_cache else None
+        return hidden_states, new_cache
 
 
 class LlamaForCausalLM(nn.Module):
@@ -360,17 +387,19 @@ class LlamaForCausalLM(nn.Module):
         input_ids=None,
         attention_mask=None,
         position_ids=None,
-        past_key_values=None,
+        past_caches=None,
         labels=None,
-        use_cache=None):
-
-        hidden_states, next_cache = self.model(
+        use_cache=None,
+        timestep=0):
+        # invoke Llama model
+        hidden_states, new_cache = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
-            past_key_values=past_key_values,
-            use_cache=use_cache
+            past_caches=past_caches,
+            use_cache=use_cache,
+            timestep=timestep
         )
-
+        # convert to sparse logits
         logits = self.lm_head(hidden_states) # [B, seq_len, vocab]
-        return logits, next_cache
+        return logits, new_cache

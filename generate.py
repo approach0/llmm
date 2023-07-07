@@ -42,42 +42,47 @@ class Generater:
     def _generate(self, inputs, debug=False,
         max_length=128, top_k=40, top_p=0.9, temperature=0.9,
         **kwargs):
-        # generate_length + 1 for EOS token
+        # length + 1 for EOS token
         max_length += 1
-
+        # initially, input_ids and attention_mask is the inputs length
         input_ids = inputs["input_ids"]
         attention_mask = inputs["attention_mask"]
-
+        # short-hand constants
         batch_size = input_ids.size(0)
         start_idx = input_ids.size(-1)
-
-        past_key_values = None
+        # updating outer variables
+        past_caches = None # past key/value caches
         done = [False for _ in range(batch_size)]
         results = [None for _ in range(batch_size)]
+        # generate token by token ...
         for i in range(max_length):
             if i == 0:
-                logits, past_key_values = self.model(
+                # start with all input_ids and all attention_mask
+                logits, past_caches = self.model(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
-                    past_key_values=None,
-                    use_cache=True
+                    past_caches=None,
+                    use_cache=True,
+                    timestep=0
                 )
             else:
-                logits, past_key_values = self.model(
+                # use *the last* input_ids but all attention_mask
+                logits, past_caches = self.model(
                     input_ids=input_ids[:, -1:],
                     attention_mask=attention_mask,
-                    past_key_values=past_key_values,
-                    use_cache=True
+                    past_caches=past_caches,
+                    use_cache=True,
+                    timestep=i
                 )
-
+            # get the last-token logits
             logits = logits[:, -1, :]
             if i == 0: # let us not stop at the first step
                 logits[:, self.tokenizer.eos_token_id] = -float("inf")
-
+            # filter next tokens
             logits = top_k_top_p_filtering(logits,
                 temperature=temperature, top_k=top_k, top_p=top_p)
-            probs = F.softmax(logits / temperature, dim=-1)
             # sample the next token from the filtered distribution
+            probs = F.softmax(logits / temperature, dim=-1)
             next_token = torch.multinomial(probs, num_samples=1)
 
             if debug is True:
@@ -96,7 +101,7 @@ class Generater:
             if sum(done) == batch_size:
                 break
 
-            # append input_ids and attention_mask
+            # in-place appending input_ids and attention_mask!!!
             input_ids = torch.cat([input_ids, next_token], dim=-1)
             attention_mask = torch.cat([
                 attention_mask, torch.ones((batch_size, 1),
