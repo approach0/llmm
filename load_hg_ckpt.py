@@ -9,7 +9,13 @@ def load(module, state_dict, prefix='', debug=False):
     used_keys = set()
     params_and_buffers = list(module._modules.items())
     params_and_buffers += list(module._buffers.items())
-    for name, child in params_and_buffers:
+    params_and_buffers += list(module._non_persistent_buffers_set)
+    for item in params_and_buffers:
+        if isinstance(item, tuple):
+            name, child = item
+        else: # non_persisitent_buffers
+            del module._buffers[item]
+            module._non_persistent_buffers_set.discard(item)
         if child is not None:
             is_buffer = True if torch.is_tensor(child) else False
             leaf = f'{prefix}{name}' if is_buffer else f'{prefix}{name}.weight'
@@ -19,6 +25,7 @@ def load(module, state_dict, prefix='', debug=False):
                 with torch.no_grad():
                     if is_buffer:
                         assert child.shape == t.shape
+                        del module._buffers[name]
                         module.register_buffer(name, t, persistent=True)
                     else:
                         assert child.weight.shape == t.shape
@@ -38,7 +45,7 @@ def load(module, state_dict, prefix='', debug=False):
     return used_keys
 
 
-def load_hg_llama(path, debug=False):
+def load_hg_llama(path, debug=False, device='cpu'):
     from llms.llama import LlamaForCausalLM
     from transformers import LlamaConfig
 
@@ -67,7 +74,8 @@ def load_hg_llama(path, debug=False):
     all_keys = set(src_state_dict.keys())
     unused_keys = all_keys.difference(used_keys)
     assert len(unused_keys) == 0, print('Unused keys:', unused_keys)
-    return model
+
+    return model.to(device)
 
 
 if __name__ == '__main__':

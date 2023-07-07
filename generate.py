@@ -33,8 +33,12 @@ class Generater:
         self.model = model
         self.tokenizer = tokenizer
 
+    def get_device(self):
+        return next(self.model.parameters()).device
+
     def generate(self, text_list, **kwargs):
         tokens = self.tokenizer(text_list, return_tensors='pt')
+        tokens.to(self.get_device())
         with torch.no_grad():
             result = self._generate(tokens, **kwargs)
         return result

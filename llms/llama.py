@@ -75,7 +75,7 @@ class LlamaRotaryEmbedding(torch.nn.Module):
         self.register_buffer("sin_cached", sin, persistent=False)
 
     def forward(self, x, tot_seq_len):
-        if self.cos_cached.is_meta:
+        if not hasattr(self, "cos_cached"):
             self.register_sincos_buf(debug=True)
         return (
             self.cos_cached[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
