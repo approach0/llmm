@@ -372,5 +372,5 @@ class LlamaForCausalLM(nn.Module):
             use_cache=use_cache
         )
 
-        logits = self.lm_head(hidden_states)
+        logits = self.lm_head(hidden_states) # [B, seq_len, vocab]
         return logits, next_cache
