@@ -2,6 +2,7 @@ import os
 import fire
 import json
 import torch
+import shutil
 
 
 # almost copied from https://github.com/pytorch/pytorch/blob/789b1437e945336f83c915ab2f2dd283ac472191/torch/nn/modules/module.py#L1919
@@ -80,8 +81,12 @@ def load_hg_llama(path, debug=False, device='cpu'):
 
 def convert(inpath, outpath, debug=True):
     os.makedirs(outpath, exist_ok=True)
+    cfg_src = os.path.join(inpath, "config.json")
+    cfg_dst = os.path.join(outpath, "config.json")
+    shutil.copyfile(cfg_src, cfg_dst)
     model = load_hg_llama(inpath, debug=debug, device='cpu')
     states = model.state_dict()
+    print(states.keys())
     torch.save(states, os.path.join(outpath, "state_dict.pt"))
 
 
