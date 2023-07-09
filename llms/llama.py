@@ -1,6 +1,13 @@
+from torch.nn import Module
+from torch.nn.functional import silu, softmax
+
+from bmt import DistributedModule as DistributedModule
+from bmt import DistributedParameter as DistributedParameter
+from model_center.layer import DistributedLinear, DistributedEmbedding
+from bmt import CheckpointBlock, TransformerBlockList as ModuleList
+
 import math
 import torch
-from torch import nn
 from transformers import LlamaConfig
 
 
@@ -35,10 +42,10 @@ def _expand_mask(mask, dtype, seq_len):
         inverted_mask.to(torch.bool), torch.finfo(dtype).min)
 
 
-class LlamaRMSNorm(nn.Module):
+class LlamaRMSNorm(DistributedModule):
     def __init__(self, hidden_size, eps=1e-6):
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(hidden_size))
+        self.weight = DistributedParameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
     def forward(self, states):
@@ -49,7 +56,7 @@ class LlamaRMSNorm(nn.Module):
         return (self.weight * states).to(input_dtype)
 
 
-class LlamaRotaryEmbedding(torch.nn.Module):
+class LlamaRotaryEmbedding(DistributedModule):
     def __init__(self, dim,
         max_position_embeddings=2048, base=10000, device=None):
         super().__init__()
@@ -97,24 +104,24 @@ class LlamaRotaryEmbedding(torch.nn.Module):
         return q_embed, k_embed
 
 
-class SiLUActivation(nn.Module):
+class SiLUActivation(DistributedModule):
     def forward(self, input):
-        return nn.functional.silu(input)
+        return silu(input)
 
 
-class LlamaMLP(nn.Module):
+class LlamaMLP(DistributedModule):
     def __init__(self, hidden_size, intermediate_size):
         super().__init__()
-        self.gate_proj = nn.Linear(hidden_size, intermediate_size, bias=False)
-        self.down_proj = nn.Linear(intermediate_size, hidden_size, bias=False)
-        self.up_proj = nn.Linear(hidden_size, intermediate_size, bias=False)
+        self.gate_proj = DistributedLinear(hidden_size, intermediate_size, bias=False)
+        self.down_proj = DistributedLinear(intermediate_size, hidden_size, bias=False)
+        self.up_proj = DistributedLinear(hidden_size, intermediate_size, bias=False)
         self.act_fn = SiLUActivation()
 
     def forward(self, x):
         return self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
 
 
-class LlamaAttention(nn.Module):
+class LlamaAttention(DistributedModule):
     def __init__(self, config: LlamaConfig):
         super().__init__()
         self.config = config
@@ -122,10 +129,10 @@ class LlamaAttention(nn.Module):
         self.num_heads = config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads # head_H
         H = self.num_heads * self.head_dim
-        self.q_proj = nn.Linear(self.hidden_size, H, bias=False)
-        self.k_proj = nn.Linear(self.hidden_size, H, bias=False)
-        self.v_proj = nn.Linear(self.hidden_size, H, bias=False)
-        self.o_proj = nn.Linear(H, self.hidden_size, bias=False)
+        self.q_proj = DistributedLinear(self.hidden_size, H, bias=False)
+        self.k_proj = DistributedLinear(self.hidden_size, H, bias=False)
+        self.v_proj = DistributedLinear(self.hidden_size, H, bias=False)
+        self.o_proj = DistributedLinear(H, self.hidden_size, bias=False)
         self.rotary_emb = LlamaRotaryEmbedding(
             self.head_dim,
             max_position_embeddings=config.max_position_embeddings
@@ -182,9 +189,7 @@ class LlamaAttention(nn.Module):
             attn_W = torch.max(attn_W, neg_infinity)
 
         # upcast to fp32 before softmax and downcast back to the original dtype
-        attn_W = nn.functional.softmax(
-            attn_W, dim=-1, dtype=torch.float32
-        ).to(Q.dtype)
+        attn_W = softmax(attn_W, dim=-1, dtype=torch.float32).to(Q.dtype)
 
         # apply attention weights to Value
         attn_out = torch.matmul(attn_W, V)
@@ -199,7 +204,7 @@ class LlamaAttention(nn.Module):
         return attn_out, past_cache
 
 
-class LlamaDecoderLayer(nn.Module):
+class LlamaDecoderLayer(Module):
     def __init__(self, config: LlamaConfig):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -265,16 +270,17 @@ class LlamaDecoderLayer(nn.Module):
         return outputs
 
 
-class LlamaModel(nn.Module):
+class LlamaModel(Module):
     def __init__(self, config: LlamaConfig):
         super().__init__()
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
-        self.embed_tokens = nn.Embedding(
+        self.embed_tokens = DistributedEmbedding(
             config.vocab_size, config.hidden_size, self.padding_idx
         )
-        self.layers = nn.ModuleList([
-            LlamaDecoderLayer(config) for _ in range(config.num_hidden_layers)
+        self.layers = ModuleList([
+            CheckpointBlock(LlamaDecoderLayer(config))
+            for _ in range(config.num_hidden_layers)
         ])
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
@@ -376,11 +382,11 @@ class LlamaModel(nn.Module):
         return hidden_states, new_cache
 
 
-class LlamaForCausalLM(nn.Module):
+class LlamaForCausalLM(Module):
     def __init__(self, config):
         super().__init__()
         self.model = LlamaModel(config)
-        self.lm_head = nn.Linear(
+        self.lm_head = DistributedLinear(
             config.hidden_size, config.vocab_size, bias=False)
 
     def forward(self,

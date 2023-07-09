@@ -19,7 +19,8 @@ def rank_print(*args, **kargs):
 
 def main(token_path, model_path,
     prompt='My name is Mariama, my favorite ',
-    debug=False, device='cpu', seed=3407):
+    debug=False, seed=3407):
+    local_rank = int(os.environ["LOCAL_RANK"])
 
     bmt.init_distributed(seed=seed)
 
@@ -31,13 +32,15 @@ def main(token_path, model_path,
     model = LlamaForCausalLM(config) # allocate space
     rank_print('allocated.')
 
+    rank_print('loading checkpoints from rank0 ...')
     ckpt = os.path.join(model_path, "state_dict.pt")
-    bmt.load(model, ckpt, strict=True)
-    bmt.synchronize()
+    model = bmt.load(model, ckpt, strict=True)
 
-    #model = Generater(model, tokenizer)
     rank_print('Prompt:', prompt, rank=0)
-    #return model.generate([prompt], debug=debug)
+    if local_rank == 0:
+        model = Generater(model, tokenizer)
+        model.generate([prompt], debug=debug)
+    bmt.synchronize()
 
 
 if __name__ == '__main__':

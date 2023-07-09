@@ -1,3 +1,10 @@
+export NCCL_BLOCKING_WAIT=1  # Set this variable to use the NCCL backend
+export NCCL_IB_DISABLE=1
+export NCCL_DEBUG=INFO
+export NCCL_P2P_DISABLE=1
+#export TORCH_DISTRIBUTED_DEBUG=DETAIL
+export TORCH_DISTRIBUTED_DEBUG=OFF
+
 torchrun \
     --master_addr localhost \
     --master_port 8991 \
@@ -5,5 +12,4 @@ torchrun \
     --nnodes 1 \
     inference.py \
     --token_path ~/llama-models/7B-hgf-new \
-    --model_path ./checkpoints/7B \
-    --device=cuda
+    --model_path ./checkpoints/7B
