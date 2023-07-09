@@ -4,7 +4,7 @@ from transformers import LlamaConfig
 from transformers import LlamaTokenizer
 from llms.llama import LlamaForCausalLM
 from generate import Generater
-import bmtrain as bmt
+import bmtrain
 
 
 def rank_print(*args, **kargs):
@@ -22,7 +22,7 @@ def main(token_path, model_path,
     debug=False, seed=3407):
     local_rank = int(os.environ["LOCAL_RANK"])
 
-    bmt.init_distributed(seed=seed)
+    bmtrain.init_distributed(seed=seed)
 
     rank_print('loading tokenizer...')
     tokenizer = LlamaTokenizer.from_pretrained(token_path)
@@ -34,13 +34,13 @@ def main(token_path, model_path,
 
     rank_print('loading checkpoints from rank0 ...')
     ckpt = os.path.join(model_path, "state_dict.pt")
-    model = bmt.load(model, ckpt, strict=True)
+    model = bmtrain.load(model, ckpt, strict=True)
 
     rank_print('Prompt:', prompt, rank=0)
     if local_rank == 0:
         model = Generater(model, tokenizer)
         model.generate([prompt], debug=debug)
-    bmt.synchronize()
+    bmtrain.synchronize()
 
 
 if __name__ == '__main__':

@@ -1,10 +1,11 @@
 from torch.nn import Module
 from torch.nn.functional import silu, softmax
 
-from bmt import DistributedModule as DistributedModule
-from bmt import DistributedParameter as DistributedParameter
-from model_center.layer import DistributedLinear, DistributedEmbedding
-from bmt import CheckpointBlock, TransformerBlockList as ModuleList
+from bmtrain import DistributedModule as DistributedModule
+from bmtrain import DistributedParameter as DistributedParameter
+from bmtrain import CheckpointBlock, TransformerBlockList as ModuleList
+from model_center.layer import Linear as DistributedLinear
+from model_center.layer import Embedding as DistributedEmbedding
 
 import math
 import torch
