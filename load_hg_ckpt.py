@@ -78,5 +78,12 @@ def load_hg_llama(path, debug=False, device='cpu'):
     return model.to(device)
 
 
+def convert(inpath, outpath, debug=True):
+    os.makedirs(outpath, exist_ok=True)
+    model = load_hg_llama(inpath, debug=debug, device='cpu')
+    states = model.state_dict()
+    torch.save(states, os.path.join(outpath, "state_dict.pt"))
+
+
 if __name__ == '__main__':
-    fire.Fire(load_hg_llama)
+    fire.Fire(convert)
