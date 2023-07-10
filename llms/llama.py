@@ -1,7 +1,7 @@
 from torch.nn import Module
 from torch.nn.functional import silu, softmax
 
-distributed = True
+distributed = False
 if distributed:
     from bmtrain import DistributedModule as DistributedModule
     from bmtrain import DistributedParameter as DistributedParameter
