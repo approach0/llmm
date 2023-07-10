@@ -34,12 +34,15 @@ def main(token_path, model_path,
 
     rank_print('loading checkpoints from rank0 ...')
     ckpt = os.path.join(model_path, "state_dict.pt")
-    bmtrain.load(model, ckpt, strict=True)
+    load_res = bmtrain.load(model, ckpt, strict=True)
+    rank_print('Loaded:', load_res, rank=0)
 
     rank_print('Prompt:', prompt, rank=0)
     if local_rank == 0:
         model = Generater(model, tokenizer)
-        model.generate([prompt], debug=debug)
+        answer = model.generate([prompt], debug=debug)
+        rank_print('Answer:', answer, rank=0)
+
     bmtrain.synchronize()
 
 

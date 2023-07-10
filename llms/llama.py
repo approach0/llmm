@@ -69,33 +69,29 @@ class LlamaRotaryEmbedding(DistributedModule):
     def __init__(self, dim,
         max_position_embeddings=2048, base=10000, device=None):
         super().__init__()
+
         inv_freq = 1.0 / (base ** (
             torch.arange(0, dim, 2).float().to(device) / dim)
         )
-        self.register_buffer("inv_freq", inv_freq, persistent=False)
-        self.max_position_embeddings = max_position_embeddings
-        self.register_sincos_buf()
-
-    def register_sincos_buf(self, debug=False):
-        t = torch.arange(self.max_position_embeddings,
-            device=self.inv_freq.device, dtype=self.inv_freq.dtype)
+        # Buffer will show up in state_dict(), no need to save this one.
+        # self.register_buffer("inv_freq", inv_freq, persistent=False)
+        t = torch.arange(max_position_embeddings,
+            device=inv_freq.device, dtype=inv_freq.dtype)
         # t: [max_seq_len],  inv_freq: [head_H // 2]
-        freqs = torch.einsum("i,j->ij", t, self.inv_freq)
+        freqs = torch.einsum("i,j->ij", t, inv_freq)
         # freqs: [max_seq_len, head_H // 2]
         emb = torch.cat((freqs, freqs), dim=-1)
         # emb: [max_seq_len, head_H]
         dtype = torch.get_default_dtype()
-        cos = emb.cos()[None, None, :, :].to(dtype)
-        sin = emb.sin()[None, None, :, :].to(dtype)
-        self.register_buffer("cos_cached", cos, persistent=False)
-        self.register_buffer("sin_cached", sin, persistent=False)
+        self.cos_cached = emb.cos()[None, None, :, :].to(dtype)
+        self.sin_cached = emb.sin()[None, None, :, :].to(dtype)
 
     def forward(self, x, tot_seq_len):
-        if not hasattr(self, "cos_cached"):
-            self.register_sincos_buf(debug=True)
+        cos = self.cos_cached.to(x.device)
+        sin = self.sin_cached.to(x.device)
         return (
-            self.cos_cached[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
-            self.sin_cached[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
+            cos[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
+            sin[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
         )
 
     @staticmethod
