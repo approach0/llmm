@@ -3,7 +3,8 @@ from torch.nn.functional import silu, softmax
 
 from bmtrain import DistributedModule as DistributedModule
 from bmtrain import DistributedParameter as DistributedParameter
-from bmtrain import CheckpointBlock, TransformerBlockList as ModuleList
+from bmtrain import CheckpointBlock
+from bmtrain import TransformerBlockList as ModuleList
 from model_center.layer import Linear as DistributedLinear
 from model_center.layer import Embedding as DistributedEmbedding
 
