@@ -68,10 +68,8 @@ def load_hg_llama(path, debug=False, device='cpu'):
             src_state_dict[k] = v
 
     if debug: print(model.model.layers[30].mlp.gate_proj.weight)
-    if debug: print(model.model.layers[30].self_attn.rotary_emb.inv_freq)
     used_keys = load(model, src_state_dict, '', debug=debug)
     if debug: print(model.model.layers[30].mlp.gate_proj.weight)
-    if debug: print(model.model.layers[30].self_attn.rotary_emb.inv_freq)
     all_keys = set(src_state_dict.keys())
     unused_keys = all_keys.difference(used_keys)
     assert len(unused_keys) == 0, print('Unused keys:', unused_keys)
@@ -86,7 +84,7 @@ def convert(inpath, outpath, debug=True):
     shutil.copyfile(cfg_src, cfg_dst)
     model = load_hg_llama(inpath, debug=debug, device='cpu')
     states = model.state_dict()
-    print(states.keys())
+    if debug: print('saving', states.keys())
     torch.save(states, os.path.join(outpath, "state_dict.pt"))
 
 

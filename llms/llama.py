@@ -66,7 +66,7 @@ class LlamaRotaryEmbedding(DistributedModule):
         inv_freq = 1.0 / (base ** (
             torch.arange(0, dim, 2).float().to(device) / dim)
         )
-        self.register_buffer("inv_freq", inv_freq)
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
         self.max_position_embeddings = max_position_embeddings
         self.register_sincos_buf()
 
