@@ -5,12 +5,12 @@ export NCCL_P2P_DISABLE=1
 #export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
-(cd BMTrain && python setup.py install)
+#(cd BMTrain && python setup.py install)
 
 torchrun \
     --master_addr localhost \
     --master_port 8991 \
-    --nproc_per_node 4 \
+    --nproc_per_node 1 \
     --nnodes 1 \
     inference.py \
     --token_path ~/llama-models/7B-hgf-new \
