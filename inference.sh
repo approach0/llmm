@@ -14,4 +14,5 @@ torchrun \
     --nnodes 1 \
     inference.py \
     --token_path ~/llama-models/7B-hgf-new \
-    --model_path ./checkpoints/7B
+    --model_path ./checkpoints/7B \
+    --debug
