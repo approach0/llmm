@@ -1,13 +1,19 @@
 from torch.nn import Module
 from torch.nn.functional import silu, softmax
 
-from bmtrain import DistributedModule as DistributedModule
-from bmtrain import DistributedParameter as DistributedParameter
-from bmtrain import CheckpointBlock
-from torch.nn import ModuleList
-#from bmtrain import TransformerBlockList as ModuleList
-from model_center.layer import Linear as DistributedLinear
-from model_center.layer import Embedding as DistributedEmbedding
+distributed = True
+if distributed:
+    from bmtrain import DistributedModule as DistributedModule
+    from bmtrain import DistributedParameter as DistributedParameter
+    from bmtrain import TransformerBlockList as ModuleList
+    from model_center.layer import Linear as DistributedLinear
+    from model_center.layer import Embedding as DistributedEmbedding
+else:
+    from torch.nn import Module as DistributedModule
+    from torch.nn import Parameter as DistributedParameter
+    from torch.nn import ModuleList
+    from torch.nn import Linear as DistributedLinear
+    from torch.nn import Embedding as DistributedEmbedding
 
 import math
 import torch
@@ -281,10 +287,17 @@ class LlamaModel(Module):
         self.embed_tokens = DistributedEmbedding(
             config.vocab_size, config.hidden_size, self.padding_idx
         )
-        self.layers = ModuleList([
-            CheckpointBlock(LlamaDecoderLayer(config))
-            for _ in range(config.num_hidden_layers)
-        ])
+        if distributed:
+            from bmtrain import CheckpointBlock
+            self.layers = ModuleList([
+                CheckpointBlock(LlamaDecoderLayer(config))
+                for _ in range(config.num_hidden_layers)
+            ])
+        else:
+            self.layers = ModuleList([
+                LlamaDecoderLayer(config)
+                for _ in range(config.num_hidden_layers)
+            ])
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def _prepare_decoder_attention_mask(self,
