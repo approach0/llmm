@@ -5,8 +5,7 @@ export NCCL_P2P_DISABLE=1
 #export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
-(cd BMTrain && python3 setup.py build)
-export PYTHONPATH=`pwd`/BMTrain/build/lib.linux-x86_64-cpython-310/bmtrain
+(cd BMTrain && python setup.py install)
 
 torchrun \
     --master_addr localhost \
