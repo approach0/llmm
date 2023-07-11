@@ -24,7 +24,8 @@ torch.cuda.set_device(local_rank)
 model_path = os.path.expanduser(model_path)
 
 tokenizer = LlamaTokenizer.from_pretrained(model_path)
-model = LlamaForCausalLM.from_pretrained(model_path)
+model = LlamaForCausalLM.from_pretrained(model_path,
+    torch_dtype=torch.float16)
 
 ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
 ds_engine.module.eval() # for inference
