@@ -30,6 +30,7 @@ ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
 ds_engine.module.eval() # for inference
 
 text_in = 'My name is Mariama, my favorite '
+text_in = "When I was 6 my sister was half my age. Now I'm 70, my sister's age is "
 inputs = tokenizer.encode(text_in, return_tensors="pt").to(device=local_rank)
 with torch.no_grad():
     outputs = ds_engine.module.generate(inputs,
