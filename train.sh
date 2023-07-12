@@ -8,7 +8,7 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
 deepspeed \
-    --include=localhost:4,5 \
+    --include=localhost:4,5,6,7 \
     --master_port 8921 \
     train.py \
     --output_dir ./data \
@@ -16,7 +16,11 @@ deepspeed \
     --save_strategy "steps" \
     --save_steps 100 \
     --save_total_limit 2 \
+    --learning_rate 2e-5 \
+    --bf16_full_eval True \
     --logging_steps 2 \
+    --warmup_steps 3000 \
     --report_to "tensorboard" \
+    --per_device_train_batch_size 4 \
     --deepspeed ds_config_zero3.json \
     --model_name_or_path ~/llama-models/7B-hgf-new/

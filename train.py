@@ -31,9 +31,8 @@ torch.cuda.set_device(local_rank)
 model_path = os.path.expanduser(model_path)
 
 ### Zero Configuration
-with open('ds_config_zero3.json') as fh:
+with open('ds_config_zero3.json', 'r') as fh:
     ds_config = json.load(fh)
-ds_config['train_batch_size'] = world_size * 16
 
 # this has to be run before loading the model.from_pretrained()
 ds_config_hf = HfDeepSpeedConfig(ds_config)
@@ -86,8 +85,8 @@ if tokenizer.pad_token is None:
 #if local_rank == 0: set_trace()
 
 ### Model Parallel
-ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
-ds_engine.module.eval() # for inference
+#ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
+#ds_engine.module.eval() # for inference
 
 ### Dataset
 from datasets import load_dataset
@@ -184,11 +183,15 @@ data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
 
 # Training
 from transformers import Trainer
+model.is_parallelizable = True
+model.model_parallel = True
 trainer = Trainer(
-    model=ds_engine.module,
+    model=model,
     tokenizer=tokenizer,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=None,
     data_collator=data_collator
 )
+trainer.train()
+trainer.save_state()

@@ -16,7 +16,12 @@ world_size = int(os.getenv("WORLD_SIZE", "1"))
 
 with open('ds_config_zero3.json') as fh:
     ds_config = json.load(fh)
-ds_config['train_batch_size'] = world_size * 16
+ds_config['train_batch_size'] = (
+    ds_config['train_micro_batch_size_per_gpu'] *
+    ds_config['gradient_accumulation_steps'] *
+    world_size
+)
+
 # this has to be run before loading the model.from_pretrained()
 ds_config_hf = HfDeepSpeedConfig(ds_config)
 
