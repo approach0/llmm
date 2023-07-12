@@ -4,16 +4,27 @@ import copy
 import json
 import torch
 from pdb import set_trace
+from dataclasses import dataclass
 
 import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
 
+import transformers
 from transformers import LlamaConfig
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 
-model_path = sys.argv[-1]
-assert os.path.isdir(model_path) or '.' not in model_path
+### Parse Arguments
+@dataclass
+class MyArguments:
+    model_name_or_path: str
+
+parser = transformers.HfArgumentParser(
+    (transformers.TrainingArguments, MyArguments)
+)
+training_args, my_args = parser.parse_args_into_dataclasses()
+
+model_path = my_args.model_name_or_path
 local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
 torch.cuda.set_device(local_rank)
@@ -79,9 +90,7 @@ ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
 ds_engine.module.eval() # for inference
 
 ### Dataset
-from dataclasses import dataclass
 from datasets import load_dataset
-import transformers
 
 @dataclass
 class DataCollatorForSupervisedDataset(object):
@@ -172,11 +181,14 @@ train_dataset = raw_train_datasets.map(
     fn_kwargs={"tokenizer": tokenizer}
 )
 data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
-data_module = dict(
+
+# Training
+from transformers import Trainer
+trainer = Trainer(
+    model=ds_engine.module,
+    tokenizer=tokenizer,
+    args=training_args,
     train_dataset=train_dataset,
     eval_dataset=None,
     data_collator=data_collator
 )
-
-# Training with:
-ds_engine.module
