@@ -19,3 +19,8 @@ I plan to move to a city with a good public transportation system, get a job and
 am so excited to be a part of the Communication Interns this summer and look forward to learning
 about the industry and developing skills that will help me in the future.
 ```
+
+## Tensorboard
+```sh
+tensorboard --logdir ./runs/Jul12_11-00-08_watgpu-100/ --port=8000
+```
