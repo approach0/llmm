@@ -167,7 +167,7 @@ def train_tokenize_function(examples, tokenizer):
 
 raw_train_datasets = load_dataset('json',
     data_files='./data/alpaca_data.json',
-    split="train", cache_dir='./data'
+    split="train", cache_dir='./cache'
 )
 train_dataset = raw_train_datasets.map(
     train_tokenize_function,

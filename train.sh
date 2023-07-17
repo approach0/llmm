@@ -11,7 +11,7 @@ deepspeed \
     --include=localhost:4,5,6,7 \
     --master_port 8921 \
     train.py \
-    --output_dir ./data \
+    --output_dir ./output \
     --num_train_epochs 3 \
     --save_strategy "steps" \
     --save_steps 100 \
@@ -21,7 +21,7 @@ deepspeed \
     --logging_steps 2 \
     --warmup_steps 3 \
     --report_to "tensorboard" \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 2 \
     --deepspeed ds_config_zero3.json \
     --model_name_or_path ~/llama-models/7B-hgf-new/
