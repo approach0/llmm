@@ -22,5 +22,5 @@ about the industry and developing skills that will help me in the future.
 
 ## Tensorboard
 ```sh
-tensorboard --logdir ./runs/Jul12_11-00-08_watgpu-100/ --port=8000
+tensorboard dev upload --logdir ./output/runs/Jul12_11-00-08_watgpu-100/
 ```
