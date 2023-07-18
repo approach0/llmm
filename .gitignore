@@ -4,3 +4,5 @@ checkpoints/
 data/
 output/
 cache/
+.env
+pya0
