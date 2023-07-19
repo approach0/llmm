@@ -62,7 +62,7 @@ To assist you, I have found some potentially relevant passages about this proble
 {P3}
 --- PASSAGE END   ---
 
-First, try to understand above passages and tell me if any one is useful to this problem.
+First, try to understand above passages and tell me which one(s) is/are useful to this problem.
 
 Then, please try to utilize above passages as hints, think step by step, and derive the final answer.
 
