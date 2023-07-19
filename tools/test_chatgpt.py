@@ -46,9 +46,6 @@ class OAI_API():
                     'stop' : stop,
                     'n' : num_samples,
                 }
-                print(request_url)
-                print(headers)
-                print(json_data)
                 response = requests.post(request_url, params=params, headers=headers, json=json_data)
                 output = response.json()
                 valid_output = output.copy()
@@ -82,7 +79,7 @@ class OAI_API():
                 time.sleep(sleep_time)
                 continue
             break
-        return valid_output
+        return valid_output['choices'][0]
 
 
 if __name__ == '__main__':

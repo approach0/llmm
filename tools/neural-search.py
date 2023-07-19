@@ -1,4 +1,3 @@
-cfg_path = '.training-and-inference/inference.ini'
 MATH_path = '/home/w32zhong/msr/datasets/MATH/test/precalculus'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
@@ -10,7 +9,6 @@ import sys
 sys.path.insert(0, './pya0')
 
 from pya0.index_manager import from_prebuilt_index
-from pya0.transformer_eval import search
 from pya0.replace_post_tex import replace_dollar_tex, replace_display_tex, replace_inline_tex
 from pya0.transformer_eval import psg_encoder__dpr_default, searcher__docid_vec_flat_faiss
 from pya0.visualize import output_html
