@@ -3,6 +3,7 @@ sys.path.insert(0, './pya0')
 
 import json
 import os
+import rich
 from test_chatgpt import OAI_API
 from test_gpt4 import gpt4_complete
 #api = OAI_API().get_completion
@@ -61,11 +62,14 @@ To assist you, I have found some potentially relevant passages about this proble
 {P3}
 --- PASSAGE END   ---
 
-Now, please try to utilize above passages as hints, think step by step, and derive the final answer.
+First, try to understand above passages and tell me if any one is useful to this problem.
 
-Write down your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, then, write it as \boxed{\sqrt{3}} at the end of your output.
+Then, please try to utilize above passages as hints, think step by step, and derive the final answer.
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
 '''
 
+from rich import print
 print('Loading model...')
 encoder, searcher = search_init()
 
@@ -83,8 +87,8 @@ for filename in os.listdir(MATH_path):
     prompt = prompt.replace('{P2}', dollar_results[1])
     prompt = prompt.replace('{P3}', dollar_results[2])
 
-    print(prompt)
-    out = api('how do you solve $x^2 = 4$?')
-    print(out)
-
-    input('Press Enter for the next question...')
+    print(f'[grey70]{prompt}[/grey70]', end='\n\n')
+    out = api(prompt)
+    print(out, end='\n\n')
+    print(f'[yellow]Solution[/yellow]: [green]{solution}[/green]')
+    input('[red]Press Enter for the next question...[/red]')
