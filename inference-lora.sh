@@ -10,10 +10,12 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #    ./output/checkpoint-9700/ \
 #    ./output/7B-lora-trained
 
-deepspeed \
-    --include=localhost:4,5,6,7 \
-    --master_port 8921 \
-    --no_local_rank \
-    inference-lora.py infer \
+# test the original model w/o instruct fine-tuning
+python inference-lora.py infer \
+    ~/llama-models/7B-hgf-new \
+    ~/llama-models/7B-hgf-new
+
+# test the LoRA-trained model w/ instruct fine-tuning
+python inference-lora.py infer \
     ./output/checkpoint-9700/ \
     ./output/7B-lora-trained

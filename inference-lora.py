@@ -21,25 +21,28 @@ def convert(origin_model_path, adapter_path, output_path='./tmp'):
     model.save_pretrained(output_path)
 
 
-def infer(tokenizer_path, model_path, direct_inference=True):
-    local_rank = int(os.getenv("LOCAL_RANK", "0"))
-    world_size = int(os.getenv("WORLD_SIZE", "1"))
-    torch.cuda.set_device(local_rank)
+default_prompt = '''
+Below is an instruction that describes a task, paired with an input that provides further context.
+Write a response that appropriately completes the request.
 
-    ## Zero Configuration
-    with open('ds_config_zero3.json', 'r') as fh:
-        ds_config = json.load(fh)
-    ds_config_hf = HfDeepSpeedConfig(ds_config)
+### Instruction:
+Give three tips for staying healthy.
+
+### Input:
+
+### Response:
+'''
+
+
+def infer(tokenizer_path, model_path,
+    direct_inference=True, device='cuda:0'):
 
     tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
     model = LlamaForCausalLM.from_pretrained(model_path)
+    model.to(device)
+    model.eval()
 
-    ds_engine = deepspeed.init_inference(model,
-        mp_size=world_size, dtype=torch.half,
-        checkpoint=None, replace_with_kernel_inject=True)
-    model = ds_engine.module
-
-    def inference(prompt='My name is Mariama, my favorite '):
+    def inference(prompt=default_prompt):
         print('prompt:', prompt)
         inputs = tokenizer(prompt, return_tensors="pt")
         input_ids = inputs["input_ids"].to(device)
@@ -50,21 +53,18 @@ def infer(tokenizer_path, model_path, direct_inference=True):
                 do_sample=False
             )
         output = tokenizer.decode(generation_output[0])
-        print(f'rank#{local_rank} output:', output)
+        print('output:', output)
         return output
 
-    if local_rank == 0:
-        if direct_inference:
-            inference()
-        else:
-            iface = gr.Interface(fn=inference,
-                inputs="text", outputs="text")
-            # Enabling the queue for inference times > 60 seconds:
-            iface.queue().launch(
-                debug=True, share=True, inline=False
-            )
-
-    torch.distributed.barrier()
+    if direct_inference:
+        inference()
+    else:
+        iface = gr.Interface(fn=inference,
+            inputs="text", outputs="text")
+        # Enabling the queue for inference times > 60 seconds:
+        iface.queue().launch(
+            debug=True, share=True, inline=False
+        )
 
 
 if __name__ == '__main__':
