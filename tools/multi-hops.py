@@ -4,10 +4,16 @@ sys.path.insert(0, './pya0')
 import json
 import os
 import rich
+
 from test_chatgpt import OAI_API
 from test_gpt4 import gpt4_complete
+from test_vicuna import api_init as vicuna_api_init, api as vicuna_api
+
+#api_init = lambda x: pass
 #api = OAI_API().get_completion
-api = gpt4_complete
+#api = gpt4_complete
+api_init = vicuna_api_init
+api = vicuna_api
 
 from pya0.index_manager import from_prebuilt_index
 from pya0.replace_post_tex import replace_dollar_tex, replace_display_tex, replace_inline_tex
@@ -73,6 +79,9 @@ from rich import print
 print('Loading model...')
 encoder, searcher = search_init()
 
+print('Initializing LLM...')
+api_args = api_init()
+
 for filename in os.listdir(MATH_path):
     json_path = os.path.join(MATH_path, filename)
     with open(json_path, 'r') as fh:
@@ -88,7 +97,7 @@ for filename in os.listdir(MATH_path):
     prompt = prompt.replace('{P3}', dollar_results[2])
 
     print(f'[grey70]{prompt}[/grey70]', end='\n\n')
-    out = api(prompt)
+    out = api(prompt, args=api_args)
     print(out, end='\n\n')
     print(f'[yellow]Solution[/yellow]: [green]{solution}[/green]')
     input('[red]Press Enter for the next question...[/red]')
