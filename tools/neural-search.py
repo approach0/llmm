@@ -27,12 +27,13 @@ for filename in os.listdir(MATH_path):
     query = replace_dollar_tex(query)
     query = replace_display_tex(query)
     query = replace_inline_tex(query)
+    print('Retrieving docs ...')
     results = searcher(query, encoder, topk=5, debug=False)
 
     print('TEST:', json_path)
     print('Q:', j['problem'], end='\n\n')
     print('A:', j['solution'], end='\n\n')
-    raw_results = []
+    raw_results = [j['solution']]
     for i, res in enumerate(results):
         d = res[2][1]
         raw_results.append(d)
@@ -42,11 +43,11 @@ for filename in os.listdir(MATH_path):
 
     def html(fh, query, hit, page, idx):
         if page == 0 and idx == 0:
+            pass
             fh.write(f'<p><b>Ground Truth</b>: {hit} </p>\n\n')
         else:
             fh.write(f'<p><b>Retrieved#{idx}</b>: {hit} </p>\n\n')
 
     output_html('./output', 'MATH', f'{topic}-{filename}',
-        j['problem'], raw_results,
-        None, False, 10, html)
+        j['problem'], raw_results, None, False, 10, html)
     #input('Hit Enter for the next...')
