@@ -3,7 +3,7 @@ sys.path.insert(0, './pya0')
 
 import json
 import os
-import rich
+from rich import print
 
 from test_chatgpt import OAI_API
 from test_gpt4 import gpt4_complete
@@ -20,7 +20,7 @@ from pya0.replace_post_tex import replace_dollar_tex, replace_display_tex, repla
 from pya0.transformer_eval import psg_encoder__dpr_default, searcher__docid_vec_flat_faiss
 from pya0.visualize import output_html
 
-MATH_path = '/home/w32zhong/msr/datasets/MATH/test/precalculus'
+MATH_path = '../datasets/MATH/test/precalculus'
 topic = os.path.basename(MATH_path)
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
@@ -74,12 +74,11 @@ Then, please try to utilize above passages as hints, think step by step, and der
 Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
 '''
 
-from rich import print
-print('Loading model...')
-encoder, searcher = search_init()
-
 print('Initializing LLM...')
 api_args = api_init()
+
+print('Loading model...')
+encoder, searcher = search_init()
 
 for filename in os.listdir(MATH_path):
     json_path = os.path.join(MATH_path, filename)
@@ -96,7 +95,7 @@ for filename in os.listdir(MATH_path):
     prompt = prompt.replace('{P3}', dollar_results[2])
 
     print(f'[blue]Prompt{len(prompt)}[/blue][grey70]{prompt}[/grey70]', end='\n\n')
-    out = api(prompt, args=api_args, debug=True)
+    out = api(prompt, args=api_args, debug=False)
     print(out, end='\n\n')
     print(f'[yellow]Solution[/yellow]: [green]{solution}[/green]')
     input('[red]Press Enter for the next question...[/red]')
