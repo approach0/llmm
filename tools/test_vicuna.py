@@ -10,6 +10,7 @@ model_path = 'lmsys/vicuna-7b-v1.3'
 #model_path = 'lmsys/vicuna-33b-v1.3'
 device = 'cpu'
 
+
 def api_init():
     model, tokenizer = load_model(model_path, device, 0)
     generate_stream_func = get_generate_stream_function(model, model_path)
@@ -20,14 +21,15 @@ def api_init():
     return model, tokenizer, generate_stream_func, context_len
 
 
-def api(prompt, args=None):
+def api(prompt, args=None, debug=False):
     model, tokenizer, generate_stream_func, context_len = args
 
     adapter = get_model_adapter(model_path)
     template = adapter.get_default_conv_template(model_path)
 
     actual_prompt = f'{template.roles[0]}: {prompt}\n\n{template.roles[1]}:'
-    print(actual_prompt)
+    if debug:
+        print(actual_prompt)
 
     gen_params = {
         "model": model_path,
@@ -48,16 +50,18 @@ def api(prompt, args=None):
         context_len=context_len,
         judge_sent_end=False
     )
-    #return actual_prompt, output_stream
-    return [c for c in output_stream][-1]['text']
+
+    cur_text = None
+    for cur in output_stream:
+        cur_text = cur['text']
+        if debug:
+            print("\033c", end='')
+            #print(prompt, end='')
+            print(cur_text)
+    return cur_text
 
 
-api_args = api_init()
-#prompt, output_stream = api('How to download a windows?', args=api_args)
-#for cur in output_stream:
-#    print("\033c", end='')
-#    print(prompt, end='')
-#    cur_text = cur['text']
-#    print(len(cur_text), cur_text)
-output = api('How to download a windows?', args=api_args)
-print(output)
+if __name__ == '__main__':
+    api_args = api_init()
+    output = api('How to download a windows?', args=api_args, debug=True)
+    print(output)

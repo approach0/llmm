@@ -46,8 +46,7 @@ def search(encoder, query, topk=3):
         dollar_results.append(d)
     return imath_results, dollar_results
 
-template_prompt_init = r'''
-You are a prestigious mathematician, here is a math problem that I need you to solve:
+template_prompt_init = r'''You are a prestigious mathematician, here is a math problem that I need you to solve:
 (math formulas in LaTeX are wrapped in dollar signs)
 
 --- PROBLEM BEGIN ---
@@ -96,8 +95,8 @@ for filename in os.listdir(MATH_path):
     prompt = prompt.replace('{P2}', dollar_results[1])
     prompt = prompt.replace('{P3}', dollar_results[2])
 
-    print(f'[grey70]{prompt}[/grey70]', end='\n\n')
-    out = api(prompt, args=api_args)
+    print(f'[blue]Prompt{len(prompt)}[/blue][grey70]{prompt}[/grey70]', end='\n\n')
+    out = api(prompt, args=api_args, debug=True)
     print(out, end='\n\n')
     print(f'[yellow]Solution[/yellow]: [green]{solution}[/green]')
     input('[red]Press Enter for the next question...[/red]')
