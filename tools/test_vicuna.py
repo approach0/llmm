@@ -6,11 +6,11 @@ from fastchat.model.model_adapter import load_model, get_generate_stream_functio
 from fastchat.utils import get_context_length
 from fastchat.model.model_adapter import get_model_adapter
 
-model_path = 'lmsys/vicuna-7b-v1.3'
-#model_path = 'lmsys/vicuna-33b-v1.3'
+#model_path = 'lmsys/vicuna-7b-v1.3'
+model_path = 'lmsys/vicuna-33b-v1.3'
 
 
-def api_init(device='cuda', n_gpus=1):
+def api_init(device='cuda', n_gpus=2):
     model, tokenizer = load_model(model_path, device, n_gpus)
     generate_stream_func = get_generate_stream_function(model, model_path)
 

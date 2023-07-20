@@ -46,8 +46,8 @@ def search(encoder, query, topk=3):
         dollar_results.append(d)
     return imath_results, dollar_results
 
-template_prompt_init = r'''You are a prestigious mathematician, here is a math problem that I need you to solve:
-(math formulas in LaTeX are wrapped in dollar signs)
+
+template_prompt_init = r'''You are a mathematician, here is a math problem that I need you to solve:
 
 --- PROBLEM BEGIN ---
 {Q}
@@ -72,7 +72,10 @@ First, try to understand above passages and tell me which one(s) is/are useful t
 Then, please try to utilize above passages as hints, think step by step, and derive the final answer.
 
 Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
+
+Keep your answer concise, you only have 500 tokens to generate!
 '''
+
 
 print('Initializing LLM...')
 api_args = api_init()
@@ -95,7 +98,7 @@ for filename in os.listdir(MATH_path):
     prompt = prompt.replace('{P3}', dollar_results[2])
 
     print(f'[blue]Prompt{len(prompt)}[/blue][grey70]{prompt}[/grey70]', end='\n\n')
-    out = api(prompt, args=api_args, debug=False)
+    out = api(prompt, args=api_args, debug=True)
     print(out, end='\n\n')
     print(f'[yellow]Solution[/yellow]: [green]{solution}[/green]')
     input('[red]Press Enter for the next question...[/red]')
