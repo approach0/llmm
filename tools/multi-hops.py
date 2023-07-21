@@ -156,5 +156,5 @@ for filename in filenames:
 
     #input('Press Enter for the next question...')
 
-accuracy_percentage = correct_cnt / total_cnt * 100
-print(f'Accuracy: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
+    accuracy_percentage = correct_cnt / total_cnt * 100
+    print(f'Accuracy: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
