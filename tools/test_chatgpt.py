@@ -20,9 +20,9 @@ class OAI_API():
         }
         self.api_version = "2022-06-01-preview"
 
-    def get_completion(self, prompt, num_tokens = 5000, num_samples = 1,
+    def get_completion(self, prompt, num_tokens = 2048, num_samples = 1,
                     stop = EXAMPLE_SEPARATOR_TOKEN, include_log_probs = 0,
-                    temperature = 0.0, get_probs_of = []):
+                    temperature = 0.0, get_probs_of = [], **kargs):
         get_probs_of = set(get_probs_of)
         request_url = (f"https://{self.name}.openai.azure.com/openai/deployments/" +
             f"{self.deployments[self.engine]}/completions")
