@@ -36,24 +36,34 @@ Give three tips for staying healthy.
 
 def infer(tokenizer_path, model_path,
     direct_inference=True, device='cuda:0'):
+    local_rank = int(os.environ["LOCAL_RANK"])
+    world_size = int(os.environ["WORLD_SIZE"])
 
     tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
-    model = LlamaForCausalLM.from_pretrained(model_path)
-    model.to(device)
-    model.eval()
+    model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16)
 
-    def inference(prompt=default_prompt):
+    model.eval()
+    model.is_parallelizable = True
+    model.model_parallel = True
+
+    ds_engine = deepspeed.init_inference(model, mp_size=world_size,
+        dtype=torch.half, checkpoint=None, replace_with_kernel_inject=True)
+    model = ds_engine.module
+
+    def inference(prompt='hello!'):
         print('prompt:', prompt)
         inputs = tokenizer(prompt, return_tensors="pt")
+        device = torch.cuda.current_device()
         input_ids = inputs["input_ids"].to(device)
         with torch.no_grad():
             generation_output = model.generate(
                 input_ids=input_ids,
-                max_new_tokens=128,
+                max_new_tokens=1024,
                 do_sample=False
             )
         output = tokenizer.decode(generation_output[0])
-        print('output:', output)
+        if local_rank == 0:
+            print('output:', output)
         return output
 
     if direct_inference:
@@ -65,6 +75,8 @@ def infer(tokenizer_path, model_path,
         iface.queue().launch(
             debug=True, share=True, inline=False
         )
+
+    torch.distributed.barrier()
 
 
 if __name__ == '__main__':
