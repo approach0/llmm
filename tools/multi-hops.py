@@ -12,19 +12,20 @@ from test_chatgpt import OAI_API
 from test_gpt4 import gpt4_complete
 from test_vicuna import api_init as vicuna_api_init, api as vicuna_api
 
-api_init = lambda *args: None
-api = OAI_API().get_completion
-
-#api_init = lambda x: pass
-#api = gpt4_complete
-
-#api_init = vicuna_api_init
-#api = vicuna_api
-
 from pya0.index_manager import from_prebuilt_index
 from pya0.replace_post_tex import replace_dollar_tex, replace_display_tex, replace_inline_tex
 from pya0.transformer_eval import psg_encoder__dpr_default, searcher__docid_vec_flat_faiss
 from pya0.visualize import output_html
+
+#api_init = lambda *args: None
+#api = OAI_API().get_completion
+
+#api_init = lambda *args: None
+#api = gpt4_complete
+
+api_init = vicuna_api_init
+api = vicuna_api
+
 
 MATH_path = '../datasets/MATH/test/precalculus'
 topic = os.path.basename(MATH_path)

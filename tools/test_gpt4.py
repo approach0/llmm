@@ -5,7 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
 
-def gpt4_complete(prompt):
+def gpt4_complete(prompt, **kargs):
     openai.api_key = os.environ.get('GPT4KEY')
     while True:
         try:
