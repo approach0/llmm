@@ -1,21 +1,24 @@
+import os
+import json
 import random
 import torch
 import numpy as np
-
-import sys
-sys.path.insert(0, './pya0')
-
-import json
-import os
+from rich import print as rich_print
 
 from test_chatgpt import OAI_API
 from test_gpt4 import gpt4_complete
 from test_vicuna import api_init as vicuna_api_init, api as vicuna_api
 
+import sys
+sys.path.insert(0, './pya0')
+sys.path.insert(0, '../Progressive-Hint')
+
 from pya0.index_manager import from_prebuilt_index
 from pya0.replace_post_tex import replace_dollar_tex, replace_display_tex, replace_inline_tex
 from pya0.transformer_eval import psg_encoder__dpr_default, searcher__docid_vec_flat_faiss
 from pya0.visualize import output_html
+
+from main_clean import extract_math_answer
 
 #api_init = lambda *args: None
 #api = OAI_API().get_completion
@@ -102,7 +105,13 @@ api_args = api_init()
 print('Loading model...')
 encoder, searcher = search_init()
 
-for filename in os.listdir(MATH_path):
+correct_cnt, total_cnt = 0, 0
+limit_tests = None
+
+filenames = os.listdir(MATH_path)
+filenames = filenames[:limit_tests] if isinstance(limit_tests, int) else filenames
+
+for filename in filenames:
     json_path = os.path.join(MATH_path, filename)
     with open(json_path, 'r') as fh:
         j = json.load(fh)
@@ -125,11 +134,27 @@ for filename in os.listdir(MATH_path):
     print_title(f'Prompt (len = {len(prompt)})')
     print(prompt)
 
-    answer = api(prompt, args=api_args, debug=True)
+    answer = api(prompt, args=api_args, debug=False)
     print_title(f'Answer (len = {len(answer)})')
     print(answer, end='\n\n')
 
     print_title('Ground Truth')
     print(solution)
 
-    input('Press Enter for the next question...')
+    boxed_answer = extract_math_answer(answer)
+    boxed_solution = extract_math_answer(solution)
+
+    print_title('Marking')
+    print('agent answer:', boxed_answer)
+    print('ground truth:', boxed_solution)
+    if boxed_answer == boxed_solution:
+        rich_print('[green] correct [/green]')
+        correct_cnt += 1
+    else:
+        rich_print('[red] wrong [/red]')
+    total_cnt += 1
+
+    #input('Press Enter for the next question...')
+
+accuracy_percentage = correct_cnt / total_cnt * 100
+print(f'Accuracy: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
