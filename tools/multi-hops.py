@@ -47,6 +47,7 @@ def search_init():
     searcher, _ = searcher__docid_vec_flat_faiss(index_path, None, enc_utils, 'cpu')
     return encoder, searcher
 
+
 def search(encoder, searcher, query, topk=3):
     query = replace_dollar_tex(query)
     query = replace_display_tex(query)
@@ -109,9 +110,11 @@ def main(pass_name=None, debug=False, args=None, mode=None):
 
         if mode == 'cot':
             prompt = cot1(query)
+
         elif mode == 'ia':
             imath_results, dollar_results = search(encoder, searcher, query)
             prompt = ia1(query, *dollar_results)
+
         else:
             raise NotImplemented
 
