@@ -90,7 +90,7 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         api_init = lambda *args: None
         api = OAI_API().get_completion
 
-    elif run_pass == 'gpt-4':
+    elif run_pass == 'gpt4':
         api_init = lambda *args: None
         api = gpt4_complete
 

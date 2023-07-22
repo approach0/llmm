@@ -11,7 +11,7 @@ case $SETUP in
     ;;
 
     ia-vicuna-7b)
-    export CUDA_VISIBLE_DEVICES=2
+    export CUDA_VISIBLE_DEVICES=1
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
@@ -51,5 +51,15 @@ case $SETUP in
     ia-chatgpt-2022-june)
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=ia --run_pass=chatgpt --args="[]"
+    ;;
+
+    cot-gpt4-2023-july)
+    python tools/multi-hops.py --logname $SETUP \
+        --prompt_mode=cot --run_pass=gpt4 --args="[]"
+    ;;
+
+    ia-gpt4-2023-july)
+    python tools/multi-hops.py --logname $SETUP \
+        --prompt_mode=ia --run_pass=gpt4 --args="[]"
     ;;
 esac
