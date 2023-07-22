@@ -1,4 +1,5 @@
 SETUP=${1}
+export TRANSFORMERS_CACHE='./cache'
 
 if [[ -z $SETUP ]]; then
     echo "please specify SETUP."
