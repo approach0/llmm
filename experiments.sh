@@ -30,7 +30,7 @@ case $SETUP in
 
 
     cot-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=3,7
+    export CUDA_VISIBLE_DEVICES=2,4
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=cot --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"

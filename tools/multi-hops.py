@@ -117,7 +117,7 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         os.makedirs(os.path.dirname(logpath), exist_ok=True)
         if os.path.exists(logpath):
             print(f'log exists: {logpath}')
-            time.sleep(1)
+            #time.sleep(1)
             continue
 
         with open(json_path, 'r') as fh:
