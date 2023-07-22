@@ -1,6 +1,4 @@
 SETUP=${1}
-export TRANSFORMERS_CACHE='./cache'
-
 if [[ -z $SETUP ]]; then
     echo "please specify SETUP."
 fi
@@ -32,14 +30,16 @@ case $SETUP in
 
 
     cot-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=2
+    export CUDA_VISIBLE_DEVICES=2,3
+    export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py \
-        --logname $SETUP --mode=cot --pass_name=vicuna --args="[1,'lmsys/vicuna-33b-v1.3']"
+        --logname $SETUP --mode=cot --pass_name=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
     ;;
 
     ia-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=2
+    export CUDA_VISIBLE_DEVICES=4,5
+    export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py \
-        --mode=ia --pass_name=vicuna --args="[1,'lmsys/vicuna-33b-v1.3']"
+        --mode=ia --pass_name=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
     ;;
 esac
