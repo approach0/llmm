@@ -86,7 +86,7 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         api = vicuna_api
         args = ['cuda', *args]
 
-    elif run_pass == 'chatgpt-2022-june':
+    elif run_pass == 'chatgpt':
         api_init = lambda *args: None
         api = OAI_API().get_completion
 
