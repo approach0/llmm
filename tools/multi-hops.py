@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import time
 import torch
 import numpy as np
 from rich import print as rich_print
@@ -24,8 +25,8 @@ from math_equivalence import is_equiv
 from prompt_factory import *
 
 
-MATH_path = '../datasets/MATH/test/precalculus'
-topic = os.path.basename(MATH_path)
+dataset_prefix = 'datasets'
+MATH_path = f'../{dataset_prefix}/MATH/test/precalculus'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
@@ -63,24 +64,33 @@ def search(encoder, searcher, query, topk=3):
     return imath_results, dollar_results
 
 
-def main(pass_name=None, debug=False, args=None, mode=None):
-    assert mode in ['cot', 'ia', 'mhop']
-    #args = json.loads(args)
+def map_query_log_path(inpath, run_name):
+    inpath = inpath.rstrip('/')
+    inpath = inpath.split('/')
+    fname = inpath[-1] + '.log'
+    start, end = inpath.index(dataset_prefix), -1
+    outpath = '/'.join(inpath[start:end] + [run_name])
+    return os.path.join('./output', outpath, fname)
 
-    if pass_name is None:
-        print('please specify pass_name')
+
+def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
+    assert logname is not None
+    assert prompt_mode in ['cot', 'ia', 'mhop']
+
+    if run_pass is None:
+        print('please specify run_pass')
         quit(1)
 
-    elif pass_name == 'vicuna':
+    elif run_pass == 'vicuna':
         api_init = vicuna_api_init
         api = vicuna_api
         args = ['cuda', *args]
 
-    elif pass_name == 'chatgpt-2022-june':
+    elif run_pass == 'chatgpt-2022-june':
         api_init = lambda *args: None
         api = OAI_API().get_completion
 
-    elif pass_name == 'gpt-4':
+    elif run_pass == 'gpt-4':
         api_init = lambda *args: None
         api = gpt4_complete
 
@@ -103,15 +113,22 @@ def main(pass_name=None, debug=False, args=None, mode=None):
 
     for filename in filenames:
         json_path = os.path.join(MATH_path, filename)
+        logpath = map_query_log_path(json_path, f'logname__{logname}')
+        os.makedirs(os.path.dirname(logpath), exist_ok=True)
+        if os.path.exists(logpath):
+            print(f'log exists: {logpath}')
+            time.sleep(1)
+            continue
+
         with open(json_path, 'r') as fh:
             j = json.load(fh)
         query = j['problem']
         solution = j['solution']
 
-        if mode == 'cot':
+        if prompt_mode == 'cot':
             prompt = cot1(query)
 
-        elif mode == 'ia':
+        elif prompt_mode == 'ia':
             imath_results, dollar_results = search(encoder, searcher, query)
             prompt = ia1(query, *dollar_results)
 
@@ -140,7 +157,8 @@ def main(pass_name=None, debug=False, args=None, mode=None):
         print_title('Marking')
         print('agent answer:', boxed_answer)
         print('ground truth:', boxed_solution)
-        if is_equiv(boxed_answer, boxed_solution):
+        equiv = is_equiv(boxed_answer, boxed_solution)
+        if equiv:
             rich_print('[green] correct [/green]')
             correct_cnt += 1
         else:
@@ -148,6 +166,19 @@ def main(pass_name=None, debug=False, args=None, mode=None):
         total_cnt += 1
 
         #input('Press Enter for the next question...')
+        log_json = {
+            'problem': json_path,
+            'prompt': prompt,
+            'answer': answer,
+            'solution': solution,
+            'agent_answer': boxed_answer,
+            'ground_truth': boxed_solution,
+            'is_equiv': equiv,
+            'args': json.dumps(args)
+        }
+        with open(logpath, 'w') as fh:
+            json.dump(log_json, fh, indent=2)
+            print('Written log:', logpath)
 
         accuracy_percentage = correct_cnt / total_cnt * 100
         print(f'Accuracy: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')

@@ -11,7 +11,8 @@ def gpt4_complete(prompt, **kargs):
         try:
             completion = openai.ChatCompletion.create(
               model="gpt-4",
-              messages=[{"role": "user", "content": prompt}]
+              messages=[{"role": "user", "content": prompt}],
+              max_tokens=1024
             )
         except Exception as e:
             print('Err', e)

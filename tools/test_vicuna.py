@@ -34,7 +34,7 @@ def api(prompt, args=None, debug=False):
         "prompt": actual_prompt,
         "temperature": 0,
         "repetition_penalty": 1.0,
-        "max_new_tokens": 512,
+        "max_new_tokens": 1024,
         "stop": None,
         "stop_token_ids": [],
         "echo": False,
