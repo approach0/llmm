@@ -11,7 +11,7 @@ case $SETUP in
     ;;
 
     ia-vicuna-7b)
-    export CUDA_VISIBLE_DEVICES=3
+    export CUDA_VISIBLE_DEVICES=2
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
@@ -30,14 +30,14 @@ case $SETUP in
 
 
     cot-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=2,3
+    export CUDA_VISIBLE_DEVICES=3,7
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=cot --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
     ;;
 
     ia-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=4,5
+    export CUDA_VISIBLE_DEVICES=3,7
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=ia --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
