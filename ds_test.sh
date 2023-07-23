@@ -23,7 +23,7 @@ export CUDA_VISIBLE_DEVICES=4,5
 #    output/checkpoint-6500 \
 #    output/13B-lora-trained-2ep
 
-deepspeed --num_gpus 2 \
+deepspeed --num_gpus 1 \
     ds_test.py \
     output/checkpoint-6500 \
     output/7B-lora-trained

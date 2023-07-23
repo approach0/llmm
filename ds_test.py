@@ -21,6 +21,7 @@ use_flash_att2 = True
 if use_flash_att2:
     replace_llama_attn_with_flash_attn()
 
+
 tokenizer_path = sys.argv[-2]
 model_path = sys.argv[-1]
 
