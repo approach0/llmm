@@ -10,6 +10,8 @@ from transformers import LlamaConfig
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 
+#from auto_gptq import AutoGPTQForCausalLM
+
 tokenizer_path = sys.argv[-2]
 model_path = sys.argv[-1]
 
@@ -31,6 +33,7 @@ model_path = os.path.expanduser(model_path)
 tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
 model = LlamaForCausalLM.from_pretrained(model_path,
     torch_dtype=torch.float16)
+#model = AutoGPTQForCausalLM.from_quantized(model_path, device=local_rank)
 
 ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
 model = ds_engine.module
@@ -47,11 +50,13 @@ Give three tips for staying healthy.
 
 ### Response:
 '''
+#inputs = tokenizer(text_in, return_tensors="pt")
 inputs = tokenizer.encode(text_in, return_tensors="pt")
 inputs = inputs.to(device=local_rank)
 with torch.no_grad():
     outputs = model.generate(inputs,
         synced_gpus=True, max_new_tokens=128, do_sample=True)
+    #outputs = model.generate(**inputs)
 text_out = tokenizer.decode(outputs[0],
     skip_special_tokens=True)
 
