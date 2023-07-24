@@ -2,7 +2,7 @@ import os
 import json
 
 
-def get_topic_stats(logdir):
+def get_topic_stats(logdir, detail=0):
     correct_cnt, total_cnt = 0, 0
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
@@ -17,8 +17,8 @@ def get_topic_stats(logdir):
         agent_answer = j['agent_answer']
         ground_truth = j['ground_truth']
         is_equiv = j['is_equiv']
-        #print(logpath, '\t', agent_answer, '\t', ground_truth, '\t', is_equiv)
-        #print(logpath, is_equiv)
+        if detail > 1: print(logpath, '\t', agent_answer, '\t', ground_truth, '\t', is_equiv)
+        elif detail > 0: print(logpath, is_equiv)
         if is_equiv:
             correct_cnt += 1
         total_cnt += 1
