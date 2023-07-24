@@ -84,7 +84,10 @@ if local_rank != 0:
 else:
     import gradio as gr
     iface = gr.Interface(
-        fn=inference, inputs="text", outputs="text")
+        fn=inference,
+        inputs=gr.Textbox(default_prompt, lines=40),
+        outputs=gr.Textbox(lines=40)
+    )
     # Enabling the queue for inference times > 60 seconds:
     iface.queue().launch(server_port=8922,
         debug=True, share=True, inline=False
