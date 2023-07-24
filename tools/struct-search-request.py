@@ -25,7 +25,7 @@ if res.ok:
         quit(1)
     for hit in j['hits']:
         docid = hit['docid']
-        answer_url = hit['field_url']
+        url = hit['field_url']
         answer_id = hit['field_title']
         snippet = hit['field_content']
         document = corpus[answer_id]
@@ -33,5 +33,5 @@ if res.ok:
         d = d.replace(r'[imath]', '$')
         d = d.replace(r'[/imath]', '$')
 
-        print('-' * 50)
+        print('-' * 20, url, '-' * 20)
         print(d)
