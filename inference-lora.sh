@@ -21,15 +21,15 @@ export CUDA_LAUNCH_BLOCKING=1
 #    ./output/checkpoint-9700/ \
 #    ./output/7B-lora-trained
 
-export CUDA_VISIBLE_DEVICES=4,5
+#deepspeed \
+#    --no_local_rank \
+#    --include=localhost:4,5 \
+#    --master_port 8921 \
+#    inference-lora.py infer \
+#    ~/llama-models/7B-hgf-new \
+#    ~/llama-models/7B-hgf-new
 
-deepspeed \
-    --no_local_rank \
-    --include=localhost:4,5 \
-    --master_port 8921 \
-    inference-lora.py infer \
-    ~/llama-models/7B-hgf-new \
-    ~/llama-models/7B-hgf-new
-
-    #./output/checkpoint-9700/ \
-    #./output/7B-lora-trained
+python inference-lora.py quantize \
+    ./output/checkpoint-6500/ \
+    ./output/7B-lora-trained \
+    ./output/7B-lora-gptq

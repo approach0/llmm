@@ -20,7 +20,15 @@ def get_topic_stats(logdir):
     print(f'Accuracy: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
 
 
+def output_html(file_path):
+    import sys
+    sys.path.insert(0, './pya0')
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
-    fire.Fire(get_topic_stats)
+    fire.Fire({
+        'get_topic_stats': get_topic_stats,
+        'output_html': output_html
+    })

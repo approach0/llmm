@@ -79,9 +79,29 @@ def infer(tokenizer_path, model_path,
     torch.distributed.barrier()
 
 
+def quantize(tokenizer_path, model_path, quantized_model_path):
+    from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
+    quantize_config = BaseQuantizeConfig(
+        bits=4, group_size=128, desc_act=False
+    )
+
+    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
+    examples = [
+        tokenizer(
+            "auto-gptq is an easy-to-use model quantization library with user-friendly apis, based on GPTQ algorithm."
+        )
+    ]
+    model = AutoGPTQForCausalLM.from_pretrained(model_path,
+        quantize_config)
+    model.to('cuda')
+    model.quantize(examples)
+    model.save_quantized(quantized_model_path)
+
+
 if __name__ == '__main__':
     import fire
     fire.Fire({
         'convert': convert,
+        'quantize': quantize,
         'infer': infer,
     })
