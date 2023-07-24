@@ -1,8 +1,7 @@
 You are a mathematician, here is a math problem that I need you to solve:
 
 --- PROBLEM BEGIN ---
-The points $(0,0,0),$ $(a,1,1),$ $(1,b,1),$ and $(1,1,c)$ are coplanar, where $a \\neq 1,$ $b \\neq 1,$ and $c \\neq 1.$  Compute
-\\[\\frac{1}{1 - a} + \\frac{1}{1 - b} + \\frac{1}{1 - c}.\\]
+Find the number of solutions in the interval $[0,2\\pi]$ to\n\\[\\tan x + \\sec x = 2 \\cos x.\\]
 --- PROBLEM END   ---
 
 To assist you, I have found some potentially relevant passages about this problem:
