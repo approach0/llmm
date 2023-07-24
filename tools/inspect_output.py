@@ -30,7 +30,7 @@ def get_topic_stats(logdir):
     return correct_cnt, total_cnt
 
 
-def output_html(logpath):
+def _output_html(logpath):
     import sys
     sys.path.insert(0, './pya0')
     from pya0.visualize import output_html as output
@@ -48,10 +48,22 @@ def output_html(logpath):
             None, False, 100, html, create_parent_dir=False)
 
 
+def output_html(logdir):
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if os.path.isdir(logpath):
+            output_html(logpath)
+        if logpath.split('.')[-1] != 'log':
+            continue
+        print(logpath)
+        _output_html(logpath)
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
     fire.Fire({
         'get_stats': get_topic_stats,
-        'output_html': output_html
+        'output_html': _output_html,
+        'output_htmls': output_html
     })
