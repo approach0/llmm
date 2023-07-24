@@ -1,0 +1,25 @@
+You are a mathematician, here is a math problem that I need you to solve:
+
+--- PROBLEM BEGIN ---
+The points $(0,0,0),$ $(a,1,1),$ $(1,b,1),$ and $(1,1,c)$ are coplanar, where $a \\neq 1,$ $b \\neq 1,$ and $c \\neq 1.$  Compute
+\\[\\frac{1}{1 - a} + \\frac{1}{1 - b} + \\frac{1}{1 - c}.\\]
+--- PROBLEM END   ---
+
+To assist you, I have found some potentially relevant passages about this problem:
+
+--- PASSAGE BEGIN ---
+Of course, $x$ cannot be an integer multiple of $\pi$ plus $\frac{\pi}{2}$. We have here a quadratic equation after a little manipulation, which you, yourself, started. $\frac{\sin x}{\cos x}+\frac{1}{\cos x}=2\cos x$ After multiplying by $\cos x$, using the identity $1=\sin^2 x+\cos^2 x$, and bringing everything to the left hand side: $2\sin^2 x+\sin x-1=0$ If we replace $y=\sin x$, then you
+will be able find a familiar expression for $y$: $2y^2+y-1 = 0$ Which gives, $y = \frac{1}{2}$ or $-1$. So, $\sin x$ is equal to either of those two values, which yields $x= 2n\pi+\frac{\pi}{6}$, $x=2n\pi+\frac{5\pi}{6}$ or $x=2n\pi+\frac{\pi}{2}$. However, we ruled out the latter solution initially.
+--- PASSAGE END   ---
+
+--- PASSAGE BEGIN ---
+\begin{eqnarray}   \left(\dfrac{\sin x}{\cos x}\right)+\left(\dfrac{1}{\cos x}\right)&=&2\cos x\\   \sin x + 1 &=& 2 \cos^2 x \\   \sin x + 1 &=& 2(1-\sin^2 x)\\ \end{eqnarray} Then $\sin x = -1$ or $\sin x = 1/2$ and the solutions are $-\pi + 2k \pi, \pi/6 + 2 k\pi$  and $5\pi/6 + 2k \pi$.
+--- PASSAGE END   ---
+
+Utilize above passages as hints, but feel free to tell me which one(s) is/are useful or not useful to this problem.
+
+Then, let's think step by step and derive the final answer.
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
+
+Keep your answer concise, you have 2048 tokens to finish answering it!
