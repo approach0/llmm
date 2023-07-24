@@ -1,4 +1,4 @@
-You are a mathematician, here is a math problem that I need you to solve:
+Here is a math problem that I need you to solve:
 
 --- PROBLEM BEGIN ---
 Find the number of solutions in the interval $[0,2\\pi]$ to\n\\[\\tan x + \\sec x = 2 \\cos x.\\]
@@ -15,10 +15,7 @@ will be able find a familiar expression for $y$: $2y^2+y-1 = 0$ Which gives, $y 
 \begin{eqnarray}   \left(\dfrac{\sin x}{\cos x}\right)+\left(\dfrac{1}{\cos x}\right)&=&2\cos x\\   \sin x + 1 &=& 2 \cos^2 x \\   \sin x + 1 &=& 2(1-\sin^2 x)\\ \end{eqnarray} Then $\sin x = -1$ or $\sin x = 1/2$ and the solutions are $-\pi + 2k \pi, \pi/6 + 2 k\pi$  and $5\pi/6 + 2k \pi$.
 --- PASSAGE END   ---
 
-Utilize above passages as hints, but feel free to tell me which one(s) is/are useful or not useful to this problem.
+You are not good at math, but you can utilize above passages as hints as much as possible.
+Also, feel free to tell me which one(s) is/are useful or not useful.
 
-Then, let's think step by step and derive the final answer.
-
-Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
-
-Keep your answer concise, you have 2048 tokens to finish answering it!
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
