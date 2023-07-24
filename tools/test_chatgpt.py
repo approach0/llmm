@@ -68,7 +68,7 @@ class OAI_API():
                 if "error" in output:
                     valid_output = None
                     if ("code" in output and "content_filter" in output["code"]) or "filter" in output["error"].get("message", ""):
-                        return output
+                        return None
                     if "maximum context length" in output["error"].get("message", ""):
                         valid_output = -1
                         split_prompt = prompt.split(EXAMPLE_SEPARATOR_TOKEN)

@@ -26,7 +26,7 @@ from prompt_factory import *
 
 
 dataset_prefix = 'datasets'
-MATH_path = f'../{dataset_prefix}/MATH/test/precalculus'
+MATH_path = f'../{dataset_prefix}/MATH/test/number_theory'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
@@ -145,6 +145,9 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         print(prompt)
 
         answer = api(prompt, args=api_args, debug=debug)
+        if answer is None: # content_filter policy triggered
+            continue
+
         print_title(f'Answer (len = {len(answer)})')
         print(answer, end='\n\n')
 
