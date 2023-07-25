@@ -26,7 +26,6 @@ from prompt_factory import *
 
 
 dataset_prefix = 'datasets'
-MATH_path = f'../{dataset_prefix}/MATH/test/precalculus'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
@@ -73,9 +72,11 @@ def map_query_log_path(inpath, run_name):
     return os.path.join('./output', outpath, fname)
 
 
-def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
+def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None, topic=None):
     assert logname is not None
     assert prompt_mode in ['cot', 'ia', 'mhop', 'direct'] or prompt_mode.startswith('example')
+    MATH_path = f'../{dataset_prefix}/MATH/test/{topic}'
+    print('dataset path:', MATH_path)
 
     if run_pass is None:
         print('please specify run_pass')
