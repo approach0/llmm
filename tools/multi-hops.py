@@ -75,7 +75,7 @@ def map_query_log_path(inpath, run_name):
 
 def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
     assert logname is not None
-    assert prompt_mode in ['cot', 'ia', 'mhop', 'direct', 'example']
+    assert prompt_mode in ['cot', 'ia', 'mhop', 'direct'] or prompt_mode.startswith('example')
 
     if run_pass is None:
         print('please specify run_pass')
@@ -99,10 +99,10 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
 
     reproducible()
 
-    print('Initializing LLM...')
+    print('Initializing LLM ...')
     api_args = api_init(*args)
 
-    print('Loading model...')
+    print('Loading Retriever ...')
     encoder, searcher = search_init()
 
     correct_cnt, total_cnt = 0, 0
@@ -128,8 +128,8 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         if prompt_mode == 'direct':
             prompt = direct1(query)
 
-        elif prompt_mode == 'example':
-            prompt = example1(query)
+        elif prompt_mode.startswith('example'):
+            prompt = example(prompt_mode)
 
         elif prompt_mode == 'cot':
             prompt = cot1(query)
@@ -174,7 +174,7 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
             rich_print('[red] wrong [/red]')
         total_cnt += 1
 
-        if prompt_mode == 'example':
+        if prompt_mode.startswith('example'):
             input('Press Enter for the next question...')
 
         log_json = {

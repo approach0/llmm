@@ -1,5 +1,5 @@
-def example1(Q):
-    with open('./prompt_example1.txt', 'r') as fh:
+def example(Q):
+    with open(f'prompt_{Q}.txt', 'r') as fh:
         return fh.read()
 
 
