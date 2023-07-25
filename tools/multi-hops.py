@@ -127,17 +127,17 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None, 
         solution = j['solution']
 
         if prompt_mode == 'direct':
-            prompt = direct1(query)
+            prompt = direct2(query)
 
         elif prompt_mode.startswith('example'):
             prompt = example(prompt_mode)
 
         elif prompt_mode == 'cot':
-            prompt = cot1(query)
+            prompt = cot2(query)
 
         elif prompt_mode == 'ia':
             imath_results, dollar_results = search(encoder, searcher, query)
-            prompt = ia1(query, *dollar_results)
+            prompt = ia2(query, *dollar_results)
 
         else:
             raise NotImplemented

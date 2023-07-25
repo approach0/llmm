@@ -61,7 +61,7 @@ class OAI_API():
                         output['choices'][0]["logprobs"]["token_logprobs"]):
                         if token in get_probs_of:
                             valid_output["token_log_prob"][token] = prob
-                sleep_time = 1
+                sleep_time = 2
             except Exception as e:
                 print(output)
                 tries += 1
@@ -80,6 +80,7 @@ class OAI_API():
                 sleep_time *= 2
                 time.sleep(sleep_time)
                 continue
+            time.sleep(sleep_time)
             break
         return valid_output['choices'][0]
 
