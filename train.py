@@ -38,22 +38,26 @@ with open('ds_config_zero3.json', 'r') as fh:
 ds_config_hf = HfDeepSpeedConfig(ds_config)
 
 # Model and LoRa Adapter
-model = LlamaForCausalLM.from_pretrained(model_path,
-    cache_dir='./data', torch_dtype=torch.float16)
+load_model = False
+if load_model:
+    model = LlamaForCausalLM.from_pretrained(model_path,
+        cache_dir='./data', torch_dtype=torch.float16)
 
-from peft import LoraConfig, get_peft_model
-TARGET_MODULES = [
-    "q_proj",
-    "v_proj",
-]
-lora_config = LoraConfig(
-    task_type="CAUSAL_LM",
-    r=8, lora_dropout=0.05,
-    lora_alpha=16, bias='none',
-    target_modules=TARGET_MODULES,
-)
-model = get_peft_model(model, lora_config)
-model.print_trainable_parameters()
+    from peft import LoraConfig, get_peft_model
+    TARGET_MODULES = [
+        "q_proj",
+        "v_proj",
+    ]
+    lora_config = LoraConfig(
+        task_type="CAUSAL_LM",
+        r=8, lora_dropout=0.05,
+        lora_alpha=16, bias='none',
+        target_modules=TARGET_MODULES,
+    )
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+else:
+    model = None
 
 ### Tokenizer
 IGNORE_INDEX = -100
@@ -73,7 +77,8 @@ PROMPT_DICT = {
 
 def smart_tokenizer_and_embedding_resize(special_tokens_dict, tokenizer, model):
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
-    model.resize_token_embeddings(len(tokenizer))
+    if load_model:
+        model.resize_token_embeddings(len(tokenizer))
 
 tokenizer = LlamaTokenizer.from_pretrained(model_path)
 if tokenizer.pad_token is None:
@@ -181,17 +186,20 @@ train_dataset = raw_train_datasets.map(
 )
 data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
 
-# Training
-from transformers import Trainer
-model.is_parallelizable = True
-model.model_parallel = True
-trainer = Trainer(
-    model=model,
-    tokenizer=tokenizer,
-    args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=None,
-    data_collator=data_collator
-)
-trainer.train()
-trainer.save_state()
+if load_model:
+    # Training
+    from transformers import Trainer
+    model.is_parallelizable = True
+    model.model_parallel = True
+    trainer = Trainer(
+        model=model,
+        tokenizer=tokenizer,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=None,
+        data_collator=data_collator
+    )
+    trainer.train()
+    trainer.save_state()
+else:
+    import pdb; pdb.set_trace()
