@@ -1,3 +1,18 @@
+def direct1(Q):
+    prompt = r'''Please solve the math problem below:
+
+--- PROBLEM BEGIN ---
+{}
+--- PROBLEM END   ---
+'''.format(Q)
+
+    prompt += r'''
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
+'''
+    return prompt
+
+
 def cot1(Q):
     prompt = r'''You are a mathematician, here is a math problem that I need you to solve:
 

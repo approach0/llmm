@@ -75,7 +75,7 @@ def map_query_log_path(inpath, run_name):
 
 def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
     assert logname is not None
-    assert prompt_mode in ['cot', 'ia', 'mhop']
+    assert prompt_mode in ['cot', 'ia', 'mhop', 'direct']
 
     if run_pass is None:
         print('please specify run_pass')
@@ -125,7 +125,10 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         query = j['problem']
         solution = j['solution']
 
-        if prompt_mode == 'cot':
+        if prompt_mode == 'direct':
+            prompt = direct1(query)
+
+        elif prompt_mode == 'cot':
             prompt = cot1(query)
 
         elif prompt_mode == 'ia':
