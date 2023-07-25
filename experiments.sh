@@ -84,7 +84,7 @@ case $SETUP in
     example-vicuna-7b)
     export CUDA_VISIBLE_DEVICES=0
     python tools/multi-hops.py --logname $SETUP \
-        --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
+        --prompt_mode=example --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
 
     example-vicuna-13b)
