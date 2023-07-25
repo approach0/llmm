@@ -29,7 +29,6 @@ def generate_pairs(
     all_questions = q_dict.items()
     output = []
     with tqdm(all_questions) as progress:
-        cnt = 0
         for qid, (ac, tags, Q) in progress:
             positives = []
             if ac in a_dict:
@@ -52,10 +51,10 @@ def generate_pairs(
                     "output": A
                 }
                 output.append(j)
-            cnt += 1
-            if cnt >= max_items:
+            if len(output) >= max_items:
                 break
 
+    print(f'Saving {len(output)} pairs ...')
     with open(output_file, 'w') as fh:
         json.dump(output, fh, indent=2)
 
