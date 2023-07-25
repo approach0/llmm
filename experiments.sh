@@ -67,6 +67,11 @@ case $SETUP in
         --prompt_mode=ia --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
     ;;
 
+    direct-chatgpt-2023-03-15)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
+        --prompt_mode=direct --run_pass=chatgpt --args="[]"
+    ;;
+
     cot-chatgpt-2023-03-15)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=cot --run_pass=chatgpt --args="[]"
