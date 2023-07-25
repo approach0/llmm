@@ -75,7 +75,7 @@ def map_query_log_path(inpath, run_name):
 
 def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
     assert logname is not None
-    assert prompt_mode in ['cot', 'ia', 'mhop', 'direct']
+    assert prompt_mode in ['cot', 'ia', 'mhop', 'direct', 'example']
 
     if run_pass is None:
         print('please specify run_pass')
@@ -128,6 +128,9 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         if prompt_mode == 'direct':
             prompt = direct1(query)
 
+        elif prompt_mode == 'example':
+            prompt = example1(query)
+
         elif prompt_mode == 'cot':
             prompt = cot1(query)
 
@@ -171,7 +174,9 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
             rich_print('[red] wrong [/red]')
         total_cnt += 1
 
-        #input('Press Enter for the next question...')
+        if prompt_mode == 'example':
+            input('Press Enter for the next question...')
+
         log_json = {
             'problem': json_path,
             'prompt': prompt,

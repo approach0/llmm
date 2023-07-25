@@ -1,5 +1,3 @@
-http://tuna.cs.uwaterloo.ca:8080/test/precalculus/logname__ia-vicuna-7b/1183.json.log_____p001.html
-
 Here is a math problem that I need you to solve:
 
 --- PROBLEM BEGIN ---

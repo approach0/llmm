@@ -80,4 +80,23 @@ case $SETUP in
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=ia --run_pass=gpt4 --args="[]"
     ;;
+
+    example-vicuna-7b)
+    export CUDA_VISIBLE_DEVICES=0
+    python tools/multi-hops.py --logname $SETUP \
+        --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
+    ;;
+
+    example-vicuna-13b)
+    export CUDA_VISIBLE_DEVICES=5
+    python tools/multi-hops.py --logname $SETUP \
+        --prompt_mode=example --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
+    ;;
+
+    example-vicuna-33b)
+    export CUDA_VISIBLE_DEVICES=3,7
+    export TRANSFORMERS_CACHE='./cache'
+    python tools/multi-hops.py --logname $SETUP \
+        --prompt_mode=example --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
+    ;;
 esac

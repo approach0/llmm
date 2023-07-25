@@ -1,3 +1,8 @@
+def example1(Q):
+    with open('./prompt_example1.txt', 'r') as fh:
+        return fh.read()
+
+
 def direct1(Q):
     prompt = r'''Please solve the math problem below:
 
