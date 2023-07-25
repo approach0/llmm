@@ -49,12 +49,17 @@ ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
 model = ds_engine.module
 model.eval() # for inference
 
-default_prompt = '''
+default_prompt = r'''
 Below is an instruction that describes a task, paired with an input that provides further context.
 Write a response that appropriately completes the request.
 
 ### Instruction:
-Give three tips for staying healthy.
+Answer a math question in the input.
+The input is also followed by some potentially relevant passages to assist you.
+
+If you find any passage(s) very helpful, feel free to tell me, and utilize them to guide your answer as much as possible.
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
 
 ### Input:
 
