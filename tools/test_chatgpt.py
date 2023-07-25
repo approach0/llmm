@@ -18,7 +18,8 @@ class OAI_API():
             "text-davinci-003" : "text-davinci-003",
             "gpt-35-turbo" : "gpt-35-turbo"
         }
-        self.api_version = "2022-06-01-preview"
+        #self.api_version = "2022-06-01-preview"
+        self.api_version = "2023-03-15-preview"
 
     def get_completion(self, prompt, num_tokens = 1024, num_samples = 1,
                     stop = EXAMPLE_SEPARATOR_TOKEN, include_log_probs = 0,
@@ -46,6 +47,7 @@ class OAI_API():
                     'stop' : stop,
                     'n' : num_samples,
                 }
+                print('requesting: ', request_url)
                 response = requests.post(request_url, params=params, headers=headers, json=json_data)
                 output = response.json()
                 valid_output = output.copy()

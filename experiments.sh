@@ -99,4 +99,9 @@ case $SETUP in
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=example2 --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
     ;;
+
+    example-chatgpt-2022-june)
+    python tools/multi-hops.py --logname $SETUP \
+        --prompt_mode=example2 --run_pass=chatgpt --args="[]"
+    ;;
 esac
