@@ -51,9 +51,9 @@
         "enabled": true
     },
 
-    "gradient_accumulation_steps": 6,
+    "gradient_accumulation_steps": 4,
     "train_micro_batch_size_per_gpu": 1,
-    "train_batch_size": 48,
+    "train_batch_size": 16,
     "gradient_clipping": "auto",
     "steps_per_print": 2000,
     "wall_clock_breakdown": false

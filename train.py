@@ -33,12 +33,17 @@ model_path = os.path.expanduser(model_path)
 ### Zero Configuration
 with open('ds_config_zero3.json', 'r') as fh:
     ds_config = json.load(fh)
+## enable parameter cpu offload?
+ds_config['zero_optimization']['offload_param'] = {
+    "device": "cpu",
+    "pin_memory": True
+}
 
 # this has to be run before loading the model.from_pretrained()
 ds_config_hf = HfDeepSpeedConfig(ds_config)
 
 # Model and LoRa Adapter
-load_model = False
+load_model = True
 if load_model:
     model = LlamaForCausalLM.from_pretrained(model_path,
         cache_dir='./data', torch_dtype=torch.float16)
@@ -87,11 +92,6 @@ if tokenizer.pad_token is None:
         tokenizer=tokenizer,
         model=model,
     )
-#if local_rank == 0: set_trace()
-
-### Model Parallel
-#ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
-#ds_engine.module.eval() # for inference
 
 ### Dataset
 from datasets import load_dataset
