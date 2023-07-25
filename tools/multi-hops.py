@@ -26,7 +26,7 @@ from prompt_factory import *
 
 
 dataset_prefix = 'datasets'
-MATH_path = f'../{dataset_prefix}/MATH/test/number_theory'
+MATH_path = f'../{dataset_prefix}/MATH/test/precalculus'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
@@ -175,18 +175,26 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None):
         total_cnt += 1
 
         if prompt_mode.startswith('example'):
-            input('Press Enter for the next question...')
+            input('Press Enter to save this example output...')
 
-        log_json = {
-            'problem': json_path,
-            'prompt': prompt,
-            'answer': answer,
-            'solution': solution,
-            'agent_answer': boxed_answer,
-            'ground_truth': boxed_solution,
-            'is_equiv': equiv,
-            'args': json.dumps(args)
-        }
+        if prompt_mode.startswith('example'):
+            log_json = {
+                'problem': prompt_mode,
+                'prompt': prompt,
+                'answer': answer,
+                'args': json.dumps(args)
+            }
+        else:
+            log_json = {
+                'problem': json_path,
+                'prompt': prompt,
+                'answer': answer,
+                'solution': solution,
+                'agent_answer': boxed_answer,
+                'ground_truth': boxed_solution,
+                'is_equiv': equiv,
+                'args': json.dumps(args)
+            }
         with open(logpath, 'w') as fh:
             json.dump(log_json, fh, indent=2)
             print('Written log:', logpath)
