@@ -12,7 +12,8 @@ Remember to indicate your final answer in boxed LaTeX. For example, if you think
 ### Input:
 
 --- QUESTION BEGIN ---
-Find the number of solutions in the interval $[0,2\\pi]$ to\n\\[\\tan x + \\sec x = 2 \\cos x.\\]
+Find the number of solutions in the interval $[0,2\pi]$ to
+$$ \tan x + \sec x = 2 \cos x. $$
 --- QUESTION END   ---
 
 --- PASSAGE BEGIN ---

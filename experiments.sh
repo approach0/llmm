@@ -94,7 +94,7 @@ case $SETUP in
     ;;
 
     example-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=4,5
+    export CUDA_VISIBLE_DEVICES=3,7
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP \
         --prompt_mode=example2 --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
