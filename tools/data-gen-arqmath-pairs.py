@@ -55,8 +55,8 @@ def generate_pairs(
                 break
 
     print(f'Saving {len(output)} pairs ...')
-    with open(output_file, 'w') as fh:
-        json.dump(output, fh, indent=2)
+    with open(output_file, 'w', encoding='utf8', errors='replace') as fh:
+        json.dump(output, fh, indent=2, ensure_ascii=False)
 
 
 if __name__ == '__main__':

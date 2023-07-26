@@ -24,4 +24,4 @@ deepspeed \
     --per_device_train_batch_size 1 \
     --gradient_accumulation_steps 4 \
     --deepspeed ds_config_zero3.json \
-    --model_name_or_path ~/llama-models/13B-hgf-new/
+    --model_name_or_path ~/llama-models/7B-hgf-new/

@@ -14,6 +14,11 @@ from transformers import LlamaConfig
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 
+#data_file = './data/alpaca_data.json'
+data_file = './data/arqmath-pairs.json'
+load_model = True
+en_param_offload = False
+
 ### Parse Arguments
 @dataclass
 class MyArguments:
@@ -34,16 +39,16 @@ model_path = os.path.expanduser(model_path)
 with open('ds_config_zero3.json', 'r') as fh:
     ds_config = json.load(fh)
 ## enable parameter cpu offload?
-ds_config['zero_optimization']['offload_param'] = {
-    "device": "cpu",
-    "pin_memory": True
-}
+if en_param_offload:
+    ds_config['zero_optimization']['offload_param'] = {
+        "device": "cpu",
+        "pin_memory": True
+    }
 
 # this has to be run before loading the model.from_pretrained()
 ds_config_hf = HfDeepSpeedConfig(ds_config)
 
 # Model and LoRa Adapter
-load_model = True
 if load_model:
     model = LlamaForCausalLM.from_pretrained(model_path,
         cache_dir='./data', torch_dtype=torch.float16)
@@ -152,6 +157,12 @@ def preprocess(sources, targets, tokenizer):
     return dict(input_ids=input_ids, labels=labels)
 
 
+def replace_imath_tags(batch_txt):
+    batch_txt = [b.replace(r'[imath]',  '$') for b in batch_txt]
+    batch_txt = [b.replace(r'[/imath]', '$') for b in batch_txt]
+    return batch_txt
+
+
 def train_tokenize_function(examples, tokenizer):
     prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
     if 'input' in examples:
@@ -166,14 +177,17 @@ def train_tokenize_function(examples, tokenizer):
             for instruction in examples['instruction']
         ]
     targets = [f"{output}{tokenizer.eos_token}" for output in examples['output']]
+
+    sources = replace_imath_tags(sources)
+    targets = replace_imath_tags(targets)
+
     data_dict = preprocess(sources, targets, tokenizer)
     return data_dict
 
 
-raw_train_datasets = load_dataset('json',
-    data_files='./data/alpaca_data.json',
-    split="train", cache_dir='./cache'
-)
+raw_train_datasets = load_dataset('json', encoding='utf-8',
+    data_files=data_file, split="train", cache_dir='./cache')
+
 train_dataset = raw_train_datasets.map(
     train_tokenize_function,
     batched=True,
