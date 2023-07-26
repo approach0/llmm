@@ -9,28 +9,34 @@ if [[ -z $TOPIC ]]; then
     exit 1
 fi
 
+detached_experiment() {
+    ID=$(cat /dev/urandom | tr -cd 'a-f0-9' | head -c 10)
+    tmux new-session -c `pwd` -s batch_experiment_$ID -d
+    tmux send-keys -t batch_experiment_$ID "$1"
+    tmux send-keys -t batch_experiment_$ID Enter
+}
+
 case $SETUP in
+    batch)
+    detached_experiment './experiments.sh direct-vicuna-7b precalculus'
+    detached_experiment './experiments.sh cot-vicuna-7b    precalculus'
+    detached_experiment './experiments.sh ia-vicuna-7b     precalculus'
+    detached_experiment './experiments.sh direct-vicuna-13b precalculus'
+    detached_experiment './experiments.sh cot-vicuna-13b    precalculus'
+    detached_experiment './experiments.sh ia-vicuna-13b     precalculus'
+    detached_experiment './experiments.sh direct-vicuna-33b precalculus'
+    #detached_experiment './experiments.sh cot-vicuna-33b    precalculus'
+    #detached_experiment './experiments.sh ia-vicuna-33b     precalculus'
+    ;;
+
     direct-vicuna-7b)
     export CUDA_VISIBLE_DEVICES=0
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=direct --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
 
-    direct-vicuna-13b)
-    export CUDA_VISIBLE_DEVICES=1
-    python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
-        --prompt_mode=direct --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
-    ;;
-
-    direct-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=2,4
-    export TRANSFORMERS_CACHE='./cache'
-    python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
-        --prompt_mode=direct --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
-    ;;
-
     cot-vicuna-7b)
-    export CUDA_VISIBLE_DEVICES=2
+    export CUDA_VISIBLE_DEVICES=0
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=cot --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
@@ -41,27 +47,40 @@ case $SETUP in
         --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
 
+    direct-vicuna-13b)
+    export CUDA_VISIBLE_DEVICES=2
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
+        --prompt_mode=direct --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
+    ;;
+
     cot-vicuna-13b)
-    export CUDA_VISIBLE_DEVICES=4
+    export CUDA_VISIBLE_DEVICES=3
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=cot --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
     ;;
 
     ia-vicuna-13b)
-    export CUDA_VISIBLE_DEVICES=5
+    export CUDA_VISIBLE_DEVICES=4
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
     ;;
 
+    direct-vicuna-33b)
+    export CUDA_VISIBLE_DEVICES=5,7
+    export TRANSFORMERS_CACHE='./cache'
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
+        --prompt_mode=direct --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
+    ;;
+
     cot-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=2,4
+    export CUDA_VISIBLE_DEVICES=5,7
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=cot --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
     ;;
 
     ia-vicuna-33b)
-    export CUDA_VISIBLE_DEVICES=3,7
+    export CUDA_VISIBLE_DEVICES=5,7
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC \
         --prompt_mode=ia --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']"
