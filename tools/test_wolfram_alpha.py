@@ -15,4 +15,5 @@ def WolframAlphaCalculator(input_query: str):
 
 
 if __name__ == '__main__':
+    #print(WolframAlphaCalculator('what is a browser?'))
     print(WolframAlphaCalculator('what is 7 mod 5?'))
