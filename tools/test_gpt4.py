@@ -20,3 +20,7 @@ def gpt4_complete(prompt, **kargs):
             continue
         break
     return completion.choices[0].message.content
+
+
+if __name__ == '__main__':
+    print(gpt4_complete('what is 7 mod 5?'))
