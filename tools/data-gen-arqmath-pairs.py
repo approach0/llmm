@@ -68,7 +68,27 @@ def generate_pairs(
             positives += [a_dict[a[0]] for a in answers if a[0] != ac]
 
             positives = filter(
+                lambda x:
+                re.search('yield', x, re.IGNORECASE) or
+                re.search('we get', x, re.IGNORECASE) or
+                re.search('answer is', x, re.IGNORECASE)
+                , positives
+            )
+
+            positives = filter(
                 lambda x: not re.search('hint', x, re.IGNORECASE), positives
+            )
+            positives = filter(
+                lambda x: not re.search('http', x, re.IGNORECASE), positives
+            )
+            positives = filter(
+                lambda x: not re.search('pdf', x, re.IGNORECASE), positives
+            )
+            positives = filter(
+                lambda x: not re.search('book', x, re.IGNORECASE), positives
+            )
+            positives = filter(
+                lambda x: not re.search('paper', x, re.IGNORECASE), positives
             )
 
             for A in list(positives)[:answer_topk]:
