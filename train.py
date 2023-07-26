@@ -157,12 +157,6 @@ def preprocess(sources, targets, tokenizer):
     return dict(input_ids=input_ids, labels=labels)
 
 
-def replace_imath_tags(batch_txt):
-    batch_txt = [b.replace(r'[imath]',  '$') for b in batch_txt]
-    batch_txt = [b.replace(r'[/imath]', '$') for b in batch_txt]
-    return batch_txt
-
-
 def train_tokenize_function(examples, tokenizer):
     prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
     if 'input' in examples:
@@ -177,9 +171,6 @@ def train_tokenize_function(examples, tokenizer):
             for instruction in examples['instruction']
         ]
     targets = [f"{output}{tokenizer.eos_token}" for output in examples['output']]
-
-    sources = replace_imath_tags(sources)
-    targets = replace_imath_tags(targets)
 
     data_dict = preprocess(sources, targets, tokenizer)
     return data_dict
