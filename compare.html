@@ -1,5 +1,5 @@
 <head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
 	<title>Compare</title>
 	<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
@@ -33,22 +33,22 @@ html {
   <option>vicuna-13b</option>
   <option>vicuna-33b</option>
 </select>
-<input class="header" v-model="q_idx"/>
-<span class="header"> (0 to {{keys.length - 1}}) </span>
-<button class="header" @click="q_idx -= 1">prev</button>
-<button class="header" @click="q_idx += 1">next</button>
+<input class="header" v-model="problem_id"/>
+<span class="header"> (fisrt: {{Math.min(...keys.map(Number))}}, last: {{Math.max(...keys.map(Number))}}) </span>
+<button class="header" @click="move(-1)">prev</button>
+<button class="header" @click="move(+1)">next</button>
 
 <div>
   <div class="box">
     <h3>Baseline (direct)</h3>
-    <p>URL: <a :href="get_url('cot', path, q_idx)">{{get_url('cot', path, q_idx)}}</a></p>
-    <iframe :src="get_url('cot', path, q_idx)" frameborder="1" align="left"></iframe>
+    <p>URL: <a :href="cur_url('cot')">{{cur_url('cot')}}</a></p>
+    <iframe :src="cur_url('cot')" frameborder="1" align="left"></iframe>
   </div>
 
   <div class="box">
     <h3>Retrieval-augmented</h3>
-    <p>URL: <a :href="get_url('ia', path, q_idx)">{{get_url('cot', path, q_idx)}}</a></p>
-    <iframe :src="get_url('ia', path, q_idx)" frameborder="1" align="right"></iframe>
+    <p>URL: <a :href="cur_url('ia')">{{cur_url('cot')}}</a></p>
+    <iframe :src="cur_url('ia')" frameborder="1" align="right"></iframe>
   </div>
 </div>
 
@@ -63,13 +63,18 @@ const app = createApp({
     return {
       keys: keys,
       path: 'chatgpt-2023-03-15',
-      q_idx: keys.indexOf("1183")
+      problem_id: '1183',
     }
   },
   methods: {
-    get_url(prefix, path, idx) {
-      return './precalculus/logname__' + prefix + '-' + path + '/' + keys[idx] + '.json.log_____p001.html'
-    }
+    cur_url(prefix) {
+      return './precalculus/logname__' + prefix + '-' + this.path + '/' + this.problem_id + '.json.log_____p001.html'
+    },
+
+    move(incr) {
+      const idx = keys.indexOf(this.problem_id)
+      this.problem_id = keys[idx + incr]
+    },
   }
 })
 
