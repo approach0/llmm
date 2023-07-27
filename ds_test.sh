@@ -12,18 +12,13 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 2 ds_test.py ~/llama-models/30B-hgf/
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
-export CUDA_VISIBLE_DEVICES=4,5
-#deepspeed --num_gpus 2 \
-#    ds_test.py \
-#    output/checkpoint-6500 \
-#    output/7B-lora-trained
+export CUDA_VISIBLE_DEVICES=7
+deepspeed --num_gpus 1 \
+    ds_test.py \
+    output/alpaca_tokenizer \
+    output/7B-lora-trained
 
 #deepspeed --num_gpus 2 \
 #    ds_test.py \
 #    output/checkpoint-6500 \
 #    output/13B-lora-trained-2ep
-
-deepspeed --num_gpus 1 \
-    ds_test.py \
-    output/checkpoint-3200 \
-    output/13B-lora-trained-3ep
