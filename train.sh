@@ -9,7 +9,7 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 
 deepspeed \
     --include=localhost:0,5,6,7 \
-    --master_port 8921 \
+    --master_port 8912 \
     train.py \
     --output_dir ./output \
     --num_train_epochs 3 \
