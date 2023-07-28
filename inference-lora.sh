@@ -6,10 +6,10 @@ export NCCL_P2P_DISABLE=1
 export TORCH_DISTRIBUTED_DEBUG=OFF
 export CUDA_LAUNCH_BLOCKING=1
 
-#python inference-lora.py convert \
-#    ~/llama-models/7B-hgf-new \
-#    ./output/checkpoint-9700/ \
-#    ./output/7B-lora-trained
+python inference-lora.py convert \
+    ~/llama-models/7B-hgf-new \
+    ./output/7B-lora-mser-ckpt \
+    ./output/7B-lora-mser
 
 # test the original model w/o instruct fine-tuning
 #python inference-lora.py infer \
@@ -29,7 +29,7 @@ export CUDA_LAUNCH_BLOCKING=1
 #    ~/llama-models/7B-hgf-new \
 #    ~/llama-models/7B-hgf-new
 
-python inference-lora.py quantize \
-    ./output/checkpoint-6500/ \
-    ./output/7B-lora-trained \
-    ./output/7B-lora-gptq
+#python inference-lora.py quantize \
+#    ./output/checkpoint-6500/ \
+#    ./output/7B-lora-trained \
+#    ./output/7B-lora-gptq

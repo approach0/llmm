@@ -73,7 +73,7 @@ def inference(prompt=default_prompt):
     use_cache = False if use_flash_att2 else True
     with torch.no_grad():
         outputs = model.generate(inputs, use_cache=use_cache,
-            synced_gpus=True, max_new_tokens=128,
+            synced_gpus=True, max_new_tokens=1024,
             do_sample=True)
         #outputs = model.generate(**inputs)
     text_out = tokenizer.decode(outputs[0],

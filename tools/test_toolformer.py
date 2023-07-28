@@ -8,6 +8,7 @@ import torch
 from transformers import LlamaForCausalLM
 from transformers import LlamaTokenizer
 
+tokenizer_path = './output/alpaca_tokenizer'
 tokenizer_path = '/home/w32zhong/llama-models/7B-hgf-new'
 model_path = './output/7B-lora-trained'
 #model_path = './output/tiny_llama'
