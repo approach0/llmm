@@ -18,6 +18,8 @@ data_file = './data/alpaca_data.json'
 data_file = './data/finetune-pairs.json'
 load_model = True
 en_param_offload = True
+ctx_length = 1024
+# tokenizer.model_max_length
 
 ### Parse Arguments
 @dataclass
@@ -129,7 +131,7 @@ def _tokenize_fn(strings, tokenizer):
             text,
             return_tensors="pt",
             padding="longest",
-            max_length=tokenizer.model_max_length,
+            max_length=ctx_length,
             truncation=True,
         )
         for text in strings
@@ -182,7 +184,7 @@ raw_train_datasets = load_dataset('json', encoding='utf-8',
 train_dataset = raw_train_datasets.map(
     train_tokenize_function,
     batched=True,
-    batch_size=30_000,
+    batch_size=3_000,
     num_proc=1,
     remove_columns=raw_train_datasets.column_names,
     load_from_cache_file=True,
