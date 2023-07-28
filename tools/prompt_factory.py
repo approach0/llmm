@@ -176,6 +176,9 @@ Write in the Response section that appropriately completes the request.
 ### Instruction:
 Answer a math question in the input. You can invoke a math-aware search engine API (SEARCH[*]) or a computation API (COMPUTE[*]) as you like, and I will insert the returned API results for you right after SEARCH or COMPUTE calls.
 
+Please only use helpful results for your goal, ignore irrelevant ones.
+Also, feel free to retry alternative ways if you find the API results are not helpful.
+
 At the end, indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
 
 Now, let me walk you through just one example first.
@@ -184,7 +187,7 @@ Now, let me walk you through just one example first.
 Find the number of solutions in the interval $[0,2\pi]$ to equation $\tan x + \sec x = 2 \cos x.$
 --- PROBLEM END   ---
 
-I feel uncertain about his problem, let me search the key formula first...
+You might feel uncertain about his problem, let us search the key formula first...
 
 SEARCH[$\tan x + \sec x = 2 \cos x.$]
 
@@ -206,15 +209,16 @@ Then I don't know where to go from there. Please help!
 --- NEXT RESULT ---
 That gives you: $\sin x= 2\cos^2x-1 = \cos(2x).$
 It should be easy from here.
---- RESULTS END   ---
+--- RESULTS END ---
 
-Okay, the second results look very relevant. Now what left to be solved is
+Okay, the second result looks very relevant.
+If we follow that thought, what left to be solved is
 
 $$
 \sin x = \cos(2x)
 $$
 
-Let me see if this equation has been solved before...
+Let us see if this equation has been solved before...
 
 SEARCH[$\sin x = \cos(2x)$]
 
@@ -224,15 +228,16 @@ Hint: Use the fact that $\cos(2x) = 1 - 2\sin^2x$.
 Then you will have a quadratic for $\sin x$.
 --- NEXT RESULT ---
 I'm guessing that you mean either for the integral to run from 0 to π/2, or from −π/2 to 0.
---- RESULTS END   ---
+--- RESULTS END ---
 
-Okay, the 2nd result is not relevant, but the first one is a very good idea. If we plug into the formula using $\cos(2x) = 1 - 2\sin^2x$, then
+Okay, the 2nd result is not relevant, but the first one is a very good idea.
+If we plug into that formula using $\cos(2x) = 1 - 2\sin^2x$, we get
 
 $$
 \sin x = 1 - 2\sin^2x
 $$
 
-if we let $\sin x = y$, then above is essentially
+now, if we let $\sin x = y$, then above is essentially
 
 $$
 y = 1 - 2 y^2
@@ -271,7 +276,7 @@ Okay, by collecting these results, and knowning that they have to be in the inte
 
 [3*pi/2, pi/6, 5*pi/6]
 
-So the number of solutions is $\boxed{2}$.
+So the number of solutions is $\boxed{3}$.
 
 You get the idea? Now it is your turn!
 '''
