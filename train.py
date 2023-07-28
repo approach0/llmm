@@ -17,7 +17,7 @@ from transformers import LlamaForCausalLM
 data_file = './data/alpaca_data.json'
 data_file = './data/finetune-pairs.json'
 load_model = True
-en_param_offload = False
+en_param_offload = True
 
 ### Parse Arguments
 @dataclass
@@ -182,8 +182,8 @@ raw_train_datasets = load_dataset('json', encoding='utf-8',
 train_dataset = raw_train_datasets.map(
     train_tokenize_function,
     batched=True,
-    batch_size=3000,
-    num_proc=32,
+    batch_size=30_000,
+    num_proc=1,
     remove_columns=raw_train_datasets.column_names,
     load_from_cache_file=True,
     desc="Running tokenizer on train dataset",
