@@ -281,7 +281,6 @@ So the number of solutions is $\boxed{3}$.
 You get the idea? Now it is your turn!
 '''
 
-
     prompt += '''
 ### Input:
 --- PROBLEM BEGIN ---
@@ -293,6 +292,29 @@ You get the idea? Now it is your turn!
     prompt += r'''
 ### Response:
 '''
+    return prompt
+
+
+def multihop_err1():
+    return '''
+Here are the results:
+--- RESULTS BEGIN ---
+API Error!
+--- RESULTS END ---
+Looks like you are calling the API incorrectly? You may want to try again...
+    '''
+
+
+def multihop_results1(results):
+    prompt = '''
+Here are the results:
+--- RESULTS BEGIN ---
+'''
+    for i, res in enumerate(results):
+        prompt += res + '\n'
+        if i != len(results) - 1:
+            prompt += '--- NEXT RESULT ---\n'
+    prompt += '--- RESULTS END ---\n\n'
     return prompt
 
 

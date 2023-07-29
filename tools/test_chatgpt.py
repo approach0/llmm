@@ -4,8 +4,6 @@ import requests
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
-EXAMPLE_SEPARATOR_TOKEN = '\n\n'
-
 
 class OAI_API():
     def __init__(self):
@@ -22,7 +20,7 @@ class OAI_API():
         self.api_version = "2023-03-15-preview"
 
     def get_completion(self, prompt, num_tokens = 4096, num_samples = 1,
-                    stop = EXAMPLE_SEPARATOR_TOKEN, include_log_probs = 0,
+                    stop = None, include_log_probs = 0,
                     temperature = 0.0, get_probs_of = [], **kargs):
         get_probs_of = set(get_probs_of)
         request_url = (f"https://{self.name}.openai.azure.com/openai/deployments/" +
@@ -72,11 +70,7 @@ class OAI_API():
                     if ("code" in output and "content_filter" in output["code"]) or "filter" in output["error"].get("message", ""):
                         return None
                     if "maximum context length" in output["error"].get("message", ""):
-                        valid_output = -1
-                        split_prompt = prompt.split(EXAMPLE_SEPARATOR_TOKEN)
-                        new_prompt = [split_prompt[0]] + split_prompt[2:]
-                        prompt = EXAMPLE_SEPARATOR_TOKEN.join(new_prompt)
-                        print(f"Error: {output['error']['message']}, shortening prompt")
+                        print(f"Error: {output['error']['message']}, shortening prompt.")
                 sleep_time *= 2
                 time.sleep(sleep_time)
                 continue

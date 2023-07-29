@@ -24,6 +24,8 @@ from main_clean import extract_math_answer
 from math_equivalence import is_equiv
 from prompt_factory import *
 
+from functools import partial
+
 
 dataset_prefix = 'datasets'
 default_tokenizer = 'approach0/dpr-cocomae-220'
@@ -63,15 +65,50 @@ def search(encoder, searcher, query, topk=3):
     return imath_results, dollar_results
 
 
-def has_result(answer):
+def has_result(answer, api_map):
     if r'\boxed' in answer:
+        for api_name in api_map:
+            if api_name in answer:
+                return False
         return True
-    else
+    else:
         return False
 
 
-def inject_result(answer):
-    pass # TODO
+def capture(string):
+    stack = []
+    started = False
+    begin, end = 0, 0
+    for i, c in enumerate(string):
+        if c == '[':
+            stack.append(c)
+            if not started:
+                begin = i
+                started = True
+        elif c == ']':
+            stack.pop()
+            if len(stack) == 0:
+                end = i
+                break
+    return begin, end
+
+
+def inject_result(answer, api_name, api_map):
+    idx = answer.find(api_name)
+    if idx == -1: return answer
+
+    idx += len(api_name)
+
+    begin, end = capture(answer[idx:])
+    begin, end = begin + idx, end + idx
+    if begin >= end:
+        return answer[:idx] + '\n' + multihop_err1()
+
+    api_args = answer[begin + 1 : end]
+    _, res = api_map[api_name](api_args)
+    injected = answer[:end + 1] + '\n\n'
+    injected += multihop_results1(res)
+    return injected
 
 
 def map_query_log_path(inpath, run_name):
@@ -84,7 +121,7 @@ def map_query_log_path(inpath, run_name):
 
 
 def main(logname=None, run_pass=None, debug=False, args=None,
-    prompt_mode=None, topic=None, fname_filter=None):
+    prompt_mode=None, topic=None, fname_filter=None, skip_existing=True):
     assert logname is not None
     assert (prompt_mode in ['cot', 'ia', 'direct', 'mh']
         or prompt_mode.startswith('example'))
@@ -133,7 +170,7 @@ def main(logname=None, run_pass=None, debug=False, args=None,
             if os.path.basename(json_path) != fname_filter:
                 continue
 
-        if os.path.exists(logpath):
+        if os.path.exists(logpath) and skip_existing:
             print(f'log exists: {logpath}')
             #time.sleep(1)
             continue
@@ -161,6 +198,9 @@ def main(logname=None, run_pass=None, debug=False, args=None,
         elif prompt_mode == 'mh':
             prompt = multihop1(query)
 
+            api_map = {
+                'SEARCH': partial(search, encoder, searcher)
+            }
         else:
             raise NotImplemented
 
@@ -173,6 +213,7 @@ def main(logname=None, run_pass=None, debug=False, args=None,
         while True:
             print_title(f'Prompt (len = {len(prompt)})')
             print(prompt)
+            import pdb; pdb.set_trace()
 
             answer = api(prompt, args=api_args, debug=debug)
             if answer is None: # content_filter policy triggered
@@ -182,8 +223,10 @@ def main(logname=None, run_pass=None, debug=False, args=None,
             print(answer, end='\n\n')
 
             if prompt_mode == 'mh':
-                if has_result(answer): break
-                prompt += inject_result(answer)
+                if has_result(answer, api_map):
+                    break
+                prompt += inject_result(
+                    answer, 'SEARCH', api_map)
             else:
                 break
 
