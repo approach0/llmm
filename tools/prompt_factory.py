@@ -297,4 +297,7 @@ You get the idea? Now it is your turn!
 
 
 if __name__ == '__main__':
-    print(multihop1(r'Let $x$ be a real number such that $\sec x - \tan x = 2$. Find $\sec x + \tan x.$'))
+    # precalculus/1185.json
+    prompt = multihop1(r'Let $x$ be a real number such that $\sec x - \tan x = 2$. Find $\sec x + \tan x.$')
+    print(prompt)
+    print('length:', len(prompt))

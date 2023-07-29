@@ -21,7 +21,7 @@ class OAI_API():
         #self.api_version = "2022-06-01-preview"
         self.api_version = "2023-03-15-preview"
 
-    def get_completion(self, prompt, num_tokens = 1024, num_samples = 1,
+    def get_completion(self, prompt, num_tokens = 4096, num_samples = 1,
                     stop = EXAMPLE_SEPARATOR_TOKEN, include_log_probs = 0,
                     temperature = 0.0, get_probs_of = [], **kargs):
         get_probs_of = set(get_probs_of)

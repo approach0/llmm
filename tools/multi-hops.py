@@ -63,6 +63,17 @@ def search(encoder, searcher, query, topk=3):
     return imath_results, dollar_results
 
 
+def has_result(answer):
+    if r'\boxed' in answer:
+        return True
+    else
+        return False
+
+
+def inject_result(answer):
+    pass # TODO
+
+
 def map_query_log_path(inpath, run_name):
     inpath = inpath.rstrip('/')
     inpath = inpath.split('/')
@@ -72,9 +83,11 @@ def map_query_log_path(inpath, run_name):
     return os.path.join('./output', outpath, fname)
 
 
-def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None, topic=None):
+def main(logname=None, run_pass=None, debug=False, args=None,
+    prompt_mode=None, topic=None, fname_filter=None):
     assert logname is not None
-    assert prompt_mode in ['cot', 'ia', 'mhop', 'direct'] or prompt_mode.startswith('example')
+    assert (prompt_mode in ['cot', 'ia', 'direct', 'mh']
+        or prompt_mode.startswith('example'))
     MATH_path = f'../{dataset_prefix}/MATH/test/{topic}'
     print('dataset path:', MATH_path)
 
@@ -115,11 +128,17 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None, 
     for filename in filenames:
         json_path = os.path.join(MATH_path, filename)
         logpath = map_query_log_path(json_path, f'logname__{logname}')
-        os.makedirs(os.path.dirname(logpath), exist_ok=True)
+
+        if fname_filter:
+            if os.path.basename(json_path) != fname_filter:
+                continue
+
         if os.path.exists(logpath):
             print(f'log exists: {logpath}')
             #time.sleep(1)
             continue
+        else:
+            os.makedirs(os.path.dirname(logpath), exist_ok=True)
 
         with open(json_path, 'r') as fh:
             j = json.load(fh)
@@ -139,6 +158,9 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None, 
             imath_results, dollar_results = search(encoder, searcher, query)
             prompt = ia2(query, *dollar_results)
 
+        elif prompt_mode == 'mh':
+            prompt = multihop1(query)
+
         else:
             raise NotImplemented
 
@@ -148,15 +170,22 @@ def main(logname=None, run_pass=None, debug=False, args=None, prompt_mode=None, 
         print_title('Problem')
         print(json_path)
 
-        print_title(f'Prompt (len = {len(prompt)})')
-        print(prompt)
+        while True:
+            print_title(f'Prompt (len = {len(prompt)})')
+            print(prompt)
 
-        answer = api(prompt, args=api_args, debug=debug)
-        if answer is None: # content_filter policy triggered
-            continue
+            answer = api(prompt, args=api_args, debug=debug)
+            if answer is None: # content_filter policy triggered
+                continue
 
-        print_title(f'Answer (len = {len(answer)})')
-        print(answer, end='\n\n')
+            print_title(f'Answer (len = {len(answer)})')
+            print(answer, end='\n\n')
+
+            if prompt_mode == 'mh':
+                if has_result(answer): break
+                prompt += inject_result(answer)
+            else:
+                break
 
         print_title('Ground Truth')
         print(solution)
