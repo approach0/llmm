@@ -133,13 +133,18 @@ def inject_result(answer, api_name, api_map):
     begin, end = capture(answer[idx:])
     begin, end = begin + idx, end + idx
     if begin >= end:
-        return answer[:idx] + '\n' + multihop_err1()
+        return answer[:idx] + '\n\n' + multihop_err1()
+    else:
+        injected = answer[:end+1] + '\n\n'
 
-    api_args = answer[begin + 1 : end]
-    results = api_map[api_name](api_args)
+    api_args = answer[begin:end+1]
+    try:
+        api_args = json.loads(api_args)
+        results = api_map[api_name](api_args)
+        injected += multihop_results1(results)
+    except json.decoder.JSONDecodeError:
+        injected += multihop_err1()
 
-    injected = answer[:end + 1] + '\n\n'
-    injected += multihop_results1(results)
     return injected
 
 
