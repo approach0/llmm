@@ -174,10 +174,33 @@ def multihop1(Q):
 Write in the Response section that appropriately completes the request.
 
 ### Instruction:
-Answer a math question in the input. You can invoke a math-aware search engine API (SEARCH[*]) or a computation API (COMPUTE[*]) as you like, and I will insert the returned API results for you right after SEARCH or COMPUTE calls.
+Answer a math question in the input. You can invoke a math-aware search engine API (SEARCH) or a computation API (COMPUTE) as you like, and I will insert the returned API results for you right after SEARCH or COMPUTE calls.
 
-Please only use helpful results for your goal, ignore irrelevant ones.
-Also, feel free to retry alternative ways if you find the API results are not helpful.
+The SEARCH API is followed by its parameters which are a list of keywords in JSON format, for example:
+
+SEARCH["apple", "banana"]
+
+Note that the SEARCH API supports math keywords, but you need to indicate math keywords by wrapping it with dollar signs, for example:
+
+SEARCH["$x^2 = -1$", "imaginary numbers"]
+
+For the COMPUTE API, it is also followed by its parameters in JSON. The first parameter `mode' is chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
+
+For example, to calculate 3 / 2, you can do:
+
+COMPUTE["calculate", "$\\frac{3}{2}$"]
+
+To simplify $x + y - 3 + 2 + x$, you can do:
+
+COMPUTE["simplify", "$x + y - 3 + 2 + x$"]
+
+And to solve "$y = 1 - 2 y^2$" for y, you can do:
+
+COMPUTE["solve y", "$y = 1 - 2 y^2$"]
+
+For the SEARCH API, only consider helpful API results for your goal, ignore irrelevant ones.
+For the COMPUTE API, remember it is limited to simple tasks (e.g., univariate, algorithmic feasible). 
+When results are not helpful, do explore alternative ways. You do not have to rely on the previous result(s)!
 
 At the end, indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
 
@@ -189,7 +212,7 @@ Find the number of solutions in the interval $[0,2\pi]$ to equation $\tan x + \s
 
 You might feel uncertain about his problem, let us search the key formula first...
 
-SEARCH[$\tan x + \sec x = 2 \cos x.$]
+SEARCH["$\\tan x +\\sec x =2\\cos x$"]
 
 Here are the results:
 --- RESULTS BEGIN ---
@@ -220,7 +243,7 @@ $$
 
 Let us see if this equation has been solved before...
 
-SEARCH[$\sin x = \cos(2x)$]
+SEARCH["$\\sin x = \\cos(2x)$"]
 
 Here are the results:
 --- RESULTS BEGIN ---
@@ -245,34 +268,34 @@ $$
 
 this easy equation should be solvable by computation API...
 
-COMPUTE[solve $y = 1 - 2 y^2$ for y]
+COMPUTE["solve y", "$y = 1 - 2 y^2$"]
 
 Here are the results:
 --- RESULTS BEGIN ---
-[-1, 1/2]
+\left[ -1, \  \frac{1}{2}\right]
 --- RESULTS END ---
 
 Okay, that means $\sin(x)$ is either $-1$ or $1/2$. Let me invoke computation API again.
 
-For $-1$ case...
+For $\sin(x) = -1$ case...
 
-COMPUTE[solve $\sin x = -1$ for x]
-
-Here are the results:
---- RESULTS BEGIN ---
-[-pi/2, 3*pi/2]
---- RESULTS END ---
-
-Okay, for the other $1/2$ case...
-
-COMPUTE[solve $\sin x = 1/2$ for x]
+COMPUTE["solve x", "$\\sin x = -1$"]
 
 Here are the results:
 --- RESULTS BEGIN ---
-[pi/6, 5*pi/6]
+\left[ - \frac{\pi}{2}, \  \frac{3 \pi}{2}\right]
 --- RESULTS END ---
 
-Okay, by collecting these results, and knowning that they have to be in the interval $[0,2\pi]$, we get
+Okay, for the other case when $\sin(x) = 1/2$...
+
+COMPUTE["solve x", "$\\sin x = 1/2$"]
+
+Here are the results:
+--- RESULTS BEGIN ---
+\left[ \frac{\pi}{6}, \  \frac{5 \pi}{6}\right]
+--- RESULTS END ---
+
+Okay, by collecting these results, and knowing that they have to be in the interval $[0,2\pi]$, we get
 
 [3*pi/2, pi/6, 5*pi/6]
 

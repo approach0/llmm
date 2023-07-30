@@ -9,6 +9,7 @@ from rich import print as rich_print
 from test_chatgpt import OAI_API
 from test_gpt4 import gpt4_complete
 from test_vicuna import api_init as vicuna_api_init, api as vicuna_api
+from test_sympy import compute as sympy_compute
 
 import sys
 sys.path.insert(0, './pya0')
@@ -25,12 +26,14 @@ from math_equivalence import is_equiv
 from prompt_factory import *
 
 from functools import partial
+import requests
 
 
 dataset_prefix = 'datasets'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
+sota_searchd_url = 'http://tuna.cs.uwaterloo.ca:8080/search'
 
 
 def reproducible(seed=42):
@@ -63,6 +66,34 @@ def search(encoder, searcher, query, topk=3):
         d = d.replace(r'[/imath]', '$')
         dollar_results.append(d)
     return imath_results, dollar_results
+
+
+def sota_search(question, keywords, full_topk=30, topk=3):
+    print('requesting:', sota_searchd_url)
+    print(question)
+    print(keywords)
+
+    res = requests.post(sota_searchd_url, json={
+        'question': question,
+        'keywords': keywords,
+        'topk': full_topk
+    })
+    if res.ok:
+        res = res.json()
+        res = res[:topk]
+        def mapper(item):
+            content, post_id, _ = item
+            url = ('https://math.stackexchange.com/' +
+                f'questions/{post_id}')
+            return f'URL: {url}\n\n' + content
+        return list(map(mapper, res))
+    else:
+        return []
+
+
+def call_sympy(args):
+    print('computing:', args)
+    return sympy_compute(*args)
 
 
 def has_result(answer, api_map):
@@ -105,9 +136,10 @@ def inject_result(answer, api_name, api_map):
         return answer[:idx] + '\n' + multihop_err1()
 
     api_args = answer[begin + 1 : end]
-    _, res = api_map[api_name](api_args)
+    results = api_map[api_name](api_args)
+
     injected = answer[:end + 1] + '\n\n'
-    injected += multihop_results1(res)
+    injected += multihop_results1(results)
     return injected
 
 
@@ -199,7 +231,8 @@ def main(logname=None, run_pass=None, debug=False, args=None,
             prompt = multihop1(query)
 
             api_map = {
-                'SEARCH': partial(search, encoder, searcher)
+                'SEARCH': partial(sota_search, query),
+                'COMPUTE': call_sympy
             }
         else:
             raise NotImplemented
