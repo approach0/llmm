@@ -89,6 +89,9 @@ class ChatGPT_Agent():
     
         self.messages = []
 
+    def reset(self):
+        self.messages = []
+
     def complete(self, prompt='count to 10', stream=True):
         self.messages.append({
             'role': 'user',
@@ -121,14 +124,12 @@ class ChatGPT_Agent():
 
 
 agent = ChatGPT_Agent()
-def get_stream_completion_api():
-    return agent.complete
-    
 
 if __name__ == '__main__':
     #api = OAI_API()
     #out = api.get_completion('Hello! How many languages do you speak?')
     #print(out['choices'][0])
 
-    complete = get_stream_completion_api()
-    complete('Hello! How many languages do you speak? Tell me a short story for each of the languages you can speak.')
+    agent.complete('Hello! How many languages do you speak? Tell me a short story for each of the languages you can speak.')
+    #agent.reset() 
+    agent.complete("which one is Chinese? I don't see it.")
