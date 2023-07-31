@@ -318,14 +318,16 @@ You get the idea? Now it is your turn!
     return prompt
 
 
-def multihop_err1():
+def multihop_err1(msg='API Error!'):
     return '''
 Here are the results:
 --- RESULTS BEGIN ---
-API Error!
+{}
 --- RESULTS END ---
-Looks like you are calling the API incorrectly? You may want to try again...
-    '''
+
+The API you just called has some issue, are you sure it is called correctly?
+You may want to try it again...
+'''.format(msg)
 
 
 def multihop_results1(results):

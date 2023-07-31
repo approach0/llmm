@@ -127,6 +127,8 @@ def has_api_call(answer, api_map):
 
 
 def has_result(answer, api_map):
+    if r'<|im_end|>' in answer:
+        return True
     key = r'\boxed'
     if key in answer:
         idx = answer.find(key)
@@ -159,7 +161,10 @@ def inject_result(answer, api_name, api_map):
         results = api_map[api_name](api_args)
         injected += multihop_results1(results)
     except json.decoder.JSONDecodeError:
-        injected += multihop_err1()
+        injected += multihop_err1('JSON decode error!\n' +
+        'Did you forget to wrap two double quotes?\n' +
+        'Or you forget to escape the backslashes?\n' +
+        'Double check and try it again!')
 
     return injected
 
