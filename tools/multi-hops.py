@@ -286,13 +286,13 @@ def main(logname=None, run_pass=None, debug=False, args=None,
         print(prompt)
 
         while True:
-            print_title(f'Answer (streaming)')
+            print_title(f'Answer (streaming, total prompt len: {len(prompt)})')
             answer = llm_api(prompt, args=llm_api_args, debug=debug,
                 api_map=api_map, abort_criteria=has_any_captured)
             if answer is None: # content_filter policy triggered
                 continue
 
-            if prompt_mode == 'mh':
+            if prompt_mode == 'mh' and len(prompt) < 8000:
                 if has_result(answer, api_map):
                     break
 
