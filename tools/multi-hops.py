@@ -70,8 +70,8 @@ def search(encoder, searcher, query, topk=3):
 
 def sota_search(question, keywords, full_topk=30, topk=3):
     print('requesting:', sota_searchd_url)
-    print(question)
-    print(keywords)
+    print('query question:', question)
+    print('query keywords:', keywords)
 
     res = requests.post(sota_searchd_url, json={
         'question': question,
@@ -289,8 +289,12 @@ def main(logname=None, run_pass=None, debug=False, args=None,
                 if has_result(answer, api_map):
                     break
 
-                prompt += inject_result(
-                    answer, 'SEARCH', api_map)
+                injected = inject_result(answer, 'SEARCH', api_map)
+
+                print_title(f'Injected')
+                print(injected)
+
+                prompt += injected
             else:
                 break
 
