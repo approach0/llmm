@@ -96,32 +96,48 @@ def call_sympy(args):
     return sympy_compute(*args)
 
 
-def has_result(answer, api_map):
-    if r'\boxed' in answer:
-        for api_name in api_map:
-            if api_name in answer:
-                return False
-        return True
-    else:
-        return False
-
-
-def capture(string):
+def capture(string, par):
     stack = []
     started = False
     begin, end = 0, 0
     for i, c in enumerate(string):
-        if c == '[':
+        if c == par[0]:
             stack.append(c)
             if not started:
                 begin = i
                 started = True
-        elif c == ']':
+        elif c == par[1]:
             stack.pop()
             if len(stack) == 0:
                 end = i
                 break
     return begin, end
+
+
+def has_api_call(answer, api_map):
+    if has_result(answer, api_map):
+        return True
+    for key in api_map.keys():
+        if key in answer:
+            idx = answer.find(key)
+            begin, end = capture(answer[idx:], ('[', ']'))
+            if begin < end:
+                return True
+    return False
+
+
+def has_result(answer, api_map):
+    key = r'\boxed'
+    if key in answer:
+        idx = answer.find(key)
+        begin, end = capture(answer[idx:], ('{', '}'))
+        if begin < end:
+            return True
+    return False
+
+
+def has_any_captured(answer, api_map):
+    return has_result(answer, api_map) or has_api_call(answer, api_map)
 
 
 def inject_result(answer, api_name, api_map):
@@ -130,7 +146,7 @@ def inject_result(answer, api_name, api_map):
 
     idx += len(api_name)
 
-    begin, end = capture(answer[idx:])
+    begin, end = capture(answer[idx:], ('[', ']'))
     begin, end = begin + idx, end + idx
     if begin >= end:
         return answer[:idx] + '\n\n' + multihop_err1()
@@ -261,18 +277,19 @@ def main(logname=None, run_pass=None, debug=False, args=None,
         while True:
             print_title(f'Prompt (len = {len(prompt)})')
             print(prompt)
-            import pdb; pdb.set_trace()
 
-            answer = llm_api(prompt, args=llm_api_args, debug=debug)
+            print_title(f'Answer (streaming)')
+            answer = llm_api(prompt, args=llm_api_args, debug=debug,
+                api_map=api_map, abort_criteria=has_any_captured)
             if answer is None: # content_filter policy triggered
                 continue
 
-            print_title(f'Answer (len = {len(answer)})')
-            print(answer, end='\n\n')
+            #print(answer, end='\n\n')
 
             if prompt_mode == 'mh':
                 if has_result(answer, api_map):
                     break
+
                 prompt += inject_result(
                     answer, 'SEARCH', api_map)
             else:

@@ -95,6 +95,7 @@ class ChatGPT_Agent():
         #openai.api_version = "2023-07-01-preview"
         openai.api_version = "2023-03-15-preview"
         openai.api_base = 'https://corby.openai.azure.com'
+        api_map = kargs['api_map'] if 'api_map' in kargs else {}
 
         self.messages.append({
             'role': 'user',
@@ -105,6 +106,7 @@ class ChatGPT_Agent():
         #    engine='gpt-35-turbo',
         #    messages=self.messages,
         #    temperature=0,
+        #    max_tokens=2048,
         #    stream=True
         #)
 
@@ -112,6 +114,7 @@ class ChatGPT_Agent():
             engine='gpt-35-turbo',
             prompt=prompt,
             temperature=0,
+            max_tokens=2048,
             stream=True
         )
 
@@ -134,6 +137,9 @@ class ChatGPT_Agent():
                     delta = choice['text']
                     if stream: print(delta, end="")
                     response_text += delta
+                    abort = kargs.get('abort_criteria', None)
+                    if abort and abort(response_text, api_map):
+                        break
         if stream: print()
 
         self.messages.append({
