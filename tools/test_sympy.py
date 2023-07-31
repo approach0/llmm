@@ -9,21 +9,23 @@ from sympy import latex
 
 def compute(mode, latex_expr):
     latex_expr = latex_expr.strip().strip('$')
+    def wrap_math(r):
+        return '$' + str(r) + '$'
     try:
         if mode == 'calculate':
             res = parse_latex(latex_expr).evalf(3, subs={
                 'pi': pi
             })
-            return str(latex(res))
+            return wrap_math(latex(res))
 
         elif mode == 'simplify':
             res = simplify(parse_latex(latex_expr))
-            return str(latex(res))
+            return wrap_math(latex(res))
 
         elif mode.startswith('solve'):
             var = mode.split('solve ')[-1].strip()
             res = solve(parse_latex(latex_expr), symbols(var))
-            return str(latex(res))
+            return wrap_math(latex(res))
 
         else:
             return 'Error: Wrong input format, try again!'
