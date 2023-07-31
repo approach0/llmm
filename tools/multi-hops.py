@@ -142,29 +142,33 @@ def has_any_captured(answer, api_map):
     return has_result(answer, api_map) or has_api_call(answer, api_map)
 
 
-def inject_result(answer, api_name, api_map):
-    idx = answer.find(api_name)
-    if idx == -1: return answer
+def inject_result(answer, api_map):
+    for api_name in api_map:
+        idx = answer.find(api_name)
+        if idx == -1: continue
 
-    idx += len(api_name)
+        idx += len(api_name)
 
-    begin, end = capture(answer[idx:], ('[', ']'))
-    begin, end = begin + idx, end + idx
-    if begin >= end:
-        return answer[:idx] + '\n\n' + multihop_err1()
-    else:
-        injected = answer[:end+1] + '\n\n'
+        begin, end = capture(answer[idx:], ('[', ']'))
+        begin, end = begin + idx, end + idx
+        if begin >= end:
+            return answer[:idx] + '\n\n' + multihop_err1()
+        else:
+            injected = answer[:end+1] + '\n\n'
 
-    api_args = answer[begin:end+1]
-    try:
-        api_args = json.loads(api_args)
-        results = api_map[api_name](api_args)
-        injected += multihop_results1(results)
-    except json.decoder.JSONDecodeError:
-        injected += multihop_err1('JSON decode error!\n' +
-        'Double check your API call and try it again!')
+        api_args = answer[begin:end+1]
+        try:
+            api_args = json.loads(api_args)
+            results = api_map[api_name](api_args)
+            injected += multihop_results1(results)
+        except json.decoder.JSONDecodeError:
+            injected += multihop_err1('JSON decode error!\n' +
+            'Double check your API call and try it again!')
+        return injected
 
-    return injected
+    return multihop_err1(
+        'Error! Please choose the API from: {}'.format(list(api_map.keys()))
+    )
 
 
 def map_query_log_path(inpath, run_name):
@@ -292,7 +296,7 @@ def main(logname=None, run_pass=None, debug=False, args=None,
                 if has_result(answer, api_map):
                     break
 
-                injected = inject_result(answer, 'SEARCH', api_map)
+                injected = inject_result(answer, api_map)
 
                 print_title(f'Injected')
                 print(injected)
