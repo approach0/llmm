@@ -80,38 +80,58 @@ class OAI_API():
 
 
 import openai
+
+
 class ChatGPT_Agent():
     def __init__(self):
-        openai.api_key = os.environ.get('OAIKey')
-        openai.api_type = 'azure'
-        openai.api_version = "2023-07-01-preview"
-        openai.api_base = 'https://corby.openai.azure.com'
-    
         self.messages = []
 
     def reset(self):
         self.messages = []
 
-    def complete(self, prompt='count to 10', stream=True):
+    def complete(self, prompt='count to 10', stream=True, **kargs):
+        openai.api_key = os.environ.get('OAIKey')
+        openai.api_type = 'azure'
+        #openai.api_version = "2023-07-01-preview"
+        openai.api_version = "2023-03-15-preview"
+        openai.api_base = 'https://corby.openai.azure.com'
+
         self.messages.append({
             'role': 'user',
             'content': prompt
         })
 
-        response = openai.ChatCompletion.create(
+        #response = openai.ChatCompletion.create(
+        #    engine='gpt-35-turbo',
+        #    messages=self.messages,
+        #    temperature=0,
+        #    stream=True
+        #)
+
+        response = openai.Completion.create(
             engine='gpt-35-turbo',
-            messages=self.messages,
+            prompt=prompt,
             temperature=0,
             stream=True
         )
 
         response_text = ''
+        #for chunk in response:
+        #    choices = chunk['choices']
+        #    if len(choices) > 0:
+        #        delta = choices[0]['delta']
+        #        if 'content' in delta:
+        #            delta = delta['content']
+        #            if stream: print(delta, end="")
+        #            response_text += delta
+        #if stream: print()
+
         for chunk in response:
             choices = chunk['choices']
             if len(choices) > 0:
-                delta = choices[0]['delta']
-                if 'content' in delta:
-                    delta = delta['content']
+                choice = choices[0]
+                if 'text' in choice:
+                    delta = choice['text']
                     if stream: print(delta, end="")
                     response_text += delta
         if stream: print()

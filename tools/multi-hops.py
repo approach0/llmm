@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from rich import print as rich_print
 
-from test_chatgpt import OAI_API
+from test_chatgpt import OAI_API, agent as chatgpt_agent
 from test_gpt4 import gpt4_complete
 from test_vicuna import api_init as vicuna_api_init, api as vicuna_api
 from test_sympy import compute as sympy_compute
@@ -170,17 +170,26 @@ def main(logname=None, run_pass=None, debug=False, args=None,
         quit(1)
 
     elif run_pass == 'vicuna':
-        api_init = vicuna_api_init
-        api = vicuna_api
-        args = ['cuda', *args]
+        llm_init = vicuna_api_init
+        llm_api = vicuna_api
+        llm_rst = lambda *args: None
+        llm_args = ['cuda', *args]
 
     elif run_pass == 'chatgpt':
-        api_init = lambda *args: None
-        api = OAI_API().get_completion
+        llm_init = lambda *args: None
+
+        #llm_api = OAI_API().get_completion
+        #llm_rst = lambda *args: None
+        llm_api = chatgpt_agent.complete
+        llm_rst = chatgpt_agent.reset
+
+        llm_args = []
 
     elif run_pass == 'gpt4':
-        api_init = lambda *args: None
-        api = gpt4_complete
+        llm_init = lambda *args: None
+        llm_api = gpt4_complete
+        llm_rst = lambda *args: None
+        llm_args = []
 
     else:
         raise NotImplemented
@@ -188,7 +197,7 @@ def main(logname=None, run_pass=None, debug=False, args=None,
     reproducible()
 
     print('Initializing LLM ...')
-    api_args = api_init(*args)
+    llm_api_args = llm_init(*llm_args)
 
     print('Loading Retriever ...')
     encoder, searcher = search_init()
@@ -248,12 +257,13 @@ def main(logname=None, run_pass=None, debug=False, args=None,
         print_title('Problem')
         print(json_path)
 
+        llm_rst()
         while True:
             print_title(f'Prompt (len = {len(prompt)})')
             print(prompt)
             import pdb; pdb.set_trace()
 
-            answer = api(prompt, args=api_args, debug=debug)
+            answer = llm_api(prompt, args=llm_api_args, debug=debug)
             if answer is None: # content_filter policy triggered
                 continue
 
