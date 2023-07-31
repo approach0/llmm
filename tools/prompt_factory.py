@@ -200,6 +200,8 @@ COMPUTE["solve y", "$y = 1 - 2 y^2$"]
 
 For the SEARCH API, only consider helpful API results for your goal, ignore irrelevant ones.
 For the COMPUTE API, remember it is limited to simple tasks (e.g., univariate, algorithmic feasible). 
+
+When API returns any error, exam your query and check whether your argument is a valid JSON, if you find an error, call the same API with corrected argument(s) again!
 When results are not helpful, do explore alternative ways. You do not have to rely on the previous result(s)!
 
 At the end, indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
@@ -318,15 +320,12 @@ You get the idea? Now it is your turn!
     return prompt
 
 
-def multihop_err1(msg='API Error!'):
+def multihop_err1(msg='API error!'):
     return '''
 Here are the results:
 --- RESULTS BEGIN ---
 {}
 --- RESULTS END ---
-
-The API you just called has some issue, are you sure it is called correctly?
-You may want to try it again...
 '''.format(msg)
 
 

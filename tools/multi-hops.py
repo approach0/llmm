@@ -162,9 +162,7 @@ def inject_result(answer, api_name, api_map):
         injected += multihop_results1(results)
     except json.decoder.JSONDecodeError:
         injected += multihop_err1('JSON decode error!\n' +
-        'Did you forget to wrap two double quotes?\n' +
-        'Or you forget to escape the backslashes?\n' +
-        'Double check and try it again!')
+        'Double check your API call and try it again!')
 
     return injected
 
