@@ -334,10 +334,13 @@ def multihop_results1(results):
 Here are the results:
 --- RESULTS BEGIN ---
 '''
-    for i, res in enumerate(results):
-        prompt += res + '\n'
-        if i != len(results) - 1:
-            prompt += '--- NEXT RESULT ---\n'
+    if isinstance(results, str):
+        prompt += results + '\n'
+    else:
+        for i, res in enumerate(results):
+            prompt += res + '\n'
+            if i != len(results) - 1:
+                prompt += '--- NEXT RESULT ---\n'
     prompt += '--- RESULTS END ---\n\n'
     return prompt
 
