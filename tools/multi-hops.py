@@ -275,7 +275,7 @@ def main(logname=None, run_pass=None, debug=False, args=None,
             raise NotImplemented
 
         def print_title(title):
-            print('\n', '=' * 30, title, '=' * 30, end='\n\n')
+            print('\n', '=' * 15, title, '=' * 15, end='\n\n')
 
         print_title('Problem')
         print(json_path)
