@@ -19,7 +19,7 @@ detached_experiment() {
 
 case $SETUP in
     test)
-    ./experiments.sh mh-chatgpt-2023-03-15 precalculus 1185.json
+    ./experiments.sh mh-chatgpt-2023-03-15 ${TOPIC} ${FILTER}
     ;;
 
     batch)
