@@ -7,7 +7,6 @@ load_dotenv(find_dotenv())
 
 class OAI_API():
     def __init__(self):
-        self.endpoint = "https://corby.openai.azure.com/"
         self.name = "corby"
         self.oaikey = os.environ.get('OAIKey')
         self.engine = "gpt-35-turbo"
@@ -17,7 +16,8 @@ class OAI_API():
             "gpt-35-turbo" : "gpt-35-turbo"
         }
         #self.api_version = "2022-06-01-preview"
-        self.api_version = "2023-03-15-preview"
+        #self.api_version = "2023-03-15-preview"
+        self.api_version = "2023-07-01-preview"
 
     def get_completion(self, prompt, num_tokens = 2048, num_samples = 1,
                     stop = None, include_log_probs = 0,
@@ -79,7 +79,56 @@ class OAI_API():
         return valid_output['choices'][0]
 
 
+import openai
+class ChatGPT_Agent():
+    def __init__(self):
+        openai.api_key = os.environ.get('OAIKey')
+        openai.api_type = 'azure'
+        openai.api_version = "2023-07-01-preview"
+        openai.api_base = 'https://corby.openai.azure.com'
+    
+        self.messages = []
+
+    def complete(self, prompt='count to 10', stream=True):
+        self.messages.append({
+            'role': 'user',
+            'content': prompt
+        })
+
+        response = openai.ChatCompletion.create(
+            engine='gpt-35-turbo',
+            messages=self.messages,
+            temperature=0,
+            stream=True
+        )
+
+        response_text = ''
+        for chunk in response:
+            choices = chunk['choices']
+            if len(choices) > 0:
+                delta = choices[0]['delta']
+                if 'content' in delta:
+                    delta = delta['content']
+                    if stream: print(delta, end="")
+                    response_text += delta
+        if stream: print()
+
+        self.messages.append({
+            'role': 'assistant',
+            'content': response_text
+        })
+        return response_text
+
+
+agent = ChatGPT_Agent()
+def get_stream_completion_api():
+    return agent.complete
+    
+
 if __name__ == '__main__':
-    api = OAI_API()
-    out = api.get_completion('Hello! How many languages do you speak?')
-    print(out['choices'][0])
+    #api = OAI_API()
+    #out = api.get_completion('Hello! How many languages do you speak?')
+    #print(out['choices'][0])
+
+    complete = get_stream_completion_api()
+    complete('Hello! How many languages do you speak? Tell me a short story for each of the languages you can speak.')
