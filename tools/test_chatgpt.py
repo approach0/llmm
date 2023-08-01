@@ -102,14 +102,6 @@ class ChatGPT_Agent():
             'content': prompt
         })
 
-        #response = openai.ChatCompletion.create(
-        #    engine='gpt-35-turbo',
-        #    messages=self.messages,
-        #    temperature=0,
-        #    max_tokens=2048,
-        #    stream=True
-        #)
-
         response = openai.Completion.create(
             engine='gpt-35-turbo',
             prompt=prompt,
@@ -119,16 +111,6 @@ class ChatGPT_Agent():
         )
 
         response_text = ''
-        #for chunk in response:
-        #    choices = chunk['choices']
-        #    if len(choices) > 0:
-        #        delta = choices[0]['delta']
-        #        if 'content' in delta:
-        #            delta = delta['content']
-        #            if stream: print(delta, end="")
-        #            response_text += delta
-        #if stream: print()
-
         for chunk in response:
             choices = chunk['choices']
             if len(choices) > 0:
