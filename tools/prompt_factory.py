@@ -80,7 +80,7 @@ def direct2(Q):
 Write a response that appropriately completes the request.
 
 ### Instruction:
-Answer a math question in the input.
+Answer a math question in the input directly without any thought process.
 
 Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
 '''

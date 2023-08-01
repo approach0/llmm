@@ -179,10 +179,7 @@ def inject_result(answer, api_map):
             injected += multihop_err1('JSON decode error!\n' +
             'Double check your API call and try it again!')
         return injected
-
-    return multihop_err1(
-        'Error! Please choose the API from: {}'.format(list(api_map.keys()))
-    )
+    return None
 
 
 def map_query_log_path(inpath, run_name):
@@ -238,7 +235,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
 
     reproducible()
 
-    print('Initializing LLM ...')
+    print('Initializing LLM ...', llm_args)
     llm_api_args = llm_init(*llm_args)
 
     #print('Loading Retriever ...')
@@ -265,6 +262,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             j = json.load(fh)
         query = j['problem']
         solution = j['solution']
+        api_map = None
 
         if prompt_mode == 'direct':
             prompt = direct2(query)
@@ -303,23 +301,27 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
         print(prompt)
 
         while len(prompt) < max_ctx:
-            print_title(f'Answer (streaming, total prompt len: {len(prompt)})')
+            print_title(f'Answer (total prompt len: {len(prompt)})')
             answer = llm_api(prompt, args=llm_api_args, debug=debug,
                 api_map=api_map, abort_criteria=has_any_captured)
-            if answer is None: # content_filter policy triggered
+
+            if answer is None: # e.g., content_filter policy triggered
                 continue
 
             if prompt_mode == 'mh':
+                injected = inject_result(answer, api_map)
+
+                if injected is not None:
+                    print_title(f'Injected')
+                    print(injected)
+                    answer = injected
+
                 if has_result(answer, api_map):
                     break
 
-                injected = inject_result(answer, api_map)
-
-                print_title(f'Injected')
-                print(injected)
-
-                prompt += injected
+                prompt += answer
             else:
+                print(answer)
                 break
 
         print_title('Ground Truth')

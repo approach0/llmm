@@ -27,9 +27,9 @@ case $SETUP in
     detached_experiment './experiments.sh direct-vicuna-7b prealgebra'
     detached_experiment './experiments.sh direct-vicuna-7b intermediate_algebra'
 
-    detached_experiment './experiments.sh ia-vicuna-7b algebra'
-    detached_experiment './experiments.sh ia-vicuna-7b prealgebra'
-    detached_experiment './experiments.sh ia-vicuna-7b intermediate_algebra'
+    detached_experiment './experiments.sh cot-vicuna-7b algebra'
+    detached_experiment './experiments.sh cot-vicuna-7b prealgebra'
+    detached_experiment './experiments.sh cot-vicuna-7b intermediate_algebra'
 
     #detached_experiment './experiments.sh direct-vicuna-7b precalculus'
     #detached_experiment './experiments.sh cot-vicuna-7b    precalculus'
@@ -153,5 +153,11 @@ case $SETUP in
     mh-chatgpt-2023-03-15)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True
+    ;;
+
+    mh-vicuna-7b)
+    export CUDA_VISIBLE_DEVICES=0
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=mh --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
 esac

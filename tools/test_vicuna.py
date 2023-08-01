@@ -19,7 +19,7 @@ def api_init(device='cuda', n_gpus=1, model_path='lmsys/vicuna-7b-v1.3'):
     return model, tokenizer, generate_stream_func, context_len, device, model_path
 
 
-def api(prompt, args=None, debug=False):
+def api(prompt, args=None, debug=False, **kargs):
     model, tokenizer, generate_stream_func, context_len, device, model_path = args
 
     adapter = get_model_adapter(model_path)
@@ -34,7 +34,7 @@ def api(prompt, args=None, debug=False):
         "prompt": actual_prompt,
         "temperature": 0,
         "repetition_penalty": 1.0,
-        "max_new_tokens": 1024,
+        "max_new_tokens": 2048,
         "stop": None,
         "stop_token_ids": [],
         "echo": False,
