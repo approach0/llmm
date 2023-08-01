@@ -22,5 +22,19 @@ def gpt4_complete(prompt, **kargs):
     return completion.choices[0].message.content
 
 
+def gpt4_msr(prompt, **kargs):
+    openai.api_key = os.environ.get('GPT4KEY')
+    openai.api_type = 'azure'
+    openai.api_version = "2023-05-15"
+    openai.api_base = 'https://gcrgpt4aoai9c.openai.azure.com/'
+    response = openai.Completion.create(
+        engine='gpt-4',
+        prompt=prompt,
+        temperature=0,
+        max_tokens=2048,
+    )
+
+
 if __name__ == '__main__':
-    print(gpt4_complete('what is 7 mod 5?'))
+    #print(gpt4_complete('what is 7 mod 5?'))
+    print(gpt4_msr('what is 7 mod 5?'))
