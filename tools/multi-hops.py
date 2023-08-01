@@ -180,13 +180,18 @@ def map_query_log_path(inpath, run_name):
     return os.path.join('./output', outpath, fname)
 
 
-def main(logname=None, run_pass=None, debug=False, args=None,
-    prompt_mode=None, topic=None, fname_filter=None, skip_existing=True):
+def main(logname=None, run_pass=None, debug=False,
+    args=None, prompt_mode=None, topic=None, fname_filter=None,
+    skip_existing=True, begin=0, end=None):
     assert logname is not None
     assert (prompt_mode in ['cot', 'ia', 'direct', 'mh']
         or prompt_mode.startswith('example'))
+
     MATH_path = f'../{dataset_prefix}/MATH/test/{topic}'
     print('dataset path:', MATH_path)
+    filenames = os.listdir(MATH_path)
+    print('number of tests:', len(filenames))
+    time.sleep(1)
 
     if run_pass is None:
         print('please specify run_pass')
@@ -222,14 +227,11 @@ def main(logname=None, run_pass=None, debug=False, args=None,
     print('Initializing LLM ...')
     llm_api_args = llm_init(*llm_args)
 
-    print('Loading Retriever ...')
-    encoder, searcher = search_init()
+    #print('Loading Retriever ...')
+    #encoder, searcher = search_init()
 
     correct_cnt, total_cnt = 0, 0
-    limit_tests = None
-
-    filenames = os.listdir(MATH_path)
-    filenames = filenames[:limit_tests] if isinstance(limit_tests, int) else filenames
+    filenames = filenames[begin:end]
 
     for filename in filenames:
         json_path = os.path.join(MATH_path, filename)
@@ -241,7 +243,6 @@ def main(logname=None, run_pass=None, debug=False, args=None,
 
         if os.path.exists(logpath) and skip_existing:
             print(f'log exists: {logpath}')
-            #time.sleep(1)
             continue
         else:
             os.makedirs(os.path.dirname(logpath), exist_ok=True)
@@ -261,8 +262,9 @@ def main(logname=None, run_pass=None, debug=False, args=None,
             prompt = cot2(query)
 
         elif prompt_mode == 'ia':
-            imath_results, dollar_results = search(encoder, searcher, query)
-            prompt = ia2(query, *dollar_results)
+            raise NotImplemented
+            #imath_results, dollar_results = search(encoder, searcher, query)
+            #prompt = ia2(query, *dollar_results)
 
         elif prompt_mode == 'mh':
             prompt = multihop1(query)
@@ -279,6 +281,7 @@ def main(logname=None, run_pass=None, debug=False, args=None,
 
         print_title('Problem')
         print(json_path)
+        time.sleep(1)
 
         llm_rst()
 
