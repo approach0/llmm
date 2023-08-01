@@ -199,7 +199,7 @@ And to solve "$y = 1 - 2 y^2$" for y, you can do:
 COMPUTE["solve y", "$y = 1 - 2 y^2$"]
 
 For the SEARCH API, only consider helpful API results for your goal, ignore irrelevant ones.
-For the COMPUTE API, remember it is limited to simple tasks (e.g., univariate, algorithmic feasible). 
+For the COMPUTE API, remember it is limited to simple tasks. It does not support linear algebra, nor matrix manipulations. 
 
 When API returns any error, exam your query and check whether your argument is a valid JSON, if you find an error, call the same API with corrected argument(s) again!
 When results are not helpful, do explore alternative ways. You do not have to rely on the previous result(s)!
