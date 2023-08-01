@@ -23,6 +23,14 @@ case $SETUP in
     ;;
 
     batch)
+    detached_experiment './experiments.sh direct-vicuna-7b algebra'
+    detached_experiment './experiments.sh direct-vicuna-7b prealgebra'
+    detached_experiment './experiments.sh direct-vicuna-7b intermediate_algebra'
+
+    detached_experiment './experiments.sh ia-vicuna-7b algebra'
+    detached_experiment './experiments.sh ia-vicuna-7b prealgebra'
+    detached_experiment './experiments.sh ia-vicuna-7b intermediate_algebra'
+
     #detached_experiment './experiments.sh direct-vicuna-7b precalculus'
     #detached_experiment './experiments.sh cot-vicuna-7b    precalculus'
     #detached_experiment './experiments.sh ia-vicuna-7b     precalculus'
@@ -33,9 +41,7 @@ case $SETUP in
     #detached_experiment './experiments.sh cot-vicuna-33b    precalculus'
     #detached_experiment './experiments.sh ia-vicuna-33b     precalculus'
 
-    detached_experiment './experiments.sh mh-chatgpt-2023-03-15-batch1 precalculus'
-    detached_experiment './experiments.sh mh-chatgpt-2023-03-15-batch2 precalculus'
-    detached_experiment './experiments.sh mh-chatgpt-2023-03-15-batch3 precalculus'
+    #detached_experiment './experiments.sh mh-chatgpt-2023-03-15 precalculus'
     ;;
 
     direct-vicuna-7b)
