@@ -80,11 +80,24 @@ class OAI_API():
 
 
 import openai
+import stopit
+
+
+@stopit.threading_timeoutable(default=None)
+def generate(prompt):
+    return openai.Completion.create(
+        engine='gpt-35-turbo',
+        prompt=prompt,
+        temperature=0,
+        max_tokens=2048,
+        stream=True
+    )
 
 
 class ChatGPT_Agent():
     def __init__(self):
         self.messages = []
+        self.max_wait = 20
 
     def reset(self):
         self.messages = []
@@ -102,13 +115,14 @@ class ChatGPT_Agent():
             'content': prompt
         })
 
-        response = openai.Completion.create(
-            engine='gpt-35-turbo',
-            prompt=prompt,
-            temperature=0,
-            max_tokens=2048,
-            stream=True
-        )
+        response = None
+        sleep_time = 1
+        while response is None:
+            print(f'before API call, wait {sleep_time}s ...')
+            time.sleep(sleep_time)
+            print(f'calling API, wait {self.max_wait}s ...')
+            response = generate(prompt, timeout=self.max_wait)
+            sleep_time *= 2
 
         response_text = ''
         for chunk in response:
@@ -138,6 +152,8 @@ if __name__ == '__main__':
     #out = api.get_completion('Hello! How many languages do you speak?')
     #print(out['choices'][0])
 
-    agent.complete('Hello! How many languages do you speak? Tell me a short story for each of the languages you can speak.')
+    #agent.complete('Hello! How many languages do you speak? Tell me a short story for each of the languages you can speak.')
     #agent.reset() 
-    agent.complete("which one is Chinese? I don't see it.")
+    #agent.complete("which one is Chinese? I don't see it.")
+
+    agent.complete("what is your name?")
