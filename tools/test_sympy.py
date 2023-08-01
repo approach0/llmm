@@ -5,10 +5,10 @@ from sympy import simplify, trigsimp
 from sympy import evalf
 from sympy import pi
 from sympy import latex
-import stopit
+from timeout import timeout
 
 
-@stopit.threading_timeoutable(default='not finished')
+@timeout(seconds=20)
 def compute(mode, latex_expr, *args):
     latex_expr = latex_expr.strip().strip('$')
     def wrap_math(r):
@@ -32,9 +32,6 @@ def compute(mode, latex_expr, *args):
         else:
             return 'Error: Wrong input format, try again!'
 
-    except stopit.TimeoutException:
-        return 'Error: timeout, problem is too hard.'
-
     except Exception as err:
         return 'Error: ' + str(err)
 
@@ -57,4 +54,4 @@ if __name__ == '__main__':
     #res = compute('simplify', r'$\begin{pmatrix} x \\ y \end{pmatrix} = \begin{pmatrix} 8 \\ -1 \end{pmatrix} + t \begin{pmatrix} 2 \\ 3 \end{pmatrix}$')
     #print(res)
 
-    print(compute('solve y', '$y^9+4y^6-4y^3-8$', 'foo', timeout=2))
+    print(compute('solve y', '$y^9+4y^6-4y^3-8$', 'foo'))

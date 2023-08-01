@@ -80,10 +80,10 @@ class OAI_API():
 
 
 import openai
-import stopit
+from timeout import timeout
 
 
-@stopit.threading_timeoutable(default=None)
+@timeout(seconds=30)
 def generate(prompt):
     return openai.Completion.create(
         engine='gpt-35-turbo',
@@ -97,7 +97,6 @@ def generate(prompt):
 class ChatGPT_Agent():
     def __init__(self):
         self.messages = []
-        self.max_wait = 20
 
     def reset(self):
         self.messages = []
@@ -115,14 +114,16 @@ class ChatGPT_Agent():
             'content': prompt
         })
 
-        response = None
         sleep_time = 1
-        while response is None:
-            print(f'before API call, wait {sleep_time}s ...')
-            time.sleep(sleep_time)
-            print(f'calling API, wait {self.max_wait}s ...')
-            response = generate(prompt, timeout=self.max_wait)
-            sleep_time *= 2
+        while True:
+            try:
+                response = generate(prompt)
+                break
+            except Exception as e:
+                print(str(e), f'sleep {sleep_time} secs.')
+                time.sleep(sleep_time)
+                sleep_time *= 2
+                continue
 
         response_text = ''
         for chunk in response:

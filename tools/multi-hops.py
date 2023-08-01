@@ -105,7 +105,7 @@ def sota_search(question, keywords, full_topk=30, topk=3):
 
 def call_sympy(args):
     print('computing:', args)
-    return sympy_compute(*args, timeout=10)
+    return sympy_compute(*args)
 
 
 def capture(string, par):
