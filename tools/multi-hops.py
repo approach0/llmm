@@ -105,6 +105,8 @@ def sota_search(question, keywords, full_topk=30, topk=3):
 
 def call_sympy(args):
     print('computing:', args)
+    if isinstance(args, dict):
+        return 'Error: passed in a dictionary. Use array!'
     return sympy_compute(*args)
 
 
