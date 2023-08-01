@@ -74,7 +74,7 @@ def unwrap_text(test_str):
         string.ascii_letters +
         string.whitespace + '.' + '$')
     if set(test_str) <= allowed:
-        return test_str.strip(' ').strip('$')
+        return test_str.strip().strip('$')
     else:
         return test_str
 

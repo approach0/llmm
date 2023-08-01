@@ -151,19 +151,19 @@ case $SETUP in
 
     mh-chatgpt-2023-03-15-batch1)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
         --begin 0 --end 180
     ;;
 
     mh-chatgpt-2023-03-15-batch2)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
         --begin 180 --end 360
     ;;
 
     mh-chatgpt-2023-03-15-batch3)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
         --begin 360 --end 546
     ;;
 esac
