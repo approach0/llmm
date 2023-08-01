@@ -192,7 +192,7 @@ def map_query_log_path(inpath, run_name):
     return os.path.join('./output', outpath, fname)
 
 
-def main(logname=None, run_pass=None, debug=False,
+def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
     args=None, prompt_mode=None, topic=None, fname_filter=None,
     skip_existing=True, begin=0, end=None):
     assert logname is not None
@@ -300,14 +300,14 @@ def main(logname=None, run_pass=None, debug=False,
         print_title(f'Prompt (len = {len(prompt)})')
         print(prompt)
 
-        while True:
+        while len(prompt) < max_ctx:
             print_title(f'Answer (streaming, total prompt len: {len(prompt)})')
             answer = llm_api(prompt, args=llm_api_args, debug=debug,
                 api_map=api_map, abort_criteria=has_any_captured)
             if answer is None: # content_filter policy triggered
                 continue
 
-            if prompt_mode == 'mh' and len(prompt) < 8000:
+            if prompt_mode == 'mh':
                 if has_result(answer, api_map):
                     break
 
