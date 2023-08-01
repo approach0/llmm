@@ -22,7 +22,7 @@ def compute(mode, latex_expr):
             res = simplify(parse_latex(latex_expr))
             return wrap_math(latex(res))
 
-        elif mode.startswith('solve'):
+        elif mode.startswith('solve '):
             var = mode.split('solve ')[-1].strip()
             res = solve(parse_latex(latex_expr), symbols(var))
             return wrap_math(latex(res))
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     #print(res)
     #res = compute("solve x", "$\\sin x = 1/2$")
     #print(res)
+    #res = compute('simplify', r'$\begin{pmatrix} x \\ y \end{pmatrix} = \begin{pmatrix} 8 \\ -1 \end{pmatrix} + t \begin{pmatrix} 2 \\ 3 \end{pmatrix}$')
+    #print(res)
 
-    res = compute('simplify', r'$\begin{pmatrix} x \\ y \end{pmatrix} = \begin{pmatrix} 8 \\ -1 \end{pmatrix} + t \begin{pmatrix} 2 \\ 3 \end{pmatrix}$')
-    print(res)
+    print(compute('solve y', '$y^9+4y^6-4y^3-8$'))
