@@ -68,9 +68,21 @@ def search(encoder, searcher, query, topk=3):
     return imath_results, dollar_results
 
 
+def unwrap_text(test_str):
+    import string
+    allowed = set(
+        string.ascii_letters +
+        string.whitespace + '.' + '$')
+    if set(test_str) <= allowed:
+        return test_str.strip(' ').strip('$')
+    else:
+        return test_str
+
+
 def sota_search(question, keywords, full_topk=30, topk=3):
     print('requesting:', sota_searchd_url)
     print('query question:', question)
+    keywords = list(map(unwrap_text, keywords))
     print('query keywords:', keywords)
 
     res = requests.post(sota_searchd_url, json={
