@@ -81,12 +81,12 @@ def unwrap_text(test_str):
 
 def sota_search(question, keywords, full_topk=30, topk=3):
     print('requesting:', sota_searchd_url)
-    print('query question:', question)
+    #print('query question:', question)
     keywords = list(map(unwrap_text, keywords))
     print('query keywords:', keywords)
 
     res = requests.post(sota_searchd_url, json={
-        'question': question,
+        #'question': question,
         'keywords': keywords,
         'topk': full_topk
     })
