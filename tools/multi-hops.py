@@ -309,6 +309,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                 else:
                     manual_query_formula = cmd
                     k_count = 0
+                metric_name = 'maj' # pass@k would break the loop.
             else:
                 k_count += 1
 
