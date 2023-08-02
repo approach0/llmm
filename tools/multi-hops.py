@@ -279,16 +279,20 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             # manual prompt?
             if prompt_mode == 'manual':
                 print('current query formula:', manual_query_formula)
-                cmd = input('Enter formula, "ok", "retry", or nothing to skip:\n')
+                cmd = input('Enter formula, "ok", "retry", or "skip":\n')
                 if cmd.strip() == '':
-                    looptry = False
                     manual_query_formula = None
+                elif cmd == 'retry':
+                    pass
+                elif cmd == 'skip':
+                    manual_query_formula = None
+                    looptry = False
+                    prompt = ''
                     answer = ''
                     continue
-                if cmd == 'retry':
-                    pass
                 elif cmd == 'ok':
                     looptry = False
+                    prompt = ''
                     answer = ''
                     continue
                 else:
