@@ -235,11 +235,18 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
 
     reproducible()
 
+    def print_title(title):
+        print('\n', '=' * 15, title, '=' * 15, end='\n\n')
+
+
     print('Initializing LLM ...', llm_args)
     llm_api_args = llm_init(*llm_args)
 
     #print('Loading Retriever ...')
     #encoder, searcher = search_init()
+    #imath_results, dollar_results = search(encoder, searcher, query)
+    #prompt = ia2(query, *dollar_results)
+    manual_query_formula = None
 
     correct_cnt, total_cnt = 0, 0
     filenames = filenames[begin:end]
@@ -263,72 +270,88 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
         query = j['problem']
         solution = j['solution']
         api_map = None
+        looptry = True
 
-        if prompt_mode == 'direct':
-            prompt = direct2(query)
+        while looptry:
+            if prompt_mode == 'direct':
+                prompt = direct2(query)
 
-        elif prompt_mode.startswith('example'):
-            prompt = example(prompt_mode)
+            elif prompt_mode.startswith('example'):
+                prompt = example(prompt_mode)
 
-        elif prompt_mode == 'cot':
-            prompt = cot2(query)
+            elif prompt_mode == 'cot':
+                prompt = cot2(query)
 
-        elif prompt_mode == 'ia':
-            raise NotImplemented
-            #imath_results, dollar_results = search(encoder, searcher, query)
-            #prompt = ia2(query, *dollar_results)
+            elif prompt_mode == 'ia':
+                raise NotImplemented
 
-        elif prompt_mode == 'mh':
-            prompt = multihop1(query)
+            elif prompt_mode == 'mh':
+                prompt = multihop1(query)
 
-            api_map = {
-                'SEARCH': partial(sota_search, query),
-                'COMPUTE': call_sympy
-            }
-        else:
-            raise NotImplemented
+                api_map = {
+                    'SEARCH': partial(sota_search, query),
+                    'COMPUTE': call_sympy
+                }
 
-        def print_title(title):
-            print('\n', '=' * 15, title, '=' * 15, end='\n\n')
+            elif prompt_mode == 'manual':
+                if manual_query_formula is None:
+                    prompt = cot2(query)
+                else:
+                    kws = ['$' + manual_query_formula + '$']
+                    results = sota_search(query, kws, topk=4)
+                    prompt = ia2(query, *results)
 
-        print_title('Problem')
-        print(json_path)
-        time.sleep(1)
+            else:
+                raise NotImplemented
 
-        llm_rst()
+            print_title('Problem')
+            print(json_path)
 
-        print_title(f'Prompt (len = {len(prompt)})')
-        print(prompt)
+            llm_rst()
 
-        while len(prompt) < max_ctx:
-            print_title(f'Answer (total prompt len: {len(prompt)})')
-            answer = llm_api(prompt, args=llm_api_args, debug=debug,
-                api_map=api_map, abort_criteria=has_any_captured)
+            print_title(f'Prompt (len = {len(prompt)})')
+            print(prompt)
 
-            if answer is None: # e.g., content_filter policy triggered
-                continue
+            while len(prompt) < max_ctx:
+                print_title(f'Answer (total prompt len: {len(prompt)})')
+                answer = llm_api(prompt, args=llm_api_args, debug=debug,
+                    api_map=api_map, abort_criteria=has_any_captured)
 
-            if prompt_mode == 'mh':
-                injected = inject_result(answer, api_map)
+                if answer is None: # e.g., content_filter policy triggered
+                    continue
 
-                if injected is not None:
-                    print_title(f'Injected')
-                    print(injected)
-                    answer = injected
+                if prompt_mode == 'mh':
+                    injected = inject_result(answer, api_map)
 
-                if has_result(answer, api_map):
+                    if injected is not None:
+                        print_title(f'Injected')
+                        print(injected)
+                        answer = injected
+
+                    if has_result(answer, api_map):
+                        break
+
+                    prompt += answer
+                else:
+                    print(answer)
                     break
 
-                prompt += answer
+            print_title('Ground Truth')
+            print(solution)
+
+            boxed_answer = extract_math_answer(answer)
+            boxed_solution = extract_math_answer(solution)
+
+            if prompt_mode == 'manual':
+                cmd = input('Enter formula to query and retry, enter "next".')
+                if cmd == 'next':
+                    looptry = False
+                elif cmd.strip() == '':
+                    manual_query_formula = None
+                else:
+                    manual_query_formula = cmd
             else:
-                print(answer)
-                break
-
-        print_title('Ground Truth')
-        print(solution)
-
-        boxed_answer = extract_math_answer(answer)
-        boxed_solution = extract_math_answer(solution)
+                looptry = False
 
         print_title('Marking')
         print('agent answer:', boxed_answer)
