@@ -273,6 +273,28 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
         looptry = True
 
         while looptry:
+            print_title('Problem')
+            print(json_path)
+
+            # manual prompt?
+            if prompt_mode == 'manual':
+                print('current query formula:', manual_query_formula)
+                cmd = input('Enter formula, "ok", or nothing to skip:\n')
+                if cmd.strip() == '':
+                    looptry = False
+                    manual_query_formula = None
+                    answer = ''
+                    continue
+                elif cmd == 'ok':
+                    looptry = False
+                    answer = ''
+                    continue
+                else:
+                    manual_query_formula = cmd
+            else:
+                looptry = False
+
+            # determine the prompt
             if prompt_mode == 'direct':
                 prompt = direct2(query)
 
@@ -304,14 +326,12 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             else:
                 raise NotImplemented
 
-            print_title('Problem')
-            print(json_path)
-
             llm_rst()
 
             print_title(f'Prompt (len = {len(prompt)})')
             print(prompt)
 
+            # answering
             while len(prompt) < max_ctx:
                 print_title(f'Answer (total prompt len: {len(prompt)})')
                 answer = llm_api(prompt, args=llm_api_args, debug=debug,
@@ -336,38 +356,29 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                     print(answer)
                     break
 
+            # marking
             print_title('Ground Truth')
             print(solution)
 
             boxed_answer = extract_math_answer(answer)
             boxed_solution = extract_math_answer(solution)
 
-            if prompt_mode == 'manual':
-                cmd = input('Enter formula to query, enter "next" for the next:\n')
-                if cmd == 'next':
-                    looptry = False
-                elif cmd.strip() == '':
-                    manual_query_formula = None
-                else:
-                    manual_query_formula = cmd
+            print_title('Marking')
+            print('agent answer:', boxed_answer)
+            print('ground truth:', boxed_solution)
+            equiv = is_equiv(boxed_answer, boxed_solution)
+            if equiv:
+                rich_print('[green] correct [/green]')
+                correct_cnt += 1
             else:
-                looptry = False
+                rich_print('[red] wrong [/red]')
 
-        print_title('Marking')
-        print('agent answer:', boxed_answer)
-        print('ground truth:', boxed_solution)
-        equiv = is_equiv(boxed_answer, boxed_solution)
-        if equiv:
-            rich_print('[green] correct [/green]')
-            correct_cnt += 1
-        else:
-            rich_print('[red] wrong [/red]')
         total_cnt += 1
 
         if prompt_mode.startswith('example'):
             input('Press Enter to save this example output...')
 
-        if prompt_mode.startswith('example'):
+        if prompt_mode.startswith('example') or prompt_mode == 'manual':
             log_json = {
                 'problem': prompt_mode,
                 'prompt': prompt,
