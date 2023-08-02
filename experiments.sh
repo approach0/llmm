@@ -22,8 +22,11 @@ detached_experiment() {
 
 case $SETUP in
     manual)
+    #python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    #    --prompt_mode=manual --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
+
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=manual --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
+        --prompt_mode=manual --run_pass=chatgpt --args="[]"
     ;;
 
     batch)

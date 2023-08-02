@@ -242,12 +242,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
     print('Initializing LLM ...', llm_args)
     llm_api_args = llm_init(*llm_args)
 
-    #print('Loading Retriever ...')
-    #encoder, searcher = search_init()
-    #imath_results, dollar_results = search(encoder, searcher, query)
-    #prompt = ia2(query, *dollar_results)
     manual_query_formula = None
-
     correct_cnt, total_cnt = 0, 0
     filenames = filenames[begin:end]
 
@@ -271,6 +266,12 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
         solution = j['solution']
         api_map = None
         looptry = True
+
+        # setup API map
+        api_map = {
+            'SEARCH': partial(sota_search, query),
+            'COMPUTE': call_sympy
+        }
 
         while looptry:
             print_title('Problem')
@@ -315,11 +316,6 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
 
             elif prompt_mode == 'mh':
                 prompt = multihop1(query)
-
-                api_map = {
-                    'SEARCH': partial(sota_search, query),
-                    'COMPUTE': call_sympy
-                }
 
             elif prompt_mode == 'manual':
                 if manual_query_formula is None:
