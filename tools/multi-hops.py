@@ -193,10 +193,15 @@ def map_query_log_path(inpath, run_name):
 
 def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
     args=None, prompt_mode=None, topic=None, fname_filter=None,
-    skip_existing=True, begin=0, end=None):
+    skip_existing=True, begin=0, end=None, metric='pass@1'):
+
+    metric_name, k = metric.split('@')
+    k = int(k)
     assert logname is not None
     assert (prompt_mode in ['cot', 'ia', 'direct', 'mh', 'manual']
         or prompt_mode.startswith('example'))
+    assert metric_name in ['pass', 'maj']
+    assert k > 0
 
     MATH_path = f'../{dataset_prefix}/MATH/test/{topic}'
     print('dataset path:', MATH_path)
@@ -243,12 +248,12 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
     llm_api_args = llm_init(*llm_args)
 
     manual_query_formula = None
-    correct_cnt, total_cnt = 0, 0
+    tot_okcnt, tot_cnt = 0, 0
     filenames = filenames[begin:end]
 
     for filename in filenames:
         json_path = os.path.join(MATH_path, filename)
-        logpath = map_query_log_path(json_path, f'logname__{logname}')
+        logpath = map_query_log_path(json_path, f'run__{logname}')
 
         if fname_filter:
             if os.path.basename(json_path) != fname_filter:
@@ -260,12 +265,16 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
         else:
             os.makedirs(os.path.dirname(logpath), exist_ok=True)
 
+        # read question
         with open(json_path, 'r') as fh:
             j = json.load(fh)
         query = j['problem']
         solution = j['solution']
-        api_map = None
-        looptry = True
+        boxed_solution = extract_math_answer(solution)
+
+        # set up judge buffer
+        judge_buffer = []
+        k_count = 0
 
         # setup API map
         api_map = {
@@ -273,7 +282,11 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             'COMPUTE': call_sympy
         }
 
-        while looptry:
+        prompt = ''
+        pas_okcnt = 0
+        while k_count < k:
+            llm_rst()
+
             print_title('Problem')
             print(json_path)
 
@@ -283,23 +296,21 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                 cmd = input('Enter formula, "ok", "retry", or "skip":\n')
                 if cmd.strip() == '':
                     manual_query_formula = None
+                    k_count = 0
                 elif cmd == 'retry':
-                    pass
+                    k_count = 0
                 elif cmd == 'skip':
                     manual_query_formula = None
-                    looptry = False
-                    prompt = ''
-                    answer = ''
+                    k_count = k
                     continue
                 elif cmd == 'ok':
-                    looptry = False
-                    prompt = ''
-                    answer = ''
+                    k_count = k
                     continue
                 else:
                     manual_query_formula = cmd
+                    k_count = 0
             else:
-                looptry = False
+                k_count += 1
 
             # determine the prompt
             if prompt_mode == 'direct':
@@ -328,12 +339,11 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             else:
                 raise NotImplemented
 
-            llm_rst()
-
             print_title(f'Prompt (len = {len(prompt)})')
             print(prompt)
 
             # answering
+            answer = ''
             while len(prompt) < max_ctx:
                 print_title(f'Answer (total prompt len: {len(prompt)})')
                 answer = llm_api(prompt, args=llm_api_args, debug=debug,
@@ -357,53 +367,52 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                 else:
                     print(answer)
                     break
+            boxed_answer = extract_math_answer(answer)
 
             # marking
             print_title('Ground Truth')
             print(solution)
 
-            boxed_answer = extract_math_answer(answer)
-            boxed_solution = extract_math_answer(solution)
-
-            print_title('Marking')
+            print_title(f'Marking ({filename} pass#{k_count})')
             print('agent answer:', boxed_answer)
             print('ground truth:', boxed_solution)
             equiv = is_equiv(boxed_answer, boxed_solution)
             if equiv:
-                rich_print('[green] correct [/green]')
-                correct_cnt += 1
+                rich_print('[green]correct[/green]')
+                tot_okcnt += 1
+                pas_okcnt += 1
             else:
-                rich_print('[red] wrong [/red]')
+                rich_print('[red]wrong[/red]')
+            tot_cnt += 1
+            pas_accuracy = pas_okcnt / k * 100
+            tot_accuracy = tot_okcnt / tot_cnt * 100
+            print(f'kPass: {pas_okcnt} / {k} = {pas_accuracy:.2f}%')
+            print(f'Total: {tot_okcnt} / {tot_cnt} = {tot_accuracy:.2f}%')
 
-        total_cnt += 1
+            judge_buffer.append({
+                'answer': answer,
+                'boxed_answer': boxed_answer,
+                'is_equiv': equiv
+            })
+
+            # abort upon correct answer in pass@k
+            if metric_name == 'pass' and equiv:
+                break
 
         if prompt_mode.startswith('example'):
             input('Press Enter to save this example output...')
 
-        if prompt_mode.startswith('example') or prompt_mode == 'manual':
-            log_json = {
-                'problem': prompt_mode,
-                'prompt': prompt,
-                'answer': answer,
-                'args': json.dumps(args)
-            }
-        else:
-            log_json = {
-                'problem': json_path,
-                'prompt': prompt,
-                'answer': answer,
-                'solution': solution,
-                'agent_answer': boxed_answer,
-                'ground_truth': boxed_solution,
-                'is_equiv': equiv,
-                'args': json.dumps(args)
-            }
+        log_json = {
+            'problem': prompt_mode,
+            'prompt': prompt,
+            'solution': solution,
+            'ground_truth': boxed_solution,
+            'judge_buffer': judge_buffer,
+            'args': json.dumps(args)
+        }
         with open(logpath, 'w') as fh:
             json.dump(log_json, fh, indent=2)
             print('Written log:', logpath)
-
-        accuracy_percentage = correct_cnt / total_cnt * 100
-        print(f'Accuracy: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
 
 
 if __name__ == '__main__':
