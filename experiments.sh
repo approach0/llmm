@@ -23,7 +23,7 @@ detached_experiment() {
 case $SETUP in
     manual)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=manual --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']" --debug
+        --prompt_mode=manual --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']"
     ;;
 
     batch)
