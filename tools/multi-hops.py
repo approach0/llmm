@@ -195,7 +195,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
     args=None, prompt_mode=None, topic=None, fname_filter=None,
     skip_existing=True, begin=0, end=None):
     assert logname is not None
-    assert (prompt_mode in ['cot', 'ia', 'direct', 'mh']
+    assert (prompt_mode in ['cot', 'ia', 'direct', 'mh', 'manual']
         or prompt_mode.startswith('example'))
 
     MATH_path = f'../{dataset_prefix}/MATH/test/{topic}'
