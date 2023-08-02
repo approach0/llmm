@@ -343,7 +343,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             boxed_solution = extract_math_answer(solution)
 
             if prompt_mode == 'manual':
-                cmd = input('Enter formula to query and retry, enter "next".')
+                cmd = input('Enter formula to query, enter "next" for the next:\n')
                 if cmd == 'next':
                     looptry = False
                 elif cmd.strip() == '':
