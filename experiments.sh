@@ -33,6 +33,17 @@ case $SETUP in
         --prompt_mode=manual --run_pass=chatgpt --args="[]" --skip_existing True
     ;;
 
+    test_wo_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC
+    ;;
+
+    test_w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC \
+        --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+    ;;
+
     batch)
     detached_experiment direct-vicuna-7b precalculus 0
     detached_experiment cot-vicuna-7b precalculus 0

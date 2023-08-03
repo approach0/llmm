@@ -68,7 +68,7 @@ def search(encoder, searcher, query, topk=3):
     return imath_results, dollar_results
 
 
-def unwrap_text(test_str):
+def unwrap_dollars_for_text(test_str):
     import string
     allowed = set(
         string.ascii_letters +
@@ -79,17 +79,24 @@ def unwrap_text(test_str):
         return test_str
 
 
-def sota_search(question, keywords, full_topk=30, topk=3, neural=False):
-    keywords = list(map(unwrap_text, keywords))
+def sota_search(question, keywords, full_topk=30, topk=3, gt=None):
     print('requesting:', sota_searchd_url)
-    print('query question:', question, '(not used)' if not neural else '')
-    print('query keywords:', keywords)
     json = {
-        'keywords': keywords,
         'topk': full_topk
     }
-    if neural:
+    if gt is not None and 'manual_query' in gt:
+        question = None # for now...
+        if len(gt['manual_query']) > 0:
+            keywords = gt['manual_query']
+            keywords = list(map(lambda x: f'${x}$', keywords))
+            print('use ground truth.')
+    if question is not None:
         json['question'] = question
+        print('query question:', question)
+    if keywords is not None:
+        keywords = list(map(unwrap_dollars_for_text, keywords))
+        json['keywords'] = keywords
+        print('query keywords:', keywords)
 
     res = requests.post(sota_searchd_url, json=json)
     if res.ok:
@@ -193,9 +200,9 @@ def map_query_log_path(inpath, run_name):
     return os.path.join('./output', outpath, fname)
 
 
-def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
-    args=None, prompt_mode=None, topic=None, fname_filter=None,
-    skip_existing=True, begin=0, end=None, metric='pass@1'):
+def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
+    prompt_mode=None, topic=None, fname_filter=None, skip_existing=True,
+    begin=0, end=None, metric='pass@1', ground_truth_dir=None):
 
     metric_name, k = metric.split('@')
     k = int(k)
@@ -257,9 +264,19 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
         json_path = os.path.join(MATH_path, filename)
         logpath = map_query_log_path(json_path, f'run__{logname}')
 
-        if fname_filter:
+        if fname_filter is not None:
             if os.path.basename(json_path) != fname_filter:
                 continue
+
+        if ground_truth_dir:
+            path = os.path.join(ground_truth_dir, filename + '.log')
+            if os.path.exists(path):
+                with open(path, 'r') as fh:
+                    gt = json.load(fh)
+            else:
+                continue
+        else:
+            gt = None
 
         if os.path.exists(logpath) and skip_existing:
             print(f'log exists: {logpath}')
@@ -280,7 +297,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
 
         # setup API map
         api_map = {
-            'SEARCH': partial(sota_search, query),
+            'SEARCH': partial(sota_search, query, gt=gt),
             'COMPUTE': call_sympy
         }
 
@@ -328,7 +345,11 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                 prompt = cot2(query)
 
             elif prompt_mode == 'ia':
-                raise NotImplemented
+                results = sota_search(query, None, topk=4, gt=gt)
+                if len(results) > 0:
+                    prompt = ia2(query, *results)
+                else:
+                    prompt = cot2(query)
 
             elif prompt_mode == 'mh':
                 prompt = multihop1(query)
@@ -338,7 +359,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                     prompt = cot2(query)
                 else:
                     kws = list(map(lambda x: '$' + x + '$', manual_query))
-                    results = sota_search(query, kws, topk=4)
+                    results = sota_search(None, kws, topk=4)
                     prompt = ia2(query, *results)
 
             else:
