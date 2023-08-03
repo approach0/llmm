@@ -33,17 +33,6 @@ case $SETUP in
         --prompt_mode=manual --run_pass=chatgpt --args="[]" --skip_existing True
     ;;
 
-    test_wo_groundtruth_query)
-    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC
-    ;;
-
-    test_w_groundtruth_query)
-    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC \
-        --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
-    ;;
-
     batch)
     detached_experiment direct-vicuna-7b precalculus 0
     detached_experiment cot-vicuna-7b precalculus 0
@@ -58,6 +47,20 @@ case $SETUP in
     detached_experiment cot-vicuna-7b intermediate_algebra 5
     ;;
 
+    batch2)
+    detached_experiment cot-vicuna-7b-w_groundtruth_query precalculus 7
+    detached_experiment ia-vicuna-7b-w_groundtruth_query precalculus 7
+
+    detached_experiment cot-vicuna-13b-w_groundtruth_query precalculus 5
+    detached_experiment ia-vicuna-13b-w_groundtruth_query precalculus 6
+
+    #detached_experiment cot-vicuna-33b-w_groundtruth_query precalculus 3,4
+    #detached_experiment ia-vicuna-33b-w_groundtruth_query precalculus 5,6
+
+    detached_experiment cot-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
+    detached_experiment ia-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
+    ;;
+
     direct-vicuna-7b)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=direct --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']" \
@@ -70,10 +73,22 @@ case $SETUP in
         --metric $METRIC
     ;;
 
+    cot-vicuna-7b-w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    --prompt_mode=cot --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']" \
+    --metric $METRIC --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+    ;;
+
     ia-vicuna-7b)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']" \
         --metric $METRIC
+    ;;
+
+    ia-vicuna-7b-w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']" \
+    --metric $METRIC --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
     ;;
 
     direct-vicuna-13b)
@@ -88,10 +103,22 @@ case $SETUP in
         --metric $METRIC
     ;;
 
+    cot-vicuna-13b-w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    --prompt_mode=cot --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']" \
+    --metric $METRIC --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+    ;;
+
     ia-vicuna-13b)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']" \
         --metric $METRIC
+    ;;
+
+    ia-vicuna-13b-w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    --prompt_mode=ia --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']" \
+    --metric $METRIC --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
     ;;
 
     direct-vicuna-33b)
@@ -108,11 +135,25 @@ case $SETUP in
         --metric $METRIC
     ;;
 
+    cot-vicuna-33b-w_groundtruth_query)
+    export TRANSFORMERS_CACHE='./cache'
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    --prompt_mode=cot --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']" \
+    --metric $METRIC --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+    ;;
+
     ia-vicuna-33b)
     export TRANSFORMERS_CACHE='./cache'
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=ia --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']" \
         --metric $METRIC
+    ;;
+
+    ia-vicuna-33b-w_groundtruth_query)
+    export TRANSFORMERS_CACHE='./cache'
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+    --prompt_mode=ia --run_pass=vicuna --args="[2,'lmsys/vicuna-33b-v1.3']" \
+    --metric $METRIC --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
     ;;
 
     direct-chatgpt-2023-03-15)
@@ -125,9 +166,21 @@ case $SETUP in
         --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC
     ;;
 
+    cot-chatgpt-2023-03-15-w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC \
+	--ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+    ;;
+
     ia-chatgpt-2023-03-15)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC
+    ;;
+
+    ia-chatgpt-2023-03-15-w_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC \
+	    --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
     ;;
 
     cot-gpt4-2023-july)
