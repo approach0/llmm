@@ -435,7 +435,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             'solution': solution,
             'ground_truth': boxed_solution,
             'judge_buffer': judge_buffer,
-            'manual_query': manual_query,
+            'manual_query': manual_query if gt is None else gt['manual_query'],
             'args': json.dumps(args)
         }
         with open(logpath, 'w') as fh:

@@ -3,22 +3,24 @@ import json
 from collections import defaultdict
 
 
-def is_correct_v1(j, detail, logpath):
+def get_stats_v1(j, detail, logpath):
     agent_answer = j['agent_answer']
     ground_truth = j['ground_truth']
     is_equiv = j['is_equiv']
     if detail > 1: print(logpath, '\t', agent_answer, '\t', ground_truth, '\t', is_equiv)
     elif detail > 0: print(logpath, is_equiv)
-    return is_equiv
+    return 1 if is_equiv else 0
 
 
-def is_correct_v2(j, detail, logpath, metric):
+def get_stats_v2(j, detail, logpath, metric):
     import sys
     sys.path.insert(0, '../math/modeling')
     from math_equivalence import is_equiv
 
     judge_buffer = j['judge_buffer']
     ground_truth = j['ground_truth']
+
+    gt = 1 if ("manual_query" in j and len(j["manual_query"]) > 0) else 0
 
     vote_dict = defaultdict(int)
     for judge in judge_buffer:
@@ -36,13 +38,15 @@ def is_correct_v2(j, detail, logpath, metric):
         raise NotImplemented
 
     if detail > 2: print(logpath, '\t', votes, '\t', ground_truth, '\t', good)
-    elif detail > 1: print(logpath, '\t', f'ok_rate={sum(okays)}/{len(okays)}', '\t', good)
+    elif detail > 1: print(logpath, '\t', f'{gt}\t{sum(okays)}/{len(okays)}', '\t', good)
     elif detail > 0: print(logpath, good)
-    return good
+
+    cnt = 1 if good else 0
+    return cnt, gt
 
 
 def get_topic_stats(logdir, detail=0, metric='pass'):
-    correct_cnt, total_cnt = 0, 0
+    correct_cnt, total_cnt, gt_cnt = 0, 0, 0
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if os.path.isdir(logpath):
@@ -54,17 +58,21 @@ def get_topic_stats(logdir, detail=0, metric='pass'):
         with open(logpath, 'r') as fh:
             j = json.load(fh)
         if 'agent_answer' in j:
-            if is_correct_v1(j, detail, logpath):
-                correct_cnt += 1
+            cnt = get_stats_v1(j, detail, logpath)
+            correct_cnt += cnt
         else:
-            if is_correct_v2(j, detail, logpath, metric):
-                correct_cnt += 1
+            cnt, gt = get_stats_v2(j, detail, logpath, metric)
+            correct_cnt += cnt
+            gt_cnt += gt
         total_cnt += 1
 
     if total_cnt == 0:
         total_cnt = -1
     accuracy_percentage = correct_cnt / total_cnt * 100
     print(f'{logdir}: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
+    if gt_cnt > 0:
+        label_percentage = gt_cnt / total_cnt * 100
+        print('Total manual labels: {gt_cnt} / {total_cnt} = {label_percentage:.2f}%')
     return correct_cnt, total_cnt
 
 
