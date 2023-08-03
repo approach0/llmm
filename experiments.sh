@@ -20,6 +20,8 @@ export CUDA_VISIBLE_DEVICES=${DEVICES}
 detached_experiment() {
     ID=${1}-${2}
     tmux new-session -c `pwd` -s $ID -d
+    tmux send-keys -t $ID "conda activate $CONDA_DEFAULT_ENV"
+    tmux send-keys -t $ID Enter
     tmux send-keys -t $ID "./experiments.sh $1 $2 $3"
     tmux send-keys -t $ID Enter
 }
