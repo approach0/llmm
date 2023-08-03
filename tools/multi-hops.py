@@ -79,17 +79,19 @@ def unwrap_text(test_str):
         return test_str
 
 
-def sota_search(question, keywords, full_topk=30, topk=3):
-    print('requesting:', sota_searchd_url)
-    #print('query question:', question)
+def sota_search(question, keywords, full_topk=30, topk=3, neural=False):
     keywords = list(map(unwrap_text, keywords))
+    print('requesting:', sota_searchd_url)
+    print('query question:', question, '(not used)' if not neural else '')
     print('query keywords:', keywords)
-
-    res = requests.post(sota_searchd_url, json={
-        #'question': question,
+    json = {
         'keywords': keywords,
         'topk': full_topk
-    })
+    }
+    if neural:
+        json['question'] = question
+
+    res = requests.post(sota_searchd_url, json=json)
     if res.ok:
         res = res.json()
         res = res[:topk]
@@ -344,6 +346,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
 
             print_title(f'Prompt (len = {len(prompt)})')
             print(prompt)
+            #import pdb; pdb.set_trace()
 
             # answering
             answer = ''
