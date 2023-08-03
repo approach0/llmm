@@ -2,6 +2,7 @@ SETUP=${1}
 TOPIC=${2}
 DEVICES=${3-0}
 FILTER=${4-None} # 235.json, 439.json
+# could be found with larger index: 218.json
 if [[ -z $SETUP ]]; then
     echo "please specify SETUP."
     exit 1
