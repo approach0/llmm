@@ -430,7 +430,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             input('Press Enter to save this example output...')
 
         log_json = {
-            'problem': prompt_mode,
+            'problem': json_path,
             'prompt': prompt,
             'solution': solution,
             'ground_truth': boxed_solution,
