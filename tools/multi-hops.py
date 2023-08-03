@@ -247,7 +247,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
     print('Initializing LLM ...', llm_args)
     llm_api_args = llm_init(*llm_args)
 
-    manual_query_formula = None
+    manual_query = []
     tot_okcnt, tot_cnt = 0, 0
     filenames = filenames[begin:end]
 
@@ -292,24 +292,26 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
 
             # manual prompt?
             if prompt_mode == 'manual':
-                print('current query formula:', manual_query_formula)
-                cmd = input('Enter formula, "ok", "retry", or "skip":\n')
-                if cmd.strip() == '':
-                    manual_query_formula = None
-                    k_count = 0
-                elif cmd == 'retry':
-                    k_count = 0
-                elif cmd == 'skip':
-                    manual_query_formula = None
-                    k_count = k
-                    continue
-                elif cmd == 'ok':
-                    k_count = k
-                    continue
-                else:
-                    manual_query_formula = cmd
-                    k_count = 0
+                while True:
+                    print('current manual query:', manual_query)
+                    cmd = input('Enter formula, "save", "reset", or "skip":\n')
+                    if cmd.strip() == '':
+                        k_count = 0
+                        break
+                    elif cmd == 'reset':
+                        manual_query = []
+                    elif cmd == 'skip':
+                        manual_query = []
+                        k_count = k
+                        break
+                    elif cmd == 'save':
+                        k_count = k
+                        break
+                    else:
+                        manual_query.append(cmd)
+
                 metric_name = 'maj' # pass@k would break the loop.
+                if k_count == k: continue
             else:
                 k_count += 1
 
@@ -330,10 +332,10 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
                 prompt = multihop1(query)
 
             elif prompt_mode == 'manual':
-                if manual_query_formula is None:
+                if len(manual_query) == 0:
                     prompt = cot2(query)
                 else:
-                    kws = ['$' + manual_query_formula + '$']
+                    kws = list(map(lambda x: '$' + x + '$', manual_query))
                     results = sota_search(query, kws, topk=4)
                     prompt = ia2(query, *results)
 
@@ -409,6 +411,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000,
             'solution': solution,
             'ground_truth': boxed_solution,
             'judge_buffer': judge_buffer,
+            'manual_query': manual_query,
             'args': json.dumps(args)
         }
         with open(logpath, 'w') as fh:
