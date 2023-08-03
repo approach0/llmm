@@ -1,8 +1,45 @@
 import os
 import json
+from collections import defaultdict
 
 
-def get_topic_stats(logdir, detail=0):
+def is_correct_v1(j, detail, logpath):
+    agent_answer = j['agent_answer']
+    ground_truth = j['ground_truth']
+    is_equiv = j['is_equiv']
+    if detail > 1: print(logpath, '\t', agent_answer, '\t', ground_truth, '\t', is_equiv)
+    elif detail > 0: print(logpath, is_equiv)
+    return is_equiv
+
+
+def is_correct_v2(j, detail, logpath, metric):
+    import sys
+    sys.path.insert(0, '../math/modeling')
+    from math_equivalence import is_equiv
+
+    judge_buffer = j['judge_buffer']
+    ground_truth = j['ground_truth']
+
+    vote_dict = defaultdict(int)
+    for judge in judge_buffer:
+        boxed_answer = judge['boxed_answer'].strip()
+        vote_dict[boxed_answer] += 1
+    votes = vote_dict.items()
+    max_answer, max_votes = max(votes, key=lambda x: x[1])
+
+    if metric == 'pass':
+        good = any([is_equiv(ans, ground_truth) for ans in vote_dict.keys()])
+    elif metric == 'maj':
+        good = is_equiv(max_answer, ground_truth)
+    else:
+        raise NotImplemented
+
+    if detail > 1: print(logpath, '\t', votes, '\t', ground_truth, '\t', good)
+    elif detail > 0: print(logpath, good)
+    return good
+
+
+def get_topic_stats(logdir, detail=0, metric='pass'):
     correct_cnt, total_cnt = 0, 0
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
@@ -14,13 +51,12 @@ def get_topic_stats(logdir, detail=0):
             continue
         with open(logpath, 'r') as fh:
             j = json.load(fh)
-        agent_answer = j['agent_answer']
-        ground_truth = j['ground_truth']
-        is_equiv = j['is_equiv']
-        if detail > 1: print(logpath, '\t', agent_answer, '\t', ground_truth, '\t', is_equiv)
-        elif detail > 0: print(logpath, is_equiv)
-        if is_equiv:
-            correct_cnt += 1
+        if 'agent_answer' in j:
+            if is_correct_v1(j, detail, logpath):
+                correct_cnt += 1
+        else:
+            if is_correct_v2(j, detail, logpath, metric):
+                correct_cnt += 1
         total_cnt += 1
 
     if total_cnt == 0:
