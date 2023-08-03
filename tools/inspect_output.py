@@ -25,16 +25,18 @@ def is_correct_v2(j, detail, logpath, metric):
         boxed_answer = judge['boxed_answer'].strip()
         vote_dict[boxed_answer] += 1
     votes = vote_dict.items()
-    max_answer, max_votes = max(votes, key=lambda x: x[1])
+    okays = [is_equiv(j['boxed_answer'], ground_truth) for j in judge_buffer]
 
     if metric == 'pass':
-        good = any([is_equiv(ans, ground_truth) for ans in vote_dict.keys()])
+        good = any(okays)
     elif metric == 'maj':
+        max_answer, max_votes = max(votes, key=lambda x: x[1])
         good = is_equiv(max_answer, ground_truth)
     else:
         raise NotImplemented
 
-    if detail > 1: print(logpath, '\t', votes, '\t', ground_truth, '\t', good)
+    if detail > 2: print(logpath, '\t', votes, '\t', ground_truth, '\t', good)
+    elif detail > 1: print(logpath, '\t', f'ok_rate={sum(okays)}/{len(okays)}', '\t', good)
     elif detail > 0: print(logpath, good)
     return good
 
