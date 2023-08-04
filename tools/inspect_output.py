@@ -92,9 +92,11 @@ def textify_v2(items):
             for i, j in enumerate(val + [val[0]]):
                 answer = j['answer']
                 boxed_answer = j['boxed_answer']
-                if j['is_equiv'] or i >= len(val):
+                correct = j['is_equiv']
+                if correct or i >= len(val):
                     text_list.append(f'<b>Answer</b>: {answer}')
                     text_list.append(f'<b>Boxed answer</b>: {boxed_answer}')
+                    text_list.append(f'<b>Correct</b>: {correct}')
                     break
         elif key in ['args', 'manual_query']:
             continue
