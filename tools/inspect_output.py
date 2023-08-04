@@ -31,9 +31,12 @@ def get_stats_v2(j, detail, logpath, metric):
 
     if metric == 'pass':
         good = any(okays)
+    elif metric == 'all':
+        good = all(okays)
     elif metric == 'maj':
         max_answer, max_votes = max(votes, key=lambda x: x[1])
-        good = is_equiv(max_answer, ground_truth)
+        tie_votes = filter(lambda x: x[1] == max_votes, votes)
+        good = any([is_equiv(x[0], ground_truth) for x in tie_votes])
     else:
         raise NotImplemented
 
