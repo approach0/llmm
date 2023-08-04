@@ -137,11 +137,29 @@ def output_html(logdir):
         _output_html(logpath)
 
 
+# https://github.com/lz1oceani/verify_cot/raw/main/results/chatgpt3.5/natural_program/MATH_np.json
+def test(fpath='data/MATH_np.json'):
+    with open(fpath, 'r') as fh:
+        j = json.load(fh)
+    print(j[0])
+    d = defaultdict(int)
+    cnt = 0
+    for item in j:
+        topic = item['type']
+        okays = item['per_sample_correct']
+        d[topic] += 1
+        if topic == 'Precalculus':
+            if any(okays):
+                cnt += 1
+    print(cnt, d)
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
     fire.Fire({
         'get_stats': get_topic_stats,
         'output_html': _output_html,
-        'output_htmls': output_html
+        'output_htmls': output_html,
+        'test': test
     })
