@@ -68,11 +68,11 @@ def get_topic_stats(logdir, detail=0, metric='pass'):
 
     if total_cnt == 0:
         total_cnt = -1
-    accuracy_percentage = correct_cnt / total_cnt * 100
-    print(f'{logdir}: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
     if gt_cnt > 0:
         label_percentage = gt_cnt / total_cnt * 100
-        print('Total manual labels: {gt_cnt} / {total_cnt} = {label_percentage:.2f}%')
+        print(f'Total manual labels: {gt_cnt} / {total_cnt} = {label_percentage:.2f}%')
+    accuracy_percentage = correct_cnt / total_cnt * 100
+    print(f'{logdir}: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
     return correct_cnt, total_cnt
 
 
