@@ -57,10 +57,10 @@ case $SETUP in
     #detached_experiment ia-vicuna-13b-w_groundtruth_query precalculus 6
 
     #detached_experiment cot-vicuna-33b-w_groundtruth_query precalculus 3,4
-    detached_experiment ia-vicuna-33b-w_groundtruth_query precalculus 5,6
+    #detached_experiment ia-vicuna-33b-w_groundtruth_query precalculus 5,6
 
-    #detached_experiment cot-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
-    #detached_experiment ia-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
+    detached_experiment cot-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
+    detached_experiment ia-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
     ;;
 
     direct-vicuna-7b)
