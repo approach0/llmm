@@ -18,12 +18,17 @@ export CUDA_VISIBLE_DEVICES=6
 #    output/alpaca_tokenizer \
 #    output/7B-lora-trained
 
-deepspeed --num_gpus 1 \
-    ds_test.py \
-    output/7B-lora-mser-ckpt \
-    output/7B-lora-mser
+#deepspeed --num_gpus 1 \
+#    ds_test.py \
+#    output/7B-lora-mser-ckpt \
+#    output/7B-lora-mser
 
 #deepspeed --num_gpus 2 \
 #    ds_test.py \
 #    output/checkpoint-6500 \
 #    output/13B-lora-trained-2ep
+
+deepspeed --num_gpus 1 \
+    ds_test.py \
+    lmsys/vicuna-13b-v1.5 \
+    lmsys/vicuna-13b-v1.5
