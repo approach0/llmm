@@ -400,7 +400,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             print_title('Ground Truth')
             print(solution)
 
-            print_title(f'Marking ({filename} pass#{k_count})')
+            print_title(f'Marking ({filename} pass#{k_count}/{k})')
             print('agent answer:', boxed_answer)
             print('ground truth:', boxed_solution)
             equiv = is_equiv(boxed_answer, boxed_solution)
