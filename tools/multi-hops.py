@@ -207,7 +207,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
     metric_name, k = metric.split('@')
     k = int(k)
     assert logname is not None
-    assert (prompt_mode in ['cot', 'ia', 'direct', 'mh', 'manual']
+    assert (prompt_mode in ['cot', 'ia', 'direct', 'mh', 'manual', 'askkey']
         or prompt_mode.startswith('example'))
     assert metric_name in ['pass', 'maj']
     assert k > 0
@@ -362,6 +362,10 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                     results = sota_search(None, kws, topk=4)
                     prompt = ia2(query, *results)
 
+            elif prompt_mode == 'askkey':
+                prompt = ask_identity_formula(query)
+                k_count = k
+
             else:
                 raise NotImplemented
 
@@ -394,6 +398,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                 else:
                     print(answer)
                     break
+
             boxed_answer = extract_math_answer(answer)
 
             # marking
