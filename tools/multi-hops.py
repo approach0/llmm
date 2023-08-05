@@ -300,6 +300,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             'SEARCH': partial(sota_search, query, gt=gt),
             'COMPUTE': call_sympy
         }
+        llm_api_kargs = {}
 
         prompt = ''
         pas_okcnt = 0
@@ -365,6 +366,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             elif prompt_mode == 'askkey':
                 prompt = ask_identity_formula(query)
                 k_count = k
+                llm_api_kargs = {'stop': '\n\n'}
 
             else:
                 raise NotImplemented
@@ -377,8 +379,10 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             answer = ''
             while len(prompt) < max_ctx:
                 print_title(f'Answer (total prompt len: {len(prompt)})')
-                answer = llm_api(prompt, args=llm_api_args, debug=debug,
-                    api_map=api_map, abort_criteria=has_any_captured)
+                answer = llm_api(prompt,
+                    args=llm_api_args, debug=debug, api_map=api_map,
+                    abort_criteria=has_any_captured, **llm_api_kargs
+                )
 
                 if answer is None: # e.g., content_filter policy triggered
                     continue

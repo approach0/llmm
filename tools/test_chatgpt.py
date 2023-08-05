@@ -84,13 +84,14 @@ from timeout import timeout
 
 
 @timeout(seconds=30)
-def generate(prompt):
+def generate(prompt, stop=None):
     return openai.Completion.create(
         engine='gpt-35-turbo',
         prompt=prompt,
         temperature=0,
         max_tokens=2048,
-        stream=True
+        stream=True,
+        stop=stop
     )
 
 
@@ -108,6 +109,7 @@ class ChatGPT_Agent():
         openai.api_version = "2023-03-15-preview"
         openai.api_base = 'https://corby.openai.azure.com'
         api_map = kargs['api_map'] if 'api_map' in kargs else {}
+        stop = kargs['stop'] if 'stop' in kargs else None
 
         self.messages.append({
             'role': 'user',
@@ -117,7 +119,7 @@ class ChatGPT_Agent():
         sleep_time = 1
         while True:
             try:
-                response = generate(prompt)
+                response = generate(prompt, stop=stop)
                 break
             except Exception as e:
                 print(str(e), f'sleep {sleep_time} secs.')

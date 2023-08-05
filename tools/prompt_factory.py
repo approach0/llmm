@@ -346,19 +346,11 @@ Here are the results:
 
 
 def ask_identity_formula(Q):
-    prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context.
-Write a response that appropriately completes the request.
+    prompt = r'''For a given math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question. Do not consider a matrix. If you do not find one with good confidence, then say  "No such formula".
 
-### Instruction:
-For the following math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question.
+To correctly judge the dependent formula, imagine you have a math-aware search engine where you can search with this formula, if you think this formula can be very helpful to find a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a good key dependent formula.
 
-Imagine you have a math-aware search engine where you can search with this formula, if you think this formula can be very helpful to find a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a good key dependent formula.
-
-IF you think there is such a good key dependent formula, please indicate it.
-IF there is no such formula, answer "No such formula".
-
-For example, given this problem:
-
+Example 1
 --- PROBLEM BEGIN ---
 If $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4},$ then compute $xy + x + y.$
 --- PROBLEM END   ---
@@ -367,8 +359,7 @@ The first formula occurred in this problem looks very unique to this question, i
 On the other hand, $xy + x + y.$ looks like a very common expression, as a result, searching it may not recall this question compared to searching for the first formula.
 So my answer is $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$.
 
-Let us look at another example:
-
+Example 2
 --- PROBLEM BEGIN ---
 Three vertices of a cube in space have coordinates $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$
 Compute the coordinates of the center of the cube.
@@ -377,20 +368,16 @@ Compute the coordinates of the center of the cube.
 For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
 So my answer is no such formula for this problem.
 
-Okay, now it is your turn!
 '''
 
     prompt += '''
-### Input:
+Example 3
 --- PROBLEM BEGIN ---
 {}
 --- PROBLEM END   ---
 
 '''.format(Q)
 
-    prompt += r'''
-### Response:
-'''
     return prompt
 
 
