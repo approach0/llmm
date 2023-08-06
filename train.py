@@ -18,8 +18,7 @@ data_file = './data/alpaca_data.json'
 data_file = './data/finetune-pairs.json'
 load_model = True
 en_param_offload = True
-ctx_length = 1024
-# tokenizer.model_max_length
+ctx_length = 1024 # tokenizer.model_max_length
 
 ### Parse Arguments
 @dataclass
