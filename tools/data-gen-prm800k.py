@@ -1,10 +1,21 @@
 import os
+import re
 import json
 import random
 from rich import print as rich_print
 
 
-instruction = 'Answer a math question in the input.'
+import sys
+sys.path.insert(0, '../Progressive-Hint')
+sys.path.insert(0, '../math/modeling')
+from main_clean import extract_math_answer
+from math_equivalence import is_equiv
+
+
+instruction = r'''Answer a math question in the input.
+
+Indicate your final answer in boxed LaTeX. For example, if the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}}.
+'''
 
 
 def data_read(filepath, lookup, verbose=False):
@@ -29,6 +40,10 @@ def data_read(filepath, lookup, verbose=False):
                 continue
             elif finish == 'bad_problem':
                 continue
+            elif problem is None:
+                continue
+            elif '[asy]' in problem:
+                continue
 
             if verbose:
                 rich_print(f'[red]{problem}[/red]')
@@ -52,6 +67,26 @@ def data_read(filepath, lookup, verbose=False):
                         print(step_rat, step_txt)
                     steps.append(step_txt)
 
+            if len(steps) == 0:
+                continue
+            last_step = steps[-1]
+            regex = r"# Answer\n\n(.+)"
+            m = re.search(regex, last_step)
+            if not m:
+                continue
+            last_step = re.sub(regex, '', last_step)
+            steps[-1] = last_step
+            agent_answer = m.group(1)
+            steps.append(r'The answer is \boxed{'
+                + agent_answer + '}.')
+
+            if solution is not None and not is_equiv(agent_answer, solution):
+                steps.append('In case you need a different boxed format, '
+                + r'the answer is, equivalently, \boxed{' + solution + '}')
+                if verbose:
+                    print(steps[-2:])
+                    print(solution, end='\n\n')
+            steps = list(map(lambda x: x.strip(), steps))
             j_instruct = {
                 "instruction": instruction,
                 "input": problem,

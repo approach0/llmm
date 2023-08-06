@@ -5,7 +5,7 @@ import json
 dataset_path = '../datasets/MATH'
 instruction = r'''Answer a math question in the input.
 
-Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
+Indicate your final answer in boxed LaTeX. For example, if the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}}.
 '''
 
 
@@ -20,15 +20,26 @@ def generate_pairs(
         assert os.path.isdir(data_dir)
         for fname in os.listdir(data_dir):
             json_path = os.path.join(data_dir, fname)
-            print(json_path)
+            #print(json_path)
             with open(json_path, 'r') as fh:
                 j_original = json.load(fh)
-                j_instruct = {
-                    "instruction": instruction,
-                    "input": j_original['problem'],
-                    "output": j_original['solution']
-                }
-                output.append(j_instruct)
+            problem = j_original['problem']
+            solution = j_original['solution']
+            topic = j_original['type']
+            if '[asy]' in problem or '[asy]' in solution:
+                continue
+            assert topic in [
+                'Algebra', 'Number Theory',
+                'Precalculus', 'Geometry',
+                'Intermediate Algebra',
+                'Counting & Probability',
+                'Prealgebra']
+            j_instruct = {
+                "instruction": instruction,
+                "input": problem,
+                "output": solution
+            }
+            output.append(j_instruct)
             if len(output) >= max_items:
                 break
 
