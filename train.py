@@ -3,6 +3,7 @@ import sys
 import copy
 import json
 import torch
+from torch import autocast
 from pdb import set_trace
 from dataclasses import dataclass
 
@@ -15,12 +16,23 @@ from transformers import LlamaConfig
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 
+from transformers import BitsAndBytesConfig
+
 data_file = './data/alpaca_data.json'
 data_file = './data/finetune-pairs.json'
 load_model = True
 en_param_offload = True
 ctx_length = 2048 # tokenizer.model_max_length
 n_data_map_proc = 20
+use_flash_att2 = True
+load_8bit = True
+
+
+from flash_attn_monkey_patch import (
+    replace_llama_attn_with_flash_attn,
+)
+if use_flash_att2:
+    replace_llama_attn_with_flash_attn()
 
 ### Parse Arguments
 @dataclass
@@ -53,8 +65,20 @@ ds_config_hf = HfDeepSpeedConfig(ds_config)
 
 # Model and LoRa Adapter
 if load_model:
-    model = LlamaForCausalLM.from_pretrained(model_path,
-        cache_dir='./data', torch_dtype=torch.float16)
+    if load_8bit:
+        model = LlamaForCausalLM.from_pretrained(model_path,
+            use_cache=(False if use_flash_att2 else True),
+            cache_dir='./data', torch_dtype=torch.float16,
+            load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
+                load_in_8bit=True,
+                llm_int8_threshold=6.0,
+                llm_int8_has_fp16_weight=False,
+            )
+        )
+    else:
+        model = LlamaForCausalLM.from_pretrained(model_path,
+            use_cache=(False if use_flash_att2 else True),
+            cache_dir='./data', torch_dtype=torch.float16)
 
     from peft import LoraConfig, get_peft_model
     TARGET_MODULES = [
@@ -207,7 +231,8 @@ if load_model:
         eval_dataset=None,
         data_collator=data_collator
     )
-    trainer.train()
+    with autocast(device_type='cuda'):
+        trainer.train()
     trainer.save_state()
 else:
     tokenizer.save_pretrained('output/only_tokenizer')

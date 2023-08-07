@@ -8,8 +8,8 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
 deepspeed \
-    --include=localhost:0,5,6,7 \
-    --master_port 8912 \
+    --include=localhost:0 \
+    --master_port 8921 \
     train.py \
     --output_dir ./output \
     --num_train_epochs 3 \
@@ -24,4 +24,6 @@ deepspeed \
     --per_device_train_batch_size 1 \
     --gradient_accumulation_steps 4 \
     --deepspeed ds_config_zero3.json \
-    --model_name_or_path ~/llama-models/30B-hgf/
+    --model_name_or_path lmsys/vicuna-7b-v1.3
+
+    #--model_name_or_path lmsys/vicuna-13b-v1.5-16k

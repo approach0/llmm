@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import torch
+from torch import autocast
 
 import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
@@ -10,6 +11,7 @@ from transformers import LlamaConfig
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 
+from transformers import BitsAndBytesConfig
 #from auto_gptq import AutoGPTQForCausalLM
 
 import sys
@@ -17,7 +19,10 @@ sys.path.insert(0, '../FastChat')
 from flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
+
 use_flash_att2 = True
+load_8bit = True
+
 if use_flash_att2:
     replace_llama_attn_with_flash_attn()
 
@@ -41,9 +46,20 @@ torch.cuda.set_device(local_rank)
 model_path = os.path.expanduser(model_path)
 
 tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
-model = LlamaForCausalLM.from_pretrained(model_path,
-    torch_dtype=torch.float16)
-#model = AutoGPTQForCausalLM.from_quantized(model_path, device=local_rank)
+
+if load_8bit:
+    model = LlamaForCausalLM.from_pretrained(model_path,
+        cache_dir='./data', torch_dtype=torch.float16,
+        load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
+            load_in_8bit=True,
+            llm_int8_threshold=6.0,
+            llm_int8_has_fp16_weight=False,
+        )
+    )
+else:
+    model = LlamaForCausalLM.from_pretrained(model_path,
+        cache_dir='./data', torch_dtype=torch.float16)
+    #model = AutoGPTQForCausalLM.from_quantized(model_path, device=local_rank)
 
 ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
 model = ds_engine.module
@@ -72,10 +88,11 @@ def inference(prompt=default_prompt):
     inputs = inputs.to(device=local_rank)
     use_cache = False if use_flash_att2 else True
     with torch.no_grad():
-        outputs = model.generate(inputs, use_cache=use_cache,
-            synced_gpus=True, max_new_tokens=1024,
-            do_sample=True)
-        #outputs = model.generate(**inputs)
+        with autocast(device_type='cuda'):
+            outputs = model.generate(inputs, use_cache=use_cache,
+                synced_gpus=True, max_new_tokens=1024,
+                do_sample=True)
+            #outputs = model.generate(**inputs)
     text_out = tokenizer.decode(outputs[0],
         skip_special_tokens=True)
 
