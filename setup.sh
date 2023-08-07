@@ -12,3 +12,4 @@ pip3 install sentencepiece
 pip3 install peft
 pip3 install datasets
 pip install -r pya0/requirements.txt
+pip install flash-attn --no-build-isolation
