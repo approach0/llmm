@@ -10,4 +10,5 @@ python3 ./test-setup.py
 pip3 install transformers
 pip3 install sentencepiece
 pip3 install peft
+pip3 install datasets
 pip install -r pya0/requirements.txt
