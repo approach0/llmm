@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
+deepspeed.ops.op_builder.CPUAdamBuilder().load()
 
 import transformers
 from transformers import LlamaConfig
@@ -18,7 +19,8 @@ data_file = './data/alpaca_data.json'
 data_file = './data/finetune-pairs.json'
 load_model = True
 en_param_offload = True
-ctx_length = 1024 # tokenizer.model_max_length
+ctx_length = 2048 # tokenizer.model_max_length
+n_data_map_proc = 20
 
 ### Parse Arguments
 @dataclass
@@ -184,7 +186,7 @@ train_dataset = raw_train_datasets.map(
     train_tokenize_function,
     batched=True,
     batch_size=3_000,
-    num_proc=1,
+    num_proc=n_data_map_proc,
     remove_columns=raw_train_datasets.column_names,
     load_from_cache_file=True,
     desc="Running tokenizer on train dataset",
