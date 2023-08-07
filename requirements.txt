@@ -3,3 +3,6 @@ sentencepiece
 deepspeed
 datasets
 peft
+rich
+jsonlines
+openai
