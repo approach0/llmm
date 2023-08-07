@@ -2,7 +2,7 @@ import os
 import json
 
 
-dataset_path = '../datasets/MATH'
+dataset_path = '../MATH'
 instruction = r'''Answer a math question in the input.
 
 Indicate your final answer in boxed LaTeX. For example, if the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}}.
