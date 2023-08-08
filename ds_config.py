@@ -2,32 +2,13 @@ import os
 import sys
 import json
 import tempfile
-import transformers
-
-
-# https://huggingface.co/docs/transformers/v4.31.0/en/main_classes/trainer#transformers.TrainingArguments
-def inject_json(config, train_args):
-    # batch sizes
-    train_args.gradient_accumulation_steps = config["gradient_accumulation_steps"]
-    train_args.per_device_train_batch_size = config['train_micro_batch_size_per_gpu']
-
-    # learning rate
-    train_args.learning_rate = config['scheduler']['params']['warmup_max_lr']
-
-    # warm-up steps
-    train_args.warmup_steps = config['scheduler']['params']['warmup_num_steps']
-
-    #print(train_args.to_json_string())
-    return train_args
 
 
 def get_script_dir():
     return os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
-def create_json(base_cfg_file='ds_config_zero3.json', world_size=1,
-    gradient_accumulation_steps=1, train_micro_batch_size_per_gpu=1,
-    learning_rate=1e-5, warmup_steps=100,
+def create_json(base_cfg_file='ds_config_zero3.json',
     en_param_offload=False, en_act_ackpt=False, en_sparse_attn=False):
 
     script_dir = get_script_dir()
@@ -35,18 +16,6 @@ def create_json(base_cfg_file='ds_config_zero3.json', world_size=1,
 
     with open(base_cfg_file_path, 'r') as fh:
         config = json.load(fh)
-
-    # batch sizes
-    config["gradient_accumulation_steps"] = gradient_accumulation_steps
-    config["train_micro_batch_size_per_gpu"] = train_micro_batch_size_per_gpu
-    config["train_batch_size"] = (world_size *
-        gradient_accumulation_steps * train_micro_batch_size_per_gpu)
-
-    # learning rate
-    config['scheduler']['params']['warmup_max_lr'] = learning_rate
-
-    # warm-up steps
-    config['scheduler']['params']['warmup_num_steps'] = warmup_steps
 
     # deepspeed features
     if en_param_offload:

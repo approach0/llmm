@@ -21,8 +21,6 @@ from flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
 
-from ds_config import inject_json
-
 
 ### Parse Arguments
 @dataclass
@@ -39,14 +37,16 @@ parser = transformers.HfArgumentParser(
     (transformers.TrainingArguments, MyArguments)
 )
 train_args, my_args = parser.parse_args_into_dataclasses()
-
-with open(train_args.deepspeed, 'r') as fh:
-    ds_config_json = json.load(fh)
-train_args = inject_json(ds_config_json, train_args)
-
-print(my_args)
-print(train_args)
-print(json.dumps(ds_config_json, indent=2))
+ds_config = train_args.hf_deepspeed_config
+ds_config_json = ds_config.config
+if len(ds_config.mismatches) > 0:
+    for mismatch in ds_config.mismatches:
+        print(mismatch)
+    quit(1)
+else:
+    print(my_args)
+    print(train_args)
+    print(json.dumps(ds_config_json, indent=2))
 
 ### Pre-Process Arguments
 model_path = my_args.model_name_or_path
@@ -57,11 +57,6 @@ model_path = os.path.expanduser(model_path)
 
 if my_args.use_flash_att2:
     replace_llama_attn_with_flash_attn()
-
-### Zero Configuration
-
-# this has to be run before loading the model.from_pretrained()
-HfDeepSpeedConfig(ds_config_json)
 
 # Model and LoRa Adapter
 if not my_args.dryrun:
@@ -226,6 +221,7 @@ if not my_args.dryrun:
     from transformers import Trainer
     model.is_parallelizable = True
     model.model_parallel = True
+    #ds gradient_accumulation_steps=32 vs hf gradient_accumulation_steps=1
     trainer = Trainer(
         model=model,
         tokenizer=tokenizer,
