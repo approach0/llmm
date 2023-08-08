@@ -24,7 +24,7 @@
             0.999
           ],
           "eps": 1e-8,
-          "weight_decay": 0
+          "weight_decay": "auto"
         }
     },
 
@@ -32,11 +32,12 @@
         "type": "WarmupLR",
         "params": {
             "warmup_min_lr": 0,
-            "warmup_max_lr": 2e-5,
-            "warmup_num_steps": 3,
+            "warmup_max_lr": 1e-5,
+            "warmup_num_steps": 100,
             "warmup_type": "linear"
         }
     },
+
 
     "fp16": {
         "enabled": false,
@@ -53,7 +54,7 @@
 
     "gradient_accumulation_steps": 4,
     "train_micro_batch_size_per_gpu": 1,
-    "train_batch_size": 16,
+    "train_batch_size": 4,
     "gradient_clipping": "auto",
     "steps_per_print": 2000,
     "wall_clock_breakdown": false

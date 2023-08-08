@@ -9,7 +9,6 @@ from dataclasses import dataclass
 
 import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
-deepspeed.ops.op_builder.CPUAdamBuilder().load()
 
 import transformers
 from transformers import LlamaConfig
@@ -18,57 +17,58 @@ from transformers import LlamaForCausalLM
 
 from transformers import BitsAndBytesConfig
 
-data_file = './data/alpaca_data.json'
-data_file = './data/finetune-pairs.json'
-load_model = True
-en_param_offload = True
-ctx_length = 2048 # tokenizer.model_max_length
-n_data_map_proc = 20
-use_flash_att2 = True
-load_8bit = True
-
-
 from flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
-if use_flash_att2:
-    replace_llama_attn_with_flash_attn()
+
+from ds_config import inject_json
+
 
 ### Parse Arguments
 @dataclass
 class MyArguments:
     model_name_or_path: str
+    data_file: str
+    dryrun: bool
+    ctx_length: int
+    datamap_nprocs: int
+    use_flash_att2: bool
+    load_8bit: bool
 
 parser = transformers.HfArgumentParser(
     (transformers.TrainingArguments, MyArguments)
 )
-training_args, my_args = parser.parse_args_into_dataclasses()
+train_args, my_args = parser.parse_args_into_dataclasses()
 
+with open(train_args.deepspeed, 'r') as fh:
+    ds_config_json = json.load(fh)
+train_args = inject_json(ds_config_json, train_args)
+
+print(my_args)
+print(train_args)
+print(json.dumps(ds_config_json, indent=2))
+
+### Pre-Process Arguments
 model_path = my_args.model_name_or_path
 local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
 torch.cuda.set_device(local_rank)
 model_path = os.path.expanduser(model_path)
 
+if my_args.use_flash_att2:
+    replace_llama_attn_with_flash_attn()
+
 ### Zero Configuration
-with open('ds_config_zero3.json', 'r') as fh:
-    ds_config = json.load(fh)
-## enable parameter cpu offload?
-if en_param_offload:
-    ds_config['zero_optimization']['offload_param'] = {
-        "device": "cpu",
-        "pin_memory": True
-    }
 
 # this has to be run before loading the model.from_pretrained()
-ds_config_hf = HfDeepSpeedConfig(ds_config)
+HfDeepSpeedConfig(ds_config_json)
 
 # Model and LoRa Adapter
-if load_model:
-    if load_8bit:
+if not my_args.dryrun:
+    if my_args.load_8bit:
         model = LlamaForCausalLM.from_pretrained(model_path,
-            use_cache=(False if use_flash_att2 else True),
-            cache_dir='./data', torch_dtype=torch.float16,
+            use_cache=(False if my_args.use_flash_att2 else True),
+            torch_dtype=torch.bfloat16,
             load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                 load_in_8bit=True,
                 llm_int8_threshold=6.0,
@@ -77,8 +77,8 @@ if load_model:
         )
     else:
         model = LlamaForCausalLM.from_pretrained(model_path,
-            use_cache=(False if use_flash_att2 else True),
-            cache_dir='./data', torch_dtype=torch.float16)
+            use_cache=(False if my_args.use_flash_att2 else True),
+            torch_dtype=torch.bfloat16)
 
     from peft import LoraConfig, get_peft_model
     TARGET_MODULES = [
@@ -114,7 +114,7 @@ PROMPT_DICT = {
 
 def smart_tokenizer_and_embedding_resize(special_tokens_dict, tokenizer, model):
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
-    if load_model:
+    if not my_args.dryrun:
         model.resize_token_embeddings(len(tokenizer))
 
 tokenizer = LlamaTokenizer.from_pretrained(model_path)
@@ -150,20 +150,22 @@ class DataCollatorForSupervisedDataset(object):
 
 
 def _tokenize_fn(strings, tokenizer):
-    """Tokenize a list of strings."""
+    ctx_length = my_args.ctx_length
+    max_length = tokenizer.model_max_length if ctx_length == 'max' else ctx_length
     tokenized_list = [
         tokenizer(
             text,
             return_tensors="pt",
             padding="longest",
-            max_length=ctx_length,
+            max_length=max_length,
             truncation=True,
         )
         for text in strings
     ]
     input_ids = labels = [tokenized.input_ids[0] for tokenized in tokenized_list]
     input_ids_lens = labels_lens = [
-        tokenized.input_ids.ne(tokenizer.pad_token_id).sum().item() for tokenized in tokenized_list
+        tokenized.input_ids.ne(tokenizer.pad_token_id).sum().item()
+        for tokenized in tokenized_list
     ]
     return dict(
         input_ids=input_ids,
@@ -204,13 +206,13 @@ def train_tokenize_function(examples, tokenizer):
 
 
 raw_train_datasets = load_dataset('json', encoding='utf-8',
-    data_files=data_file, split="train", cache_dir='./cache')
+    data_files=my_args.data_file, split="train", cache_dir='./cache')
 
 train_dataset = raw_train_datasets.map(
     train_tokenize_function,
     batched=True,
     batch_size=3_000,
-    num_proc=n_data_map_proc,
+    num_proc=my_args.datamap_nprocs,
     remove_columns=raw_train_datasets.column_names,
     load_from_cache_file=True,
     desc="Running tokenizer on train dataset",
@@ -218,7 +220,8 @@ train_dataset = raw_train_datasets.map(
 )
 data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
 
-if load_model:
+### Training
+if not my_args.dryrun:
     # Training
     from transformers import Trainer
     model.is_parallelizable = True
@@ -226,7 +229,7 @@ if load_model:
     trainer = Trainer(
         model=model,
         tokenizer=tokenizer,
-        args=training_args,
+        args=train_args,
         train_dataset=train_dataset,
         eval_dataset=None,
         data_collator=data_collator
@@ -235,5 +238,5 @@ if load_model:
         trainer.train()
     trainer.save_state()
 else:
-    tokenizer.save_pretrained('output/only_tokenizer')
+    tokenizer.save_pretrained('output/dryrun_tokenizer')
     #import pdb; pdb.set_trace()

@@ -11,19 +11,28 @@ deepspeed \
     --include=localhost:0 \
     --master_port 8921 \
     train.py \
-    --output_dir ./output \
+    --model_name_or_path lmsys/vicuna-13b-v1.5-16k \
+    --data_file ./data/finetune-pairs.json \
+    --dryrun False \
+    --ctx_length 2048 \
+    --datamap_nprocs 10 \
+    --use_flash_att2 True \
+    --load_8bit True \
     --num_train_epochs 3 \
+    \
+    --output_dir ./output \
     --save_strategy "steps" \
     --save_steps 100 \
     --save_total_limit 2 \
-    --learning_rate 2e-5 \
-    --bf16_full_eval True \
     --logging_steps 2 \
-    --warmup_steps 3 \
     --report_to "tensorboard" \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 4 \
-    --deepspeed ds_config_zero3.json \
-    --model_name_or_path lmsys/vicuna-7b-v1.3
-
-    #--model_name_or_path lmsys/vicuna-13b-v1.5-16k
+    --deepspeed $(python ds_config.py create_json \
+        --world_size 1 \
+        --gradient_accumulation_steps 6 \
+        --train_micro_batch_size_per_gpu 1 \
+        --learning_rate 1e-5 \
+        --warmup_steps 3 \
+        --en_param_offload False \
+        --en_act_ackpt False \
+        --en_sparse_attn False \
+    )

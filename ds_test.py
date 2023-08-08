@@ -49,7 +49,7 @@ tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
 
 if load_8bit:
     model = LlamaForCausalLM.from_pretrained(model_path,
-        cache_dir='./data', torch_dtype=torch.float16,
+        torch_dtype=torch.float16,
         load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
             load_in_8bit=True,
             llm_int8_threshold=6.0,
@@ -58,7 +58,7 @@ if load_8bit:
     )
 else:
     model = LlamaForCausalLM.from_pretrained(model_path,
-        cache_dir='./data', torch_dtype=torch.float16)
+        torch_dtype=torch.float16)
     #model = AutoGPTQForCausalLM.from_quantized(model_path, device=local_rank)
 
 ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
