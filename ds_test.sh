@@ -28,7 +28,25 @@ export CUDA_VISIBLE_DEVICES=6
 #    output/checkpoint-6500 \
 #    output/13B-lora-trained-2ep
 
+#deepspeed --num_gpus 1 \
+#    ds_test.py \
+#    lmsys/vicuna-13b-v1.5 \
+#    lmsys/vicuna-13b-v1.5
+
 deepspeed --num_gpus 1 \
+    --no_local_rank \
     ds_test.py \
-    lmsys/vicuna-13b-v1.5 \
-    lmsys/vicuna-13b-v1.5
+    \
+    --model_name_or_path lmsys/vicuna-13b-v1.5-16k \
+    --ctx_length 2048 \
+    --use_flash_att2 True \
+    --load_8bit False \
+    \
+    --deepspeed $(python ds_config.py \
+        --remove_train_args \
+        --fp16 False \
+        --bf16 True \
+        --en_param_offload True \
+        --en_act_ackpt False \
+        --en_sparse_attn True \
+    )

@@ -9,6 +9,7 @@ def get_script_dir():
 
 
 def create_json(base_cfg_file='ds_config_zero3.json',
+    fp16=None, bf16=None, remove_train_args=False,
     en_param_offload=False, en_act_ackpt=False, en_sparse_attn=False):
 
     script_dir = get_script_dir()
@@ -16,6 +17,20 @@ def create_json(base_cfg_file='ds_config_zero3.json',
 
     with open(base_cfg_file_path, 'r') as fh:
         config = json.load(fh)
+
+    if fp16 is not None:
+        config['fp16']['enabled'] = fp16
+
+    if bf16 is not None:
+        config['bf16']['enabled'] = bf16
+
+    if remove_train_args:
+        config['train_batch_size'] = 1
+        del config['gradient_accumulation_steps']
+        del config['train_micro_batch_size_per_gpu']
+        del config['gradient_clipping']
+        del config['optimizer']
+        del config['scheduler']
 
     # deepspeed features
     if en_param_offload:

@@ -3,8 +3,10 @@ import sys
 import json
 import torch
 from torch import autocast
+from dataclasses import dataclass
 
 import deepspeed
+import transformers
 from transformers.deepspeed import HfDeepSpeedConfig
 
 from transformers import LlamaConfig
@@ -15,53 +17,54 @@ from transformers import BitsAndBytesConfig
 #from auto_gptq import AutoGPTQForCausalLM
 
 import sys
-sys.path.insert(0, '../FastChat')
+
 from flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
 
-use_flash_att2 = True
-load_8bit = True
-
-if use_flash_att2:
-    replace_llama_attn_with_flash_attn()
-
-
-tokenizer_path = sys.argv[-2]
-model_path = sys.argv[-1]
-
 local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
 
-with open('ds_config_zero3.json') as fh:
-    ds_config = json.load(fh)
-ds_config['train_batch_size'] = world_size
-del ds_config['gradient_accumulation_steps']
-del ds_config['train_micro_batch_size_per_gpu']
+### Parse Arguments
+@dataclass
+class MyArguments:
+    model_name_or_path: str
+    ctx_length: int
+    use_flash_att2: bool
+    load_8bit: bool
+    deepspeed: str
 
-# this has to be run before loading the model.from_pretrained()
-ds_config_hf = HfDeepSpeedConfig(ds_config)
+parser = transformers.HfArgumentParser(MyArguments)
+my_args = parser.parse_args_into_dataclasses()[0]
+
+with open(my_args.deepspeed) as fh:
+    config = json.load(fh)
+print(my_args)
+print(config)
+
+HfDeepSpeedConfig(config) # before loading model
+
+if my_args.use_flash_att2:
+    replace_llama_attn_with_flash_attn()
 
 torch.cuda.set_device(local_rank)
-model_path = os.path.expanduser(model_path)
+model_path = os.path.expanduser(my_args.model_name_or_path)
+tokenizer = LlamaTokenizer.from_pretrained(my_args.model_name_or_path)
 
-tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
-
-if load_8bit:
+if my_args.load_8bit:
     model = LlamaForCausalLM.from_pretrained(model_path,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
         load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
             load_in_8bit=True,
             llm_int8_threshold=6.0,
             llm_int8_has_fp16_weight=False,
         )
     )
-else:
-    model = LlamaForCausalLM.from_pretrained(model_path,
-        torch_dtype=torch.float16)
     #model = AutoGPTQForCausalLM.from_quantized(model_path, device=local_rank)
+else:
+    model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16)
 
-ds_engine = deepspeed.initialize(model=model, config=ds_config)[0]
+ds_engine = deepspeed.initialize(model=model, config=config)[0]
 model = ds_engine.module
 model.eval() # for inference
 
@@ -82,11 +85,11 @@ Remember to indicate your final answer in boxed LaTeX. For example, if you think
 ### Response:
 '''
 def inference(prompt=default_prompt):
-    print('rank', local_rank, end='\n\n')
+    print('inference rank', local_rank, end='\n\n')
     #inputs = tokenizer(prompt, return_tensors="pt")
     inputs = tokenizer.encode(prompt, return_tensors="pt")
     inputs = inputs.to(device=local_rank)
-    use_cache = False if use_flash_att2 else True
+    use_cache = False if my_args.use_flash_att2 else True
     with torch.no_grad():
         with autocast(device_type='cuda'):
             outputs = model.generate(inputs, use_cache=use_cache,
