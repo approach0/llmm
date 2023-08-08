@@ -12,27 +12,6 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 2 ds_test.py ~/llama-models/30B-hgf/
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
-export CUDA_VISIBLE_DEVICES=6
-#deepspeed --num_gpus 1 \
-#    ds_test.py \
-#    output/alpaca_tokenizer \
-#    output/7B-lora-trained
-
-#deepspeed --num_gpus 1 \
-#    ds_test.py \
-#    output/7B-lora-mser-ckpt \
-#    output/7B-lora-mser
-
-#deepspeed --num_gpus 2 \
-#    ds_test.py \
-#    output/checkpoint-6500 \
-#    output/13B-lora-trained-2ep
-
-#deepspeed --num_gpus 1 \
-#    ds_test.py \
-#    lmsys/vicuna-13b-v1.5 \
-#    lmsys/vicuna-13b-v1.5
-
 deepspeed --num_gpus 1 \
     --no_local_rank \
     ds_test.py \
@@ -41,6 +20,7 @@ deepspeed --num_gpus 1 \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \
+    --gradio_server_port 8922 \
     \
     --deepspeed $(python ds_config.py \
         --remove_train_args \

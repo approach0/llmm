@@ -33,6 +33,7 @@ class MyArguments:
     use_flash_att2: bool
     load_8bit: bool
     deepspeed: str
+    gradio_server_port: str
 
 parser = transformers.HfArgumentParser(MyArguments)
 my_args = parser.parse_args_into_dataclasses()[0]
@@ -114,6 +115,6 @@ else:
         outputs=gr.Textbox(lines=40)
     )
     # Enabling the queue for inference times > 60 seconds:
-    iface.queue().launch(server_port=8922,
+    iface.queue().launch(server_port=gradio_server_port,
         debug=True, share=True, inline=False
     )
