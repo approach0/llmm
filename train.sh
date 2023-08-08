@@ -29,13 +29,13 @@ deepspeed \
     --report_to "tensorboard" \
     \
     --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 32 \
+    --gradient_accumulation_steps 12 \
     --max_grad_norm 1.0 \
     --learning_rate 1e-5 \
     --fp16 False \
     --bf16 True \
     --deepspeed $(python ds_config.py \
-        --en_param_offload False \
+        --en_param_offload True \
         --en_act_ackpt False \
         --en_sparse_attn True \
     )
