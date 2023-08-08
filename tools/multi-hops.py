@@ -202,7 +202,7 @@ def map_query_log_path(inpath, run_name):
 
 def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
     prompt_mode=None, topic=None, fname_filter=None, skip_existing=True,
-    begin=0, end=None, metric='pass@1', ground_truth_dir=None):
+    begin=0, end=None, metric='pass@1', ground_truth_dir=None, do_marking_output=True):
 
     metric_name, k = metric.split('@')
     k = int(k)
@@ -366,7 +366,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             elif prompt_mode == 'askkey':
                 prompt = ask_identity_formula(query)
                 k_count = k
-                llm_api_kargs = {'stop': '\n\n'}
+                llm_api_kargs = {'stop': '\n\n', 'stream': False}
 
             else:
                 raise NotImplemented
@@ -406,12 +406,13 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             boxed_answer = extract_math_answer(answer)
 
             # marking
-            print_title('Ground Truth')
-            print(solution)
+            if do_marking_output:
+                print_title('Ground Truth')
+                print(solution)
 
-            print_title(f'Marking ({filename} pass#{k_count}/{k})')
-            print('agent answer:', boxed_answer)
-            print('ground truth:', boxed_solution)
+                print_title(f'Marking ({filename} pass#{k_count}/{k})')
+                print('agent answer:', boxed_answer)
+                print('ground truth:', boxed_solution)
             equiv = is_equiv(boxed_answer, boxed_solution)
             if equiv:
                 rich_print('[green]correct[/green]')

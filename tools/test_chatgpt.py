@@ -102,7 +102,7 @@ class ChatGPT_Agent():
     def reset(self):
         self.messages = []
 
-    def complete(self, prompt='count to 10', stream=True, **kargs):
+    def complete(self, prompt='count to 10', stream=False, **kargs):
         openai.api_key = os.environ.get('OAIKey')
         openai.api_type = 'azure'
         #openai.api_version = "2023-07-01-preview"
