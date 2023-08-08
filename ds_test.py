@@ -33,7 +33,7 @@ class MyArguments:
     use_flash_att2: bool
     load_8bit: bool
     deepspeed: str
-    gradio_server_port: str
+    gradio_server_port: int
 
 parser = transformers.HfArgumentParser(MyArguments)
 my_args = parser.parse_args_into_dataclasses()[0]
