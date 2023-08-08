@@ -12,8 +12,8 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 2 ds_test.py ~/llama-models/30B-hgf/
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
-export CUDA_VISIBLE_DEVICES=5
-deepspeed --num_gpus 1 \
+deepspeed \
+    --include=localhost:5,6,7 \
     --no_local_rank \
     --master_port 8922 \
     ds_test.py \
