@@ -22,7 +22,7 @@ deepspeed --num_gpus 1 \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \
-    --gradio_server_port 8922 \
+    --gradio_server_port 8988 \
     \
     --deepspeed $(python ds_config.py \
         --remove_train_args \
