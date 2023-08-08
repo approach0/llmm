@@ -26,7 +26,7 @@ deepspeed \
     --save_total_limit 2 \
     --logging_steps 2 \
     --report_to "tensorboard" \
-    --deepspeed $(python ds_config.py create_json \
+    --deepspeed $(python ds_config.py \
         --world_size 1 \
         --gradient_accumulation_steps 6 \
         --train_micro_batch_size_per_gpu 1 \
