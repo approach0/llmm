@@ -29,7 +29,7 @@ from functools import partial
 import requests
 
 
-dataset_prefix = 'datasets'
+dataset_prefix = 'MATH'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
@@ -212,7 +212,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
     assert metric_name in ['pass', 'maj']
     assert k > 0
 
-    MATH_path = f'../{dataset_prefix}/MATH/test/{topic}'
+    MATH_path = f'../{dataset_prefix}/test/{topic}'
     print('dataset path:', MATH_path)
     filenames = os.listdir(MATH_path)
     print('number of tests:', len(filenames))
