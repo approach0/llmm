@@ -115,6 +115,6 @@ else:
         outputs=gr.Textbox(lines=40)
     )
     # Enabling the queue for inference times > 60 seconds:
-    iface.queue().launch(server_port=gradio_server_port,
+    iface.queue().launch(server_port=my_args.gradio_server_port,
         debug=True, share=True, inline=False
     )

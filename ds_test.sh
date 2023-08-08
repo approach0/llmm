@@ -12,11 +12,13 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 2 ds_test.py ~/llama-models/30B-hgf/
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
+export CUDA_VISIBLE_DEVICES=5
 deepspeed --num_gpus 1 \
     --no_local_rank \
+    --master_port 8922 \
     ds_test.py \
     \
-    --model_name_or_path lmsys/vicuna-13b-v1.5-16k \
+    --model_name_or_path lmsys/vicuna-7b-v1.5 \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \
@@ -24,9 +26,9 @@ deepspeed --num_gpus 1 \
     \
     --deepspeed $(python ds_config.py \
         --remove_train_args \
-        --fp16 False \
-        --bf16 True \
-        --en_param_offload True \
+        --fp16 True \
+        --bf16 False \
+        --en_param_offload False \
         --en_act_ackpt False \
-        --en_sparse_attn True \
+        --en_sparse_attn False \
     )
