@@ -8,3 +8,4 @@ jsonlines
 openai
 einops
 fire
+tensorboard
