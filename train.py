@@ -6,6 +6,7 @@ import torch
 from torch import autocast
 from pdb import set_trace
 from dataclasses import dataclass
+from typing import Optional
 
 import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
@@ -28,6 +29,7 @@ class MyArguments:
     datamap_nprocs: int
     use_flash_att2: bool
     load_8bit: bool
+    cache_dir: Optional[str] = None
 
 parser = transformers.HfArgumentParser(
     (transformers.TrainingArguments, MyArguments)
@@ -71,6 +73,7 @@ if my_args.use_flash_att2:
 if not my_args.dryrun:
     if my_args.load_8bit:
         model = LlamaForCausalLM.from_pretrained(model_path,
+            cache_dir=my_args.cache_dir,
             use_cache=(False if my_args.use_flash_att2 else True),
             load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                 load_in_8bit=True,
@@ -80,6 +83,7 @@ if not my_args.dryrun:
         )
     else:
         model = LlamaForCausalLM.from_pretrained(model_path,
+            cache_dir=my_args.cache_dir,
             use_cache=(False if my_args.use_flash_att2 else True)
         )
 
