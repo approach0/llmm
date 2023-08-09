@@ -17,10 +17,6 @@ from transformers import LlamaForCausalLM
 
 from transformers import BitsAndBytesConfig
 
-from flash_attn_monkey_patch import (
-    replace_llama_attn_with_flash_attn,
-)
-
 
 ### Parse Arguments
 @dataclass
@@ -66,6 +62,9 @@ else:
     print(json.dumps(ds_config_json, indent=2))
 
 if my_args.use_flash_att2:
+    from flash_attn_monkey_patch import (
+        replace_llama_attn_with_flash_attn,
+    )
     replace_llama_attn_with_flash_attn()
 
 # Model and LoRa Adapter
