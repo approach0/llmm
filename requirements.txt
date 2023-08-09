@@ -6,3 +6,4 @@ peft
 rich
 jsonlines
 openai
+einops
