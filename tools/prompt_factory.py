@@ -389,12 +389,14 @@ As a result, it is highly unlikely they are key formulas for this problem. My an
 
 def ask_identity_formula(Q):
     prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
-Write in the Response section that appropriately completes the request.
+Write a response in the Response section that appropriately completes the request.
 
 ### Instruction
-Given a math problem, tell me if you need to look up a formula to better answer this question. The criteria is, imagine you have a math-aware search engine where you can search with formula(s), if you think there is any formula (do not consider a matrix) can be very helpful finding a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a key formula.
+Given a math problem, tell me if it requires a key formula to answer. A key formula is a expression that is relevant for solving this problem, and can be used in a math-aware search engine to look up similar expressions and the solutions.
 
-Please indicate, on a scale of 1-10 and in the format of "prob[x]", how likely there is such key formula for solving this problem?
+Do not consider a matrix in formulas.
+
+Please indicate, on a scale of 1-10 and in the format of "prob[x]", the likelihood that there is such a key formula for solving this problem.
 If you do not think this problem has a key formula, indicate it with a low score.
 
 Example 1
@@ -402,9 +404,9 @@ Example 1
 If $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4},$ then compute $xy + x + y.$
 --- PROBLEM END   ---
 
-The first formula occurred in this problem looks very unique to this question, it also looks like a good identity as it is beautiful and likely to be popular.
-On the other hand, $xy + x + y.$ looks like a very common expression, as a result, searching it may not recall this question compared to searching for the first formula.
-I am pretty confident $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$ is the key formula, my ratting is prob[10].
+There is a structure in the first expression that can be looked up by a math search engine, it could be useful because it looks like an identity, and is unique to this problem.
+
+For this question, my rating for having such key formula is prob[10].
 
 Example 2
 --- PROBLEM BEGIN ---
@@ -412,8 +414,17 @@ Three vertices of a cube in space have coordinates $A = (2,3,0),$ $B = (0,5,4),$
 Compute the coordinates of the center of the cube.
 --- PROBLEM END   ---
 
-For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
-As a result, it is highly unlikely they are key formulas for this problem. My ratting is prob[0].
+There are 3 expressions in this problem, but none of them would be informative about how to solve the problem. Instead, the key information is in the textual components.
+
+As a result, for this question, my rating for having such key formula is prob[1].
+
+Example 3
+--- PROBLEM BEGIN ---
+Find $\cos \frac{\pi}{3}.$
+--- PROBLEM END   ---
+
+The only expression in this problem might be looked up by a search engine, with potentially the correct answer, but it can also be solved directly. I am not too sure if it is useful to use the math search engine.
+As a result, for this question, my rating for having such a key formula is prob[5].
 
 '''
 

@@ -373,7 +373,8 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
 
             elif prompt_mode == 'askkey':
                 if run_pass == 'td003':
-                    prompt = ask_identity_formula_logits(query)
+                    prompt = ask_identity_formula(query)
+                    #prompt = ask_identity_formula_logits(query)
                 else:
                     prompt = ask_identity_formula(query)
 
