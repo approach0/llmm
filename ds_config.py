@@ -25,9 +25,9 @@ def create_json(base_cfg_file='ds_config_zero3.json',
         config['bf16']['enabled'] = bf16
 
     if remove_train_args:
-        config['train_batch_size'] = 1
+        config['train_micro_batch_size_per_gpu'] = 1
+        del config['train_batch_size']
         del config['gradient_accumulation_steps']
-        del config['train_micro_batch_size_per_gpu']
         del config['gradient_clipping']
         del config['optimizer']
         del config['scheduler']
