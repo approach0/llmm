@@ -84,15 +84,26 @@ from timeout import timeout
 
 
 @timeout(seconds=30)
-def generate(prompt, stop=None):
-    return openai.Completion.create(
-        engine='gpt-35-turbo',
-        prompt=prompt,
-        temperature=0,
-        max_tokens=2048,
-        stream=True,
-        stop=stop
-    )
+def generate(prompt, stop=None, logprobs=None):
+    if logprobs is not None:
+        return openai.Completion.create(
+            engine='text-davinci-003',
+            prompt=prompt,
+            temperature=0,
+            max_tokens=2048,
+            stream=True,
+            logprobs=logprobs,
+            stop=stop
+        )
+    else:
+        return openai.Completion.create(
+            engine='gpt-35-turbo',
+            prompt=prompt,
+            temperature=0,
+            max_tokens=2048,
+            stream=True,
+            stop=stop
+        )
 
 
 class ChatGPT_Agent():
@@ -102,7 +113,7 @@ class ChatGPT_Agent():
     def reset(self):
         self.messages = []
 
-    def complete(self, prompt='count to 10', stream=False, **kargs):
+    def complete(self, prompt='count to 10', verbose=False, **kargs):
         openai.api_key = os.environ.get('OAIKey')
         openai.api_type = 'azure'
         #openai.api_version = "2023-07-01-preview"
@@ -110,6 +121,7 @@ class ChatGPT_Agent():
         openai.api_base = 'https://corby.openai.azure.com'
         api_map = kargs['api_map'] if 'api_map' in kargs else {}
         stop = kargs['stop'] if 'stop' in kargs else None
+        logprobs = kargs['logprobs'] if 'logprobs' in kargs else None
 
         self.messages.append({
             'role': 'user',
@@ -119,7 +131,7 @@ class ChatGPT_Agent():
         sleep_time = 1
         while True:
             try:
-                response = generate(prompt, stop=stop)
+                response = generate(prompt, stop=stop, logprobs=logprobs)
                 break
             except Exception as e:
                 print(str(e), f'sleep {sleep_time} secs.')
@@ -128,24 +140,39 @@ class ChatGPT_Agent():
                 continue
 
         response_text = ''
+        res_logprobs = []
         for chunk in response:
             choices = chunk['choices']
             if len(choices) > 0:
                 choice = choices[0]
                 if 'text' in choice:
                     delta = choice['text']
-                    if stream: print(delta, end="")
+                    if len(delta) == 0:
+                        continue
+                    if verbose: print(delta, end="")
+
                     response_text += delta
+                    if logprobs is not None:
+                        logprobs = choice['logprobs']
+                        top_logprobs = logprobs['top_logprobs'][0].items()
+                        res_logprobs.append(
+                            (logprobs['tokens'][0], list(top_logprobs))
+                        )
+
                     abort = kargs.get('abort_criteria', None)
                     if abort and abort(response_text, api_map):
                         break
-        if stream: print()
+        if verbose: print()
 
         self.messages.append({
             'role': 'assistant',
             'content': response_text
         })
-        return response_text
+
+        if logprobs is not None:
+            return res_logprobs
+        else:
+            return response_text
 
 
 agent = ChatGPT_Agent()
@@ -159,4 +186,5 @@ if __name__ == '__main__':
     #agent.reset() 
     #agent.complete("which one is Chinese? I don't see it.")
 
-    agent.complete("what is your name?")
+    res = agent.complete("what is your name?", logprobs=10)
+    print(res)

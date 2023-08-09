@@ -3,6 +3,7 @@ import json
 import random
 import time
 import torch
+import math
 import numpy as np
 from rich import print as rich_print
 
@@ -202,7 +203,7 @@ def map_query_log_path(inpath, run_name):
 
 def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
     prompt_mode=None, topic=None, fname_filter=None, skip_existing=True,
-    begin=0, end=None, metric='pass@1', ground_truth_dir=None, do_marking_output=True):
+    begin=0, end=None, metric='pass@1', ground_truth_dir=None, output_marking=True):
 
     metric_name, k = metric.split('@')
     k = int(k)
@@ -234,6 +235,13 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
         #llm_api = OAI_API().get_completion
         #llm_rst = lambda *args: None
         llm_api = chatgpt_agent.complete
+        llm_rst = chatgpt_agent.reset
+
+        llm_args = []
+
+    elif run_pass == 'td003':
+        llm_init = lambda *args: None
+        llm_api = partial(chatgpt_agent.complete, logprobs=10)
         llm_rst = chatgpt_agent.reset
 
         llm_args = []
@@ -364,7 +372,11 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                     prompt = ia2(query, *results)
 
             elif prompt_mode == 'askkey':
-                prompt = ask_identity_formula(query)
+                if run_pass == 'td003':
+                    prompt = ask_identity_formula_logits(query)
+                else:
+                    prompt = ask_identity_formula(query)
+
                 k_count = k
                 llm_api_kargs = {'stop': '\n\n', 'stream': False}
 
@@ -400,13 +412,27 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
 
                     prompt += answer
                 else:
-                    print(answer)
+                    if isinstance(answer, str): print(answer)
                     break
+
+            if not isinstance(answer, str):
+                likelihood = -1
+                for i, _ in enumerate(answer):
+                    token = answer[i][0]
+                    if (token.strip() in ['yes', 'no'] and
+                        '[' in answer[i-1][0] and
+                        ']' in answer[i+1][0]):
+                        logprob = dict(answer[i][1])[token]
+                        likelihood = math.exp(logprob)
+                        if token.strip() == 'no':
+                            likelihood = 1.0 - likelihood
+                answer = f'{likelihood:.3f}'
+                print(answer)
 
             boxed_answer = extract_math_answer(answer)
 
             # marking
-            if do_marking_output:
+            if output_marking:
                 print_title('Ground Truth')
                 print(solution)
 
