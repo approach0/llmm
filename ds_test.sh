@@ -13,12 +13,12 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
 deepspeed \
-    --include=localhost:5,6,7 \
+    --include=localhost:5,6 \
     --no_local_rank \
     --master_port 8922 \
     ds_test.py \
     \
-    --model_name_or_path lmsys/vicuna-7b-v1.5 \
+    --model_name_or_path lmsys/vicuna-13b-v1.5 \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \

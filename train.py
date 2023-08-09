@@ -39,15 +39,6 @@ parser = transformers.HfArgumentParser(
 train_args, my_args = parser.parse_args_into_dataclasses()
 ds_config = train_args.hf_deepspeed_config
 ds_config_json = ds_config.config
-if len(ds_config.mismatches) > 0:
-    for mismatch in ds_config.mismatches:
-        print(mismatch)
-    quit(1)
-else:
-    print(my_args)
-    print(train_args)
-    print(json.dumps(ds_config_json, indent=2))
-
 
 ### Pre-Process Arguments
 model_path = my_args.model_name_or_path
@@ -55,6 +46,24 @@ local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
 torch.cuda.set_device(local_rank)
 model_path = os.path.expanduser(model_path)
+
+if len(ds_config.mismatches) > 0:
+    for mismatch in ds_config.mismatches:
+        print(mismatch)
+    quit(1)
+elif my_args.load_8bit and my_args.use_flash_att2:
+    print('Flash Attention is incompatible with 8bit.')
+    quit(1)
+elif my_args.load_8bit and world_size > 1:
+    print('8-bit multi-gpu training is not supported.')
+    quit(1)
+elif not train_args.fp16 and my_args.use_flash_att2:
+    print('Flash Attention only supports fp16.')
+    quit(1)
+else:
+    print(my_args)
+    print(train_args)
+    print(json.dumps(ds_config_json, indent=2))
 
 if my_args.use_flash_att2:
     replace_llama_attn_with_flash_attn()
@@ -64,7 +73,6 @@ if not my_args.dryrun:
     if my_args.load_8bit:
         model = LlamaForCausalLM.from_pretrained(model_path,
             use_cache=(False if my_args.use_flash_att2 else True),
-            torch_dtype=torch.bfloat16,
             load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                 load_in_8bit=True,
                 llm_int8_threshold=6.0,
@@ -73,8 +81,8 @@ if not my_args.dryrun:
         )
     else:
         model = LlamaForCausalLM.from_pretrained(model_path,
-            use_cache=(False if my_args.use_flash_att2 else True),
-            torch_dtype=torch.bfloat16)
+            use_cache=(False if my_args.use_flash_att2 else True)
+        )
 
     from peft import LoraConfig, get_peft_model
     TARGET_MODULES = [
@@ -85,7 +93,7 @@ if not my_args.dryrun:
         task_type="CAUSAL_LM",
         r=8, lora_dropout=0.05,
         lora_alpha=16, bias='none',
-        target_modules=TARGET_MODULES,
+        target_modules=TARGET_MODULES
     )
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
