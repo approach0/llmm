@@ -84,26 +84,16 @@ from timeout import timeout
 
 
 @timeout(seconds=30)
-def generate(prompt, stop=None, logprobs=None):
-    if logprobs is not None:
-        return openai.Completion.create(
-            engine='text-davinci-003',
-            prompt=prompt,
-            temperature=0,
-            max_tokens=2048,
-            stream=True,
-            logprobs=logprobs,
-            stop=stop
-        )
-    else:
-        return openai.Completion.create(
-            engine='gpt-35-turbo',
-            prompt=prompt,
-            temperature=0,
-            max_tokens=2048,
-            stream=True,
-            stop=stop
-        )
+def generate(engine, prompt, stop=None, logprobs=None):
+    return openai.Completion.create(
+        engine=engine,
+        prompt=prompt,
+        temperature=0,
+        max_tokens=2048,
+        stream=True,
+        logprobs=logprobs,
+        stop=stop
+    )
 
 
 class ChatGPT_Agent():
@@ -122,6 +112,8 @@ class ChatGPT_Agent():
         api_map = kargs['api_map'] if 'api_map' in kargs else {}
         stop = kargs['stop'] if 'stop' in kargs else None
         logprobs = kargs['logprobs'] if 'logprobs' in kargs else None
+        engine = kargs['engine']
+        assert engine in ['text-davinci-003', 'gpt-35-turbo']
 
         self.messages.append({
             'role': 'user',
@@ -131,7 +123,8 @@ class ChatGPT_Agent():
         sleep_time = 1
         while True:
             try:
-                response = generate(prompt, stop=stop, logprobs=logprobs)
+                response = generate(engine, prompt,
+                    stop=stop, logprobs=logprobs)
                 break
             except Exception as e:
                 print(str(e), f'sleep {sleep_time} secs.')

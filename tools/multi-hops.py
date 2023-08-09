@@ -234,14 +234,14 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
 
         #llm_api = OAI_API().get_completion
         #llm_rst = lambda *args: None
-        llm_api = chatgpt_agent.complete
+        llm_api = partial(chatgpt_agent.complete, engine='gpt-35-turbo')
         llm_rst = chatgpt_agent.reset
 
         llm_args = []
 
     elif run_pass == 'td003':
         llm_init = lambda *args: None
-        llm_api = partial(chatgpt_agent.complete, logprobs=10)
+        llm_api = partial(chatgpt_agent.complete, engine='text-davinci-003', logprobs=None)
         llm_rst = chatgpt_agent.reset
 
         llm_args = []

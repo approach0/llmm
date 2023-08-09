@@ -6,3 +6,4 @@ output/
 cache/
 .env
 pya0
+*.png
