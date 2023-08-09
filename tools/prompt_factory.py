@@ -345,10 +345,17 @@ Here are the results:
     return prompt
 
 
-def ask_identity_formula(Q):
-    prompt = r'''For a given math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question. Do not consider a matrix. If you do not find one with good confidence, then say  "No such formula".
+def ask_identity_formula_logits(Q):
+    prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
+Write in the Response section that appropriately completes the request.
+
+### Instruction
+For a given math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question. Do not consider a matrix. If you do not find one with good confidence, then say  "No such formula".
 
 To correctly judge the dependent formula, imagine you have a math-aware search engine where you can search with this formula, if you think this formula can be very helpful to find a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a good key dependent formula.
+
+Please give some explanations like the examples below.
+Finally, remember to indicate your answer with yes or no in a bracket.
 
 Example 1
 --- PROBLEM BEGIN ---
@@ -357,7 +364,7 @@ If $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4},$ then compute $xy + x + y.$
 
 The first formula occurred in this problem looks very unique to this question, it also looks like a good identity as it is beautiful and likely to be popular.
 On the other hand, $xy + x + y.$ looks like a very common expression, as a result, searching it may not recall this question compared to searching for the first formula.
-So my answer is $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$.
+So the key formula is $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$. The answer is [yes].
 
 Example 2
 --- PROBLEM BEGIN ---
@@ -366,15 +373,62 @@ Compute the coordinates of the center of the cube.
 --- PROBLEM END   ---
 
 For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
-So my answer is no such formula for this problem.
+So there is no key formula for this problem. The answer is [no].
 
 '''
 
     prompt += '''
-Example 3
+### Input
 --- PROBLEM BEGIN ---
 {}
 --- PROBLEM END   ---
+
+### Response
+
+'''.format(Q)
+
+    return prompt
+
+
+def ask_identity_formula(Q):
+    prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
+Write in the Response section that appropriately completes the request.
+
+### Instruction
+For a given math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question. Do not consider a matrix. If you do not find one with good confidence, then say  "No such formula".
+
+To correctly judge the dependent formula, imagine you have a math-aware search engine where you can search with this formula, if you think this formula can be very helpful to find a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a good key dependent formula.
+
+Please give some explanations like the examples below.
+Finally, remember to output a scaled confidence value (in 1-10) in the format prob[x] of the likelihood such keyword exists.
+
+Example 1
+--- PROBLEM BEGIN ---
+If $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4},$ then compute $xy + x + y.$
+--- PROBLEM END   ---
+
+The first formula occurred in this problem looks very unique to this question, it also looks like a good identity as it is beautiful and likely to be popular.
+On the other hand, $xy + x + y.$ looks like a very common expression, as a result, searching it may not recall this question compared to searching for the first formula.
+So the key formula is $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$. The answer is prob[10].
+
+Example 2
+--- PROBLEM BEGIN ---
+Three vertices of a cube in space have coordinates $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$
+Compute the coordinates of the center of the cube.
+--- PROBLEM END   ---
+
+For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
+So there is no key formula for this problem. The answer is prob[0].
+
+'''
+
+    prompt += '''
+### Input
+--- PROBLEM BEGIN ---
+{}
+--- PROBLEM END   ---
+
+### Response
 
 '''.format(Q)
 

@@ -29,7 +29,14 @@ detached_experiment() {
 case $SETUP in
     askkey)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=askkey --run_pass=chatgpt --args="[]" --skip_existing False
+        --prompt_mode=askkey --run_pass=chatgpt --args="[]" --skip_existing False \
+        --output_marking False
+    ;;
+
+    askkey_td003)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=askkey --run_pass=td003 --args="[]" --skip_existing False \
+        --output_marking False
     ;;
 
     manual)
