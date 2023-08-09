@@ -30,7 +30,7 @@ class MyArguments:
     use_flash_att2: bool
     load_8bit: bool
     cache_dir: Optional[str] = None
-    overwrite_tokenizer: Optional[str] = None
+    specified_tokenizer: Optional[str] = None
 
 
 parser = transformers.HfArgumentParser(
@@ -43,8 +43,8 @@ ds_config_json = ds_config.config
 ### Pre-Process Arguments
 model_path = my_args.model_name_or_path
 model_path = os.path.expanduser(model_path)
-if my_args.overwrite_tokenizer:
-    tokenizer_path = os.path.expanduser(my_args.overwrite_tokenizer)
+if my_args.specified_tokenizer:
+    tokenizer_path = os.path.expanduser(my_args.specified_tokenizer)
 else:
     tokenizer_path = model_path
 

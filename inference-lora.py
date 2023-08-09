@@ -11,11 +11,13 @@ import deepspeed
 from transformers.deepspeed import HfDeepSpeedConfig
 
 
-def convert(origin_model_path, adapter_path, output_path='./tmp'):
+def convert(origin_model_path, adapter_path, output_path='./tmp',
+    load_in_8bit=False, cache_dir=None, is_trainable=False):
+
     model = LlamaForCausalLM.from_pretrained(origin_model_path,
-        cache_dir='./data', torch_dtype=torch.float16)
+        load_in_8bit=load_in_8bit, cache_dir=cache_dir)
     model_and_lora = PeftModel.from_pretrained(model, adapter_path,
-        'default')
+        adapter_name='default', is_trainable=is_trainable)
     model = model_and_lora.merge_and_unload()
     print(model)
     model.save_pretrained(output_path)

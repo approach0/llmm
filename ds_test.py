@@ -4,6 +4,7 @@ import json
 import torch
 from torch import autocast
 from dataclasses import dataclass
+from typing import Optional
 
 import deepspeed
 import transformers
@@ -34,6 +35,8 @@ class MyArguments:
     load_8bit: bool
     deepspeed: str
     gradio_server_port: int
+    specified_tokenizer: Optional[str] = None
+    adapter_path: Optional[str] = None
 
 parser = transformers.HfArgumentParser(MyArguments)
 my_args = parser.parse_args_into_dataclasses()[0]
@@ -50,8 +53,13 @@ if my_args.use_flash_att2:
 
 torch.cuda.set_device(local_rank)
 model_path = os.path.expanduser(my_args.model_name_or_path)
-tokenizer = LlamaTokenizer.from_pretrained(my_args.model_name_or_path)
+if my_args.specified_tokenizer:
+    tokenizer_path = os.path.expanduser(my_args.specified_tokenizer)
+else:
+    tokenizer_path = model_path
+tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
 
+print('Loading model ...')
 if my_args.load_8bit:
     model = LlamaForCausalLM.from_pretrained(model_path,
         torch_dtype=torch.bfloat16,
@@ -65,9 +73,19 @@ if my_args.load_8bit:
 else:
     model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16)
 
+if my_args.adapter_path:
+    print('Loading adapter ...')
+    from peft import PeftModel
+    model = PeftModel.from_pretrained(model, my_args.adapter_path,
+        adapter_name='default', is_trainable=False)
+    # now the model type is still PeftModel, for compatibility, convert it to LLaMA.
+    model = model.merge_and_unload()
+
+print('Initializing DeepSpeed ...')
 ds_engine = deepspeed.initialize(model=model, config=config)[0]
 model = ds_engine.module
 model.eval() # for inference
+
 
 default_prompt = r'''
 Below is an instruction that describes a task, paired with an input that provides further context.

@@ -12,13 +12,37 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 2 ds_test.py ~/llama-models/30B-hgf/
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
+#deepspeed \
+#    --include=localhost:0 \
+#    --no_local_rank \
+#    --master_port 8922 \
+#    ds_test.py \
+#    \
+#    --model_name_or_path output/runs/Aug08_04-44-32_merged \
+#    --specified_tokenizer output/runs/Aug08_04-44-32_ckpt \
+#    --ctx_length 2048 \
+#    --use_flash_att2 True \
+#    --load_8bit False \
+#    --gradio_server_port 8988 \
+#    \
+#    --deepspeed $(python ds_config.py \
+#        --remove_train_args \
+#        --fp16 False \
+#        --bf16 True \
+#        --en_param_offload False \
+#        --en_act_ackpt False \
+#        --en_sparse_attn True \
+#    )
+
 deepspeed \
-    --include=localhost:5,6 \
+    --include=localhost:0 \
     --no_local_rank \
     --master_port 8922 \
     ds_test.py \
     \
-    --model_name_or_path lmsys/vicuna-13b-v1.5 \
+    --model_name_or_path lmsys/vicuna-13b-v1.5-16k \
+    --specified_tokenizer output/runs/Aug08_04-44-32_ckpt \
+    --adapter_path output/runs/Aug08_04-44-32_ckpt \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \
@@ -26,9 +50,9 @@ deepspeed \
     \
     --deepspeed $(python ds_config.py \
         --remove_train_args \
-        --fp16 True \
-        --bf16 False \
+        --fp16 False \
+        --bf16 True \
         --en_param_offload False \
         --en_act_ackpt False \
-        --en_sparse_attn False \
+        --en_sparse_attn True \
     )
