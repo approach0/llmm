@@ -30,6 +30,8 @@ class MyArguments:
     use_flash_att2: bool
     load_8bit: bool
     cache_dir: Optional[str] = None
+    overwrite_tokenizer: Optional[str] = None
+
 
 parser = transformers.HfArgumentParser(
     (transformers.TrainingArguments, MyArguments)
@@ -40,10 +42,16 @@ ds_config_json = ds_config.config
 
 ### Pre-Process Arguments
 model_path = my_args.model_name_or_path
+model_path = os.path.expanduser(model_path)
+if my_args.overwrite_tokenizer:
+    tokenizer_path = os.path.expanduser(my_args.overwrite_tokenizer)
+else:
+    tokenizer_path = model_path
+
 local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
+
 torch.cuda.set_device(local_rank)
-model_path = os.path.expanduser(model_path)
 
 if len(ds_config.mismatches) > 0:
     for mismatch in ds_config.mismatches:
@@ -54,9 +62,6 @@ elif my_args.load_8bit and my_args.use_flash_att2:
     quit(1)
 elif my_args.load_8bit and world_size > 1:
     print('8-bit multi-gpu training is not supported.')
-    quit(1)
-elif not train_args.fp16 and my_args.use_flash_att2:
-    print('Flash Attention only supports fp16.')
     quit(1)
 else:
     print(my_args)
@@ -124,7 +129,7 @@ def smart_tokenizer_and_embedding_resize(special_tokens_dict, tokenizer, model):
     if not my_args.dryrun:
         model.resize_token_embeddings(len(tokenizer))
 
-tokenizer = LlamaTokenizer.from_pretrained(model_path)
+tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
 if tokenizer.pad_token is None:
     smart_tokenizer_and_embedding_resize(
         special_tokens_dict=dict(pad_token=DEFAULT_PAD_TOKEN),
@@ -242,8 +247,7 @@ if not my_args.dryrun:
         eval_dataset=None,
         data_collator=data_collator
     )
-    with autocast(device_type='cuda'):
-        trainer.train()
+    trainer.train()
     trainer.save_state()
 else:
     tokenizer.save_pretrained('output/dryrun_tokenizer')
