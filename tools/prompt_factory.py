@@ -352,7 +352,7 @@ Write in the Response section that appropriately completes the request.
 ### Instruction
 Given a math problem, tell me if you need to look up a formula to better answer this question. The criteria is, imagine you have a math-aware search engine where you can search with formula(s), if you think there is any formula (do not consider a matrix) can be very helpful finding a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a key formula.
 
-Please indicate your answer by "yes" or "no" in a bracket -- whether there is such key formula for solving this problem?
+Do write your answer in either [yes] or [no] to indicate whether there is such key formula for solving this problem. Do not include extra output or values!
 
 Example 1
 --- PROBLEM BEGIN ---
@@ -371,6 +371,8 @@ Compute the coordinates of the center of the cube.
 
 For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
 As a result, it is highly unlikely they are key formulas for this problem. My answer is [no].
+
+'''
 
     prompt += '''
 ### Input
