@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from collections import defaultdict
 
@@ -138,7 +139,7 @@ def output_html(logdir):
 
 
 # https://github.com/lz1oceani/verify_cot/raw/main/results/chatgpt3.5/natural_program/MATH_np.json
-def test(fpath='data/MATH_np.json'):
+def test_np(fpath='data/MATH_np.json'):
     with open(fpath, 'r') as fh:
         j = json.load(fh)
     print(j[0])
@@ -154,6 +155,42 @@ def test(fpath='data/MATH_np.json'):
     print(cnt, d)
 
 
+def get_class_hist(logdir, mode):
+    assert mode in ['gpt3.5', 'td003']
+    data = []
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if logpath.split('.')[-1] != 'log':
+            continue
+        with open(logpath, 'r') as fh:
+            j = json.load(fh)
+        answer = j['judge_buffer'][0]['answer']
+        if mode == 'gpt3.5':
+            m = re.search(r'prob\[(\d+)\]', answer)
+            if m:
+                confidence = int(m.group(1))
+                data.append(confidence)
+            else:
+                print('wrong format:', answer)
+        else:
+            try:
+                data.append(float(answer))
+            except ValueError:
+                print('wrong format:', answer)
+    logdir = os.path.normpath(logdir)
+    basename = os.path.basename(logdir)
+    save_hist(f'{basename}.png', data)
+
+
+def save_hist(path, x):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.hist(x)
+    #plt.show()
+    print('Saving:', path)
+    plt.savefig(path)
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
@@ -161,5 +198,6 @@ if __name__ == '__main__':
         'get_stats': get_topic_stats,
         'output_html': _output_html,
         'output_htmls': output_html,
-        'test': test
+        'get_class_hist': get_class_hist,
+        'test_np': test_np,
     })

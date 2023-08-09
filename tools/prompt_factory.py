@@ -350,12 +350,9 @@ def ask_identity_formula_logits(Q):
 Write in the Response section that appropriately completes the request.
 
 ### Instruction
-For a given math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question. Do not consider a matrix. If you do not find one with good confidence, then say  "No such formula".
+Given a math problem, tell me if you need to look up a formula to better answer this question. The criteria is, imagine you have a math-aware search engine where you can search with formula(s), if you think there is any formula (do not consider a matrix) can be very helpful finding a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a key formula.
 
-To correctly judge the dependent formula, imagine you have a math-aware search engine where you can search with this formula, if you think this formula can be very helpful to find a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a good key dependent formula.
-
-Please give some explanations like the examples below.
-Finally, remember to indicate your answer with yes or no in a bracket.
+Please indicate your answer by "yes" or "no" in a bracket -- whether there is such key formula for solving this problem?
 
 Example 1
 --- PROBLEM BEGIN ---
@@ -364,7 +361,7 @@ If $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4},$ then compute $xy + x + y.$
 
 The first formula occurred in this problem looks very unique to this question, it also looks like a good identity as it is beautiful and likely to be popular.
 On the other hand, $xy + x + y.$ looks like a very common expression, as a result, searching it may not recall this question compared to searching for the first formula.
-So the key formula is $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$. The answer is [yes].
+I am pretty confident $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$ is the key formula, my answer is [yes].
 
 Example 2
 --- PROBLEM BEGIN ---
@@ -373,9 +370,7 @@ Compute the coordinates of the center of the cube.
 --- PROBLEM END   ---
 
 For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
-So there is no key formula for this problem. The answer is [no].
-
-'''
+As a result, it is highly unlikely they are key formulas for this problem. My answer is [no].
 
     prompt += '''
 ### Input
@@ -395,12 +390,10 @@ def ask_identity_formula(Q):
 Write in the Response section that appropriately completes the request.
 
 ### Instruction
-For a given math problem, please identify a math formula (if any) that is most likely the key dependent formula of the question. Do not consider a matrix. If you do not find one with good confidence, then say  "No such formula".
+Given a math problem, tell me if you need to look up a formula to better answer this question. The criteria is, imagine you have a math-aware search engine where you can search with formula(s), if you think there is any formula (do not consider a matrix) can be very helpful finding a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a key formula.
 
-To correctly judge the dependent formula, imagine you have a math-aware search engine where you can search with this formula, if you think this formula can be very helpful to find a relevant answer to this question by matching a structurally similar formula occurred in the relevant answer, then it meets the requirement of being a good key dependent formula.
-
-Please give some explanations like the examples below.
-Finally, remember to output a scaled confidence value (in 1-10) in the format prob[x] of the likelihood such keyword exists.
+Please indicate, on a scale of 1-10 and in the format of "prob[x]", how likely there is such key formula for solving this problem?
+If you do not think this problem has a key formula, indicate it with a low score.
 
 Example 1
 --- PROBLEM BEGIN ---
@@ -409,7 +402,7 @@ If $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4},$ then compute $xy + x + y.$
 
 The first formula occurred in this problem looks very unique to this question, it also looks like a good identity as it is beautiful and likely to be popular.
 On the other hand, $xy + x + y.$ looks like a very common expression, as a result, searching it may not recall this question compared to searching for the first formula.
-So the key formula is $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$. The answer is prob[10].
+I am pretty confident $\tan^{-1} x + \tan^{-1} y = \frac{\pi}{4}$ is the key formula, my ratting is prob[10].
 
 Example 2
 --- PROBLEM BEGIN ---
@@ -418,7 +411,7 @@ Compute the coordinates of the center of the cube.
 --- PROBLEM END   ---
 
 For this one, the three formulas $A = (2,3,0),$ $B = (0,5,4),$ and $C = (4,1,8).$ all look very common, I am afraid using any of them as key formula(s) will restrict the search results too much.
-So there is no key formula for this problem. The answer is prob[0].
+As a result, it is highly unlikely they are key formulas for this problem. My ratting is prob[0].
 
 '''
 
