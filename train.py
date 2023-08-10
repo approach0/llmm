@@ -31,6 +31,7 @@ class MyArguments:
     load_8bit: bool
     cache_dir: Optional[str] = None
     specified_tokenizer: Optional[str] = None
+    debug_single_layer: Optional[bool] = False
 
 
 parser = transformers.HfArgumentParser(
@@ -58,8 +59,7 @@ if len(ds_config.mismatches) > 0:
         print(mismatch)
     quit(1)
 elif my_args.load_8bit and my_args.use_flash_att2:
-    print('Flash Attention is incompatible with 8bit.')
-    quit(1)
+    print('Flash Attention may be incompatible with 8bit.')
 elif my_args.load_8bit and world_size > 1:
     print('8-bit multi-gpu training is not supported.')
     quit(1)
@@ -76,9 +76,14 @@ if my_args.use_flash_att2:
 
 # Model and LoRa Adapter
 if not my_args.dryrun:
+    if my_args.debug_single_layer:
+        from tools.tiny_llama import tiny_llama
+        load_func = tiny_llama
+    else:
+        load_func = LlamaForCausalLM.from_pretrained
+
     if my_args.load_8bit:
-        model = LlamaForCausalLM.from_pretrained(model_path,
-            cache_dir=my_args.cache_dir,
+        model = load_func(model_path, cache_dir=my_args.cache_dir,
             use_cache=(False if my_args.use_flash_att2 else True),
             load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                 load_in_8bit=True,
@@ -87,8 +92,7 @@ if not my_args.dryrun:
             )
         )
     else:
-        model = LlamaForCausalLM.from_pretrained(model_path,
-            cache_dir=my_args.cache_dir,
+        model = load_func(model_path, cache_dir=my_args.cache_dir,
             use_cache=(False if my_args.use_flash_att2 else True)
         )
 
@@ -190,7 +194,9 @@ def _tokenize_fn(strings, tokenizer):
 def preprocess(sources, targets, tokenizer):
     """Preprocess the data by tokenizing."""
     examples = [s + t for s, t in zip(sources, targets)]
-    examples_tokenized, sources_tokenized = [_tokenize_fn(strings, tokenizer) for strings in (examples, sources)]
+    examples_tokenized, sources_tokenized = [
+        _tokenize_fn(strings, tokenizer) for strings in (examples, sources)
+    ]
     input_ids = examples_tokenized["input_ids"]
     labels = copy.deepcopy(input_ids)
     for label, source_len in zip(labels, sources_tokenized["input_ids_lens"]):
@@ -199,17 +205,18 @@ def preprocess(sources, targets, tokenizer):
 
 
 def train_tokenize_function(examples, tokenizer):
-    prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
+    prompt_input = PROMPT_DICT["prompt_input"]
+    prompt_no_input = PROMPT_DICT["prompt_no_input"]
     if 'input' in examples:
         sources = [
-            prompt_input.format_map(dict(instruction=instruction, input=input)) if input != "" \
-            else prompt_no_input.format_map(dict(instruction=instruction)) \
-            for instruction, input in zip(examples['instruction'], examples['input'])
+            prompt_input.format_map(dict(instruction=instr, input=input)) if input != "" \
+            else prompt_no_input.format_map(dict(instruction=instr)) \
+            for instr, input in zip(examples['instruction'], examples['input'])
         ]
     else:
         sources = [
-            prompt_no_input.format_map(dict(instruction=instruction)) \
-            for instruction in examples['instruction']
+            prompt_no_input.format_map(dict(instruction=instr)) \
+            for instr in examples['instruction']
         ]
     targets = [f"{output}{tokenizer.eos_token}" for output in examples['output']]
 
@@ -238,7 +245,6 @@ if not my_args.dryrun:
     from transformers import Trainer
     model.is_parallelizable = True
     model.model_parallel = True
-    #ds gradient_accumulation_steps=32 vs hf gradient_accumulation_steps=1
     trainer = Trainer(
         model=model,
         tokenizer=tokenizer,

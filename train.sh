@@ -7,18 +7,21 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 #export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
+#--data_file ./data/finetune-pairs.json \
+
 deepspeed \
-    --include=localhost:0,5,6,7 \
+    --include=localhost:0 \
     --master_port 8921 \
     train.py \
     \
-    --model_name_or_path lmsys/vicuna-13b-v1.5 \
-    --data_file ./data/finetune-pairs.json \
+    --model_name_or_path lmsys/vicuna-33b-v1.3 \
+    --data_file ./output/MATH-pairs.json \
+    --debug_single_layer False \
     --dryrun False \
     --ctx_length 2048 \
     --datamap_nprocs 10 \
     --use_flash_att2 True \
-    --load_8bit False \
+    --load_8bit True \
     --num_train_epochs 3 \
     \
     --output_dir ./output \
@@ -29,13 +32,13 @@ deepspeed \
     --report_to "tensorboard" \
     \
     --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 4 \
+    --gradient_accumulation_steps 12 \
     --max_grad_norm 1.0 \
-    --learning_rate 1e-5 \
-    --fp16 True \
-    --bf16 False \
+    --learning_rate 2e-5 \
+    --fp16 False \
+    --bf16 True \
     --deepspeed $(python ds_config.py \
-        --en_param_offload False \
+        --en_param_offload True \
         --en_act_ackpt False \
         --en_sparse_attn True \
     )

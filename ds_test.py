@@ -110,11 +110,9 @@ def inference(prompt=default_prompt):
     inputs = inputs.to(device=local_rank)
     use_cache = False if my_args.use_flash_att2 else True
     with torch.no_grad():
-        with autocast(device_type='cuda'):
-            outputs = model.generate(inputs, use_cache=use_cache,
-                synced_gpus=True, max_new_tokens=1024,
-                do_sample=True)
-            #outputs = model.generate(**inputs)
+        outputs = model.generate(inputs, use_cache=use_cache,
+            synced_gpus=True, max_new_tokens=1024,
+            do_sample=True)
     text_out = tokenizer.decode(outputs[0],
         skip_special_tokens=True)
 
