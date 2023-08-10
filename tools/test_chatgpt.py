@@ -85,15 +85,25 @@ from timeout import timeout
 
 @timeout(seconds=30)
 def generate(engine, prompt, stop=None, logprobs=None):
-    return openai.Completion.create(
-        engine=engine,
-        prompt=prompt,
-        temperature=0,
-        max_tokens=2048,
-        stream=True,
-        logprobs=logprobs,
-        stop=stop
-    )
+    if logprobs:
+        return openai.Completion.create(
+            engine=engine,
+            prompt=prompt,
+            temperature=0,
+            max_tokens=2048,
+            stream=True,
+            logprobs=logprobs,
+            stop=stop
+        )
+    else:
+        return openai.Completion.create(
+            engine=engine,
+            prompt=prompt,
+            temperature=0,
+            max_tokens=2048,
+            stream=True,
+            stop=stop
+        )
 
 
 class ChatGPT_Agent():
