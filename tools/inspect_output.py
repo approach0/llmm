@@ -156,7 +156,7 @@ def test_np(fpath='data/MATH_np.json'):
 
 
 
-def get_class_hist(logdir, suffix, mode='gpt3.5'):
+def get_class_hist(logdir, suffix, mode='gpt3.5', verbose=False):
     assert mode in ['gpt3.5', 'td003']
     data = dict()
     logdir = os.path.normpath(logdir)
@@ -191,16 +191,16 @@ def get_class_hist(logdir, suffix, mode='gpt3.5'):
     if names[0] in ['MATH', 'test']:
         if names[0] == 'MATH': names[1] = 'overall'
         name = suffix + '__' + names[1]
-        print(name, len(data))
-        save_hist(name, data.values())
+        if verbose: print(name, len(data))
+        save_hist(name, data.values(), verbose=verbose)
 
     return data
 
 
-def save_hist(name, x):
+def save_hist(name, x, verbose=False):
     import matplotlib.pyplot as plt
     import numpy as np
-    print('Saving:', name)
+    if verbose: print('Saving:', name)
 
     fig, axis = plt.subplots(1, 2)
 
