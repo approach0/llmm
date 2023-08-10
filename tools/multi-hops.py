@@ -264,7 +264,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
     print('Initializing LLM ...', llm_args)
     llm_api_args = llm_init(*llm_args)
 
-    manual_query = []
+    manual_query = None
     tot_okcnt, tot_cnt = 0, 0
     filenames = filenames[begin:end]
 
@@ -322,20 +322,26 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             if prompt_mode == 'manual':
                 while True:
                     print('current manual query:', manual_query)
-                    cmd = input('Enter formula, "save", "reset", or "skip":\n')
+                    cmd = input('formula, "save", "clear", "none", or "skip":\n')
                     if cmd.strip() == '':
                         k_count = 0
-                        break
-                    elif cmd == 'reset':
-                        manual_query = []
-                    elif cmd == 'skip':
-                        manual_query = []
-                        k_count = k
                         break
                     elif cmd == 'save':
                         k_count = k
                         break
+                    elif cmd == 'clear':
+                        manual_query = []
+
+                    elif cmd == 'none':
+                        manual_query = None
+                        break
+                    elif cmd == 'skip':
+                        manual_query = None
+                        k_count = k
+                        break
                     else:
+                        if manual_query is None:
+                            manual_query = []
                         manual_query.append(cmd)
 
                 metric_name = 'maj' # pass@k would break the loop.
@@ -364,11 +370,15 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                 prompt = multihop1(query)
 
             elif prompt_mode == 'manual':
-                if len(manual_query) == 0:
+                use_text = query
+                if manual_query is None:
                     prompt = cot2(query)
+                elif len(manual_query) == 0:
+                    results = sota_search(use_text, None, topk=4)
+                    prompt = ia2(query, *results)
                 else:
                     kws = list(map(lambda x: '$' + x + '$', manual_query))
-                    results = sota_search(None, kws, topk=4)
+                    results = sota_search(use_text, kws, topk=4)
                     prompt = ia2(query, *results)
 
             elif prompt_mode == 'askkey':
