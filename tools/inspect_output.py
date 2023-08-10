@@ -155,12 +155,19 @@ def test_np(fpath='data/MATH_np.json'):
     print(cnt, d)
 
 
-def get_class_hist(logdir, mode='gpt3.5'):
+
+def get_class_hist(logdir, suffix, mode='gpt3.5', d=defaultdict(list)):
     assert mode in ['gpt3.5', 'td003']
     data = []
+    logdir = os.path.normpath(logdir)
+    names = logdir.split('/')[-2:]
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
+        if os.path.isdir(logpath):
+            data += get_class_hist(logpath, suffix, mode=mode, d=d)
         if logpath.split('.')[-1] != 'log':
+            continue
+        elif not names[-1].endswith(suffix):
             continue
         with open(logpath, 'r') as fh:
             j = json.load(fh)
@@ -171,25 +178,39 @@ def get_class_hist(logdir, mode='gpt3.5'):
                 confidence = int(m.group(1))
                 data.append(confidence)
             else:
-                print('wrong format:', answer)
+                #print('wrong format:', answer)
+                pass
         else:
             try:
                 data.append(float(answer))
             except ValueError:
-                print('wrong format:', answer)
-    logdir = os.path.normpath(logdir)
-    basename = os.path.basename(logdir)
-    save_hist(f'{basename}.png', data)
+                #print('wrong format:', answer)
+                pass
+
+    if names[0] in ['MATH', 'test']:
+        if names[0] == 'MATH': names[1] = 'overall'
+        name = suffix + '__' + names[1]
+        print(name, len(data))
+        save_hist(name, data)
+
+    return data
 
 
-def save_hist(path, x):
+def save_hist(name, x):
     import matplotlib.pyplot as plt
     import numpy as np
-    print(x)
-    plt.hist(x)
-    #plt.show()
-    print('Saving:', path)
-    plt.savefig(path)
+    print('Saving:', name)
+
+    fig, axis = plt.subplots(1, 2)
+
+    axis[0].hist(x)
+    axis[0].set_title(name)
+
+    x = list(map(lambda x: 1 if x > 5 else 0, x))
+    axis[1].hist(x)
+    axis[1].set_title('yes=1, no=0')
+
+    plt.savefig(name + '.png')
 
 
 if __name__ == '__main__':
