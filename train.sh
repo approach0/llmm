@@ -15,7 +15,7 @@ deepspeed \
     train.py \
     \
     --model_name_or_path lmsys/vicuna-33b-v1.3 \
-    --data_file ./output/MATH-pairs.json \
+    --data_file ./data/finetune-pairs.json \
     --debug_single_layer False \
     --dryrun False \
     --ctx_length 2048 \
@@ -28,13 +28,14 @@ deepspeed \
     --save_strategy "steps" \
     --save_steps 100 \
     --save_total_limit 2 \
-    --logging_steps 2 \
+    --logging_steps 1 \
     --report_to "tensorboard" \
     \
     --per_device_train_batch_size 1 \
     --gradient_accumulation_steps 12 \
     --max_grad_norm 1.0 \
     --learning_rate 2e-5 \
+    --warmup_ratio 0.03 \
     --fp16 False \
     --bf16 True \
     --deepspeed $(python ds_config.py \

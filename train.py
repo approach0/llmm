@@ -253,8 +253,8 @@ if not my_args.dryrun:
         eval_dataset=None,
         data_collator=data_collator
     )
-    trainer.train()
-    trainer.save_state()
+    with autocast(device_type="cuda"):
+        trainer.train()
 else:
     tokenizer.save_pretrained('output/dryrun_tokenizer')
     #import pdb; pdb.set_trace()
