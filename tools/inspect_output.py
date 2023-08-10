@@ -156,15 +156,16 @@ def test_np(fpath='data/MATH_np.json'):
 
 
 
-def get_class_hist(logdir, suffix, mode='gpt3.5', d=defaultdict(list)):
+def get_class_hist(logdir, suffix, mode='gpt3.5'):
     assert mode in ['gpt3.5', 'td003']
-    data = []
+    data = dict()
     logdir = os.path.normpath(logdir)
     names = logdir.split('/')[-2:]
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if os.path.isdir(logpath):
-            data += get_class_hist(logpath, suffix, mode=mode, d=d)
+            res = get_class_hist(logpath, suffix, mode=mode)
+            data.update(res)
         if logpath.split('.')[-1] != 'log':
             continue
         elif not names[-1].endswith(suffix):
@@ -176,13 +177,13 @@ def get_class_hist(logdir, suffix, mode='gpt3.5', d=defaultdict(list)):
             m = re.search(r'prob\[(\d+)\]', answer)
             if m:
                 confidence = int(m.group(1))
-                data.append(confidence)
+                data[logpath] = confidence
             else:
                 #print('wrong format:', answer)
                 pass
         else:
             try:
-                data.append(float(answer))
+                data[logpath] = float(answer)
             except ValueError:
                 #print('wrong format:', answer)
                 pass
@@ -191,7 +192,7 @@ def get_class_hist(logdir, suffix, mode='gpt3.5', d=defaultdict(list)):
         if names[0] == 'MATH': names[1] = 'overall'
         name = suffix + '__' + names[1]
         print(name, len(data))
-        save_hist(name, data)
+        save_hist(name, data.values())
 
     return data
 
