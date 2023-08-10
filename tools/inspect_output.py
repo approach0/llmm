@@ -155,7 +155,7 @@ def test_np(fpath='data/MATH_np.json'):
     print(cnt, d)
 
 
-def get_class_hist(logdir, mode):
+def get_class_hist(logdir, mode='gpt3.5'):
     assert mode in ['gpt3.5', 'td003']
     data = []
     for fname in os.listdir(logdir):
@@ -185,6 +185,7 @@ def get_class_hist(logdir, mode):
 def save_hist(path, x):
     import matplotlib.pyplot as plt
     import numpy as np
+    print(x)
     plt.hist(x)
     #plt.show()
     print('Saving:', path)
