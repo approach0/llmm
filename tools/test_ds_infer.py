@@ -6,7 +6,7 @@ def test(prompt='Can you count to 10?',
     url='http://127.0.0.1:8988/generate',
     **kargs):
     if 'args' in kargs:
-        url = kargs[args]
+        url = kargs['args']
 
     try:
         res = requests.post(url, json={
