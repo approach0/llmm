@@ -8,4 +8,4 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
 export CUDA_VISIBLE_DEVICES=1,0
-python utils.py test 'Count to 10: 1, 2'
+python utils2.py test 'Count to 10: 1, 2'

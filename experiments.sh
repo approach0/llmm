@@ -53,6 +53,13 @@ case $SETUP in
         --prompt_mode=manual --run_pass=chatgpt --args="[]" --skip_existing True
     ;;
 
+
+    utils_infer)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=manual --run_pass=utils --skip_existing False \
+        --args="['cuda', 'lmsys/vicuna-7b-v1.3', 'lmsys/vicuna-7b-v1.3']"
+    ;;
+
     batch)
     detached_experiment direct-vicuna-7b precalculus 0
     detached_experiment cot-vicuna-7b precalculus 0

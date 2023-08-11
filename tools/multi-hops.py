@@ -113,6 +113,22 @@ def sota_search(question, keywords, full_topk=30, topk=3, gt=None):
         return []
 
 
+def utils_search_init(device, *args):
+    sys.path.insert(0, '.')
+    import utils2
+    return device, *utils2.load_model(*args)
+
+
+def utils_search(prompt, args, **kargs):
+    sys.path.insert(0, '.')
+    import utils2
+    device, tokenizer, model = args
+    return utils2.generate(
+        tokenizer=tokenizer, model=model,
+        prompt=prompt, device=device, debug=False
+    )
+
+
 def call_sympy(args):
     print('computing:', args)
     if isinstance(args, dict):
@@ -259,6 +275,12 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
         llm_api = test_ds_infer.test
         llm_rst = lambda *args: None
         llm_args = []
+
+    elif run_pass == 'utils':
+        llm_init = utils_search_init
+        llm_api = utils_search
+        llm_rst = lambda *_: None
+        llm_args = args
 
     else:
         raise NotImplemented
