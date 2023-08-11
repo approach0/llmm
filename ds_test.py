@@ -34,12 +34,14 @@ class MyArguments:
     use_flash_att2: bool
     load_8bit: bool
     deepspeed: str
-    gradio_server_port: int
+    interface_port: int
+    infer_interface: str
     specified_tokenizer: Optional[str] = None
     adapter_path: Optional[str] = None
 
 parser = transformers.HfArgumentParser(MyArguments)
 my_args = parser.parse_args_into_dataclasses()[0]
+assert my_args.infer_interface in ['test', 'gradio', 'flask']
 
 with open(my_args.deepspeed) as fh:
     config = json.load(fh)
@@ -103,7 +105,7 @@ Remember to indicate your final answer in boxed LaTeX. For example, if you think
 
 ### Response:
 '''
-def inference(prompt=default_prompt):
+def inference(prompt):
     print('inference rank', local_rank, end='\n\n')
     #inputs = tokenizer(prompt, return_tensors="pt")
     inputs = tokenizer.encode(prompt, return_tensors="pt")
@@ -120,17 +122,34 @@ def inference(prompt=default_prompt):
         print(f"{prompt} {text_out}")
     return text_out
 
-if local_rank != 0:
-    while True:
-        inference()
+
+if local_rank == 0:
+    if my_args.infer_interface == 'test':
+        inference('count from 1 to 10.')
+
+    elif my_args.infer_interface == 'gradio':
+        import gradio as gr
+        iface = gr.Interface(
+            fn=inference,
+            inputs=gr.Textbox(default_prompt, lines=40),
+            outputs=gr.Textbox(lines=40)
+        )
+        # Enabling the queue for inference times > 60 seconds:
+        iface.queue().launch(
+            server_port=my_args.interface_port,
+            debug=True, share=True, inline=False
+        )
+
+    elif my_args.infer_interface == 'flask':
+        from flask import Flask, request, jsonify
+        app = Flask('ds_test API')
+
+        @app.route('/generate', methods=['GET', 'POST'])
+        def server_handler():
+            j = request.json
+            return inference(j['prompt'])
+
+        app.run(
+            port=my_args.interface_port, host="0.0.0.0")
 else:
-    import gradio as gr
-    iface = gr.Interface(
-        fn=inference,
-        inputs=gr.Textbox(default_prompt, lines=40),
-        outputs=gr.Textbox(lines=40)
-    )
-    # Enabling the queue for inference times > 60 seconds:
-    iface.queue().launch(server_port=my_args.gradio_server_port,
-        debug=True, share=True, inline=False
-    )
+    while True: inference('noop.')
