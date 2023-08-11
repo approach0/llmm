@@ -9,3 +9,4 @@ openai
 einops
 fire
 tensorboard
+python-dotenv

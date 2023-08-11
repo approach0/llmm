@@ -62,17 +62,17 @@ case $SETUP in
     ;;
 
     batch)
-    detached_experiment direct-vicuna-7b precalculus 0
-    detached_experiment cot-vicuna-7b precalculus 0
+    detached_experiment askkey_chatgpt precalculus 0
+    detached_experiment askkey_td003 precalculus 0
 
-    detached_experiment direct-vicuna-7b algebra 2
-    detached_experiment cot-vicuna-7b algebra 2
+    detached_experiment askkey_chatgpt algebra 0
+    detached_experiment askkey_td003 algebra 0
 
-    detached_experiment direct-vicuna-7b prealgebra 3
-    detached_experiment cot-vicuna-7b prealgebra 3
+    detached_experiment askkey_chatgpt prealgebra 0
+    detached_experiment askkey_td003 prealgebra 0
 
-    detached_experiment direct-vicuna-7b intermediate_algebra 5
-    detached_experiment cot-vicuna-7b intermediate_algebra 5
+    detached_experiment askkey_chatgpt intermediate_algebra 0
+    detached_experiment askkey_td003 intermediate_algebra 0
     ;;
 
     batch2)
