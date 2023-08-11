@@ -28,6 +28,7 @@ class MyArguments:
     ctx_length: int
     datamap_nprocs: int
     use_flash_att2: bool
+    use_lora: bool
     load_8bit: bool
     cache_dir: Optional[str] = None
     specified_tokenizer: Optional[str] = None
@@ -96,19 +97,20 @@ if not my_args.dryrun:
             use_cache=(False if my_args.use_flash_att2 else True)
         )
 
-    from peft import LoraConfig, get_peft_model
-    TARGET_MODULES = [
-        "q_proj",
-        "v_proj",
-    ]
-    lora_config = LoraConfig(
-        task_type="CAUSAL_LM",
-        r=8, lora_dropout=0.05,
-        lora_alpha=16, bias='none',
-        target_modules=TARGET_MODULES
-    )
-    model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
+    if my_args.use_lora:
+        from peft import LoraConfig, get_peft_model
+        TARGET_MODULES = [
+            "q_proj",
+            "v_proj",
+        ]
+        lora_config = LoraConfig(
+            task_type="CAUSAL_LM",
+            r=8, lora_dropout=0.05,
+            lora_alpha=16, bias='none',
+            target_modules=TARGET_MODULES
+        )
+        model = get_peft_model(model, lora_config)
+        model.print_trainable_parameters()
 else:
     model = None
 
