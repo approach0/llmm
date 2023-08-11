@@ -12,8 +12,6 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #deepspeed --num_gpus 2 ds_test.py ~/llama-models/30B-hgf/
 #deepspeed --num_gpus 4 ds_test.py ~/llama-models/65B-hgf-new/
 
-#--adapter_path output/13B-mathy \
-#--specified_tokenizer output/13B-mathy \
 
 deepspeed \
     --include=localhost:0 \
@@ -22,6 +20,8 @@ deepspeed \
     ds_test.py \
     \
     --model_name_or_path lmsys/vicuna-13b-v1.5 \
+    --adapter_path output/13B-mathy \
+    --specified_tokenizer output/13B-mathy \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \

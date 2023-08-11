@@ -252,6 +252,14 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
         llm_rst = lambda *args: None
         llm_args = []
 
+    elif run_pass == 'ds':
+        sys.path.insert(0, '.')
+        from tools import test_ds_infer
+        llm_init = lambda *args: args[0]
+        llm_api = test_ds_infer.test
+        llm_rst = lambda *args: None
+        llm_args = []
+
     else:
         raise NotImplemented
 

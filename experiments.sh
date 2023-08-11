@@ -39,6 +39,12 @@ case $SETUP in
         --output_marking False
     ;;
 
+    ds_infer)
+    python tools/multi-hops.py --logname mathy --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=ds --args="['http://127.0.0.1:8988/generate']" \
+	--skip_existing True
+    ;;
+
     manual)
     #python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
     #    --prompt_mode=manual --run_pass=vicuna --args="[1,'lmsys/vicuna-13b-v1.3']"
