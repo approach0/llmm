@@ -54,10 +54,11 @@ case $SETUP in
     ;;
 
 
-    utils_infer)
+    13B-mathy)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=manual --run_pass=utils --skip_existing False \
-        --args="['cuda', 'lmsys/vicuna-7b-v1.3', 'lmsys/vicuna-7b-v1.3']"
+        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['cuda', 'output/13B-mathy', 'lmsys/vicuna-13b-v1.5', 'output/13B-mathy']"
+
     ;;
 
     batch)

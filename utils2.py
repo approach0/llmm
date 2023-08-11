@@ -136,10 +136,17 @@ def generate_stream(model, tokenizer, prompt, device, context_len=2048,
     torch.cuda.empty_cache()
 
 
-def load_model(tokenizer_path, model_path, dtype=torch.float16):
+def load_model(tokenizer_path, model_path,
+    adapter_path=None, dtype=torch.float16):
     tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, legacy=False)
     model = LlamaForCausalLM.from_pretrained(model_path, device_map="auto",
         torch_dtype=dtype)
+    if adapter_path:
+        print('Loading adapter:', adapter_path)
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(model, adapter_path,
+            adapter_name='default', is_trainable=False)
+        model = model.merge_and_unload()
     return tokenizer, model
 
 
