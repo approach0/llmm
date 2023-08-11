@@ -18,7 +18,7 @@ deepspeed \
     --data_file ./data/finetune-pairs.json \
     --debug_single_layer False \
     --dryrun False \
-    --ctx_length 2048 \
+    --ctx_length 1500 \
     --datamap_nprocs 10 \
     --use_flash_att2 True \
     --load_8bit True \
