@@ -136,9 +136,10 @@ def generate_stream(model, tokenizer, prompt, device, context_len=2048,
     torch.cuda.empty_cache()
 
 
-def load_model(tokenizer_path, model_path):
+def load_model(tokenizer_path, model_path, dtype=torch.float16):
     tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, legacy=False)
-    model = LlamaForCausalLM.from_pretrained(model_path, device_map="auto")
+    model = LlamaForCausalLM.from_pretrained(model_path, device_map="auto",
+        torch_dtype=dtype)
     return tokenizer, model
 
 
