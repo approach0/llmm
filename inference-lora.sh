@@ -34,7 +34,12 @@ export CUDA_LAUNCH_BLOCKING=1
 #    ./output/7B-lora-trained \
 #    ./output/7B-lora-gptq
 
-python inference-lora.py convert \
-    lmsys/vicuna-13b-v1.5-16k \
-    ./output/runs/Aug08_04-44-32_ckpt \
-    ./output/runs/Aug08_04-44-32_merged
+#python inference-lora.py convert \
+#    lmsys/vicuna-13b-v1.5-16k \
+#    ./output/runs/Aug08_04-44-32_ckpt \
+#    ./output/runs/Aug08_04-44-32_merged
+
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+python inference-lora.py infer \
+    lmsys/vicuna-7b-v1.3 \
+    lmsys/vicuna-7b-v1.3

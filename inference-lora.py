@@ -1,14 +1,11 @@
 import os
+import gc
 import json
+import time
 import torch
 
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
-
-from peft import PeftModel
-
-import deepspeed
-from transformers.deepspeed import HfDeepSpeedConfig
 
 
 def convert(origin_model_path, adapter_path, output_path='./tmp',
@@ -23,62 +20,129 @@ def convert(origin_model_path, adapter_path, output_path='./tmp',
     model.save_pretrained(output_path)
 
 
-default_prompt = '''
-Below is an instruction that describes a task, paired with an input that provides further context.
-Write a response that appropriately completes the request.
+@torch.inference_mode()
+def generate_stream(model, tokenizer, prompt, device, context_len,
+    max_new_tokens=512, stream_interval=2, mode='greedy', stop_token_ids=[]):
+    len_prompt = len(prompt)
+    stop_token_ids.append(tokenizer.eos_token_id)
+    input_ids = tokenizer(prompt).input_ids
+    max_src_len = context_len - max_new_tokens - 1
+    input_ids = input_ids[-max_src_len:]
+    output_ids = list(input_ids)
+    input_echo_len = len(input_ids)
+    past_key_values = out = None
+    sent_interrupt = False
+    for i in range(max_new_tokens):
+        if i == 0:  # prefill
+            out = model(torch.as_tensor([input_ids], device=device), use_cache=True)
+            logits = out.logits
+            past_key_values = out.past_key_values
+        else:  # decoding
+            out = model(
+                input_ids=torch.as_tensor(
+                    [[token] if not sent_interrupt else output_ids], device=device
+                ),
+                use_cache=True,
+                past_key_values=past_key_values if not sent_interrupt else None,
+            )
+            sent_interrupt = False
+            logits = out.logits
+            past_key_values = out.past_key_values
 
-### Instruction:
-Give three tips for staying healthy.
+        last_token_logits = logits[0, -1, :]
 
-### Input:
+        if mode == 'greedy':
+            _, indices = torch.topk(last_token_logits, 2)
+            tokens = [int(index) for index in indices.tolist()]
+        elif mode == 'sample':
+            probs = torch.softmax(last_token_logits, dim=-1)
+            indices = torch.multinomial(probs, num_samples=2)
+            tokens = [int(token) for token in indices.tolist()]
+        else:
+            raise NotImplementedError
+        token = tokens[0]
+        output_ids.append(token)
 
-### Response:
-'''
+        if token in stop_token_ids:
+            stopped = True
+        else:
+            stopped = False
+
+        # Yield the output tokens
+        if i % stream_interval == 0 or i == max_new_tokens - 1 or stopped:
+            tmp_output_ids = output_ids[input_echo_len:]
+            rfind_start = 0
+
+            output = tokenizer.decode(
+                tmp_output_ids,
+                skip_special_tokens=True,
+                spaces_between_special_tokens=False,
+                clean_up_tokenization_spaces=True,
+            )
+
+            yield {
+                "text": output,
+                "usage": {
+                    "prompt_tokens": input_echo_len,
+                    "completion_tokens": i,
+                    "total_tokens": input_echo_len + i,
+                },
+                "finish_reason": None,
+            }
+
+        if stopped:
+            break
+
+    # Finish stream event, which contains finish reason
+    if i == max_new_tokens - 1:
+        finish_reason = "length"
+    elif stopped:
+        finish_reason = "stop"
+    else:
+        finish_reason = None
+
+    yield {
+        "text": output,
+        "usage": {
+            "prompt_tokens": input_echo_len,
+            "completion_tokens": i,
+            "total_tokens": input_echo_len + i,
+        },
+        "finish_reason": finish_reason,
+    }
+
+    # Clean
+    del past_key_values, out
+    gc.collect()
+    torch.cuda.empty_cache()
 
 
-def infer(tokenizer_path, model_path,
-    direct_inference=True, device='cuda:0'):
-    local_rank = int(os.environ["LOCAL_RANK"])
-    world_size = int(os.environ["WORLD_SIZE"])
+def infer(tokenizer_path, model_path, device='cuda:0'):
 
-    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
-    model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16)
+    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, legacy=False)
+    max_gpu_memory = '10GiB'
+    model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16,
+        device_map="auto", 
+        #max_memory={i: max_gpu_memory for i in range(world_size)}
+    )
 
     model.eval()
-    model.is_parallelizable = True
-    model.model_parallel = True
 
-    ds_engine = deepspeed.init_inference(model, mp_size=world_size,
-        dtype=torch.half, checkpoint=None, replace_with_kernel_inject=True)
-    model = ds_engine.module
+    prompt = 'The greatest of '
+    output_stream = generate_stream(model, tokenizer, prompt,
+        device, context_len=4096, max_new_tokens=512,
+    )
 
-    def inference(prompt='hello!'):
-        print('prompt:', prompt)
-        inputs = tokenizer(prompt, return_tensors="pt")
-        device = torch.cuda.current_device()
-        input_ids = inputs["input_ids"].to(device)
-        with torch.no_grad():
-            generation_output = model.generate(
-                input_ids=input_ids,
-                max_new_tokens=1024,
-                do_sample=False
-            )
-        output = tokenizer.decode(generation_output[0])
-        if local_rank == 0:
-            print('output:', output)
-        return output
+    cur_text, finish_reason = None, None
+    for cur in output_stream:
+        cur_text = cur['text']
+        finish_reason = cur["finish_reason"]
+        if True:
+            print("\033c", end='')
+            print(cur_text)
+            time.sleep(0.5)
 
-    if direct_inference:
-        inference()
-    else:
-        iface = gr.Interface(fn=inference,
-            inputs="text", outputs="text")
-        # Enabling the queue for inference times > 60 seconds:
-        iface.queue().launch(
-            debug=True, share=True, inline=False
-        )
-
-    torch.distributed.barrier()
+    return cur_text, finish_reason
 
 
 def quantize(tokenizer_path, model_path, quantized_model_path):
