@@ -8,7 +8,7 @@ from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 
 
-def convert(origin_model_path, adapter_path, output_path='./tmp',
+def merge_adapter(origin_model_path, adapter_path, output_path='./tmp',
     load_in_8bit=False, cache_dir=None, is_trainable=False):
 
     model = LlamaForCausalLM.from_pretrained(origin_model_path,
@@ -20,8 +20,27 @@ def convert(origin_model_path, adapter_path, output_path='./tmp',
     model.save_pretrained(output_path)
 
 
+def quantize(tokenizer_path, model_path, quantized_model_path):
+    from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
+    quantize_config = BaseQuantizeConfig(
+        bits=4, group_size=128, desc_act=False
+    )
+
+    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
+    examples = [
+        tokenizer(
+            "auto-gptq is an easy-to-use model quantization library with user-friendly apis, based on GPTQ algorithm."
+        )
+    ]
+    model = AutoGPTQForCausalLM.from_pretrained(model_path,
+        quantize_config)
+    model.to('cuda')
+    model.quantize(examples)
+    model.save_quantized(quantized_model_path)
+
+
 @torch.inference_mode()
-def generate_stream(model, tokenizer, prompt, device, context_len,
+def generate_stream(model, tokenizer, prompt, device, context_len=2048,
     max_new_tokens=512, stream_interval=2, mode='greedy', stop_token_ids=[]):
     len_prompt = len(prompt)
     stop_token_ids.append(tokenizer.eos_token_id)
@@ -117,57 +136,42 @@ def generate_stream(model, tokenizer, prompt, device, context_len,
     torch.cuda.empty_cache()
 
 
-def infer(tokenizer_path, model_path, device='cuda:0'):
-
+def load_model(tokenizer_path, model_path):
     tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, legacy=False)
-    max_gpu_memory = '10GiB'
-    model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16,
-        device_map="auto", 
-        #max_memory={i: max_gpu_memory for i in range(world_size)}
-    )
+    model = LlamaForCausalLM.from_pretrained(model_path, device_map="auto")
+    return tokenizer, model
 
-    model.eval()
 
-    prompt = 'The greatest of '
-    output_stream = generate_stream(model, tokenizer, prompt,
-        device, context_len=4096, max_new_tokens=512,
-    )
+def generate(debug=False, **kargs):
+    output_stream = generate_stream(**kargs)
 
     cur_text, finish_reason = None, None
     for cur in output_stream:
         cur_text = cur['text']
         finish_reason = cur["finish_reason"]
-        if True:
+        if debug:
             print("\033c", end='')
             print(cur_text)
             time.sleep(0.5)
 
-    return cur_text, finish_reason
+    if debug: print('finish reason:', finish_reason)
+    return cur_text
 
 
-def quantize(tokenizer_path, model_path, quantized_model_path):
-    from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
-    quantize_config = BaseQuantizeConfig(
-        bits=4, group_size=128, desc_act=False
-    )
-
-    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
-    examples = [
-        tokenizer(
-            "auto-gptq is an easy-to-use model quantization library with user-friendly apis, based on GPTQ algorithm."
-        )
-    ]
-    model = AutoGPTQForCausalLM.from_pretrained(model_path,
-        quantize_config)
-    model.to('cuda')
-    model.quantize(examples)
-    model.save_quantized(quantized_model_path)
+def test(prompt):
+    # maximum 2 gpus
+    gpus = os.environ["CUDA_VISIBLE_DEVICES"]
+    tokenizer, model = load_model('lmsys/vicuna-7b-v1.3', 'lmsys/vicuna-7b-v1.3')
+    device = 'cuda:' + gpus.split(',')[0]
+    generate(tokenizer=tokenizer, model=model, prompt=prompt,
+        device=device, debug=True)
 
 
 if __name__ == '__main__':
     import fire
+    os.environ["PAGER"] = 'cat'
     fire.Fire({
-        'convert': convert,
+        'merge_adapter': merge_adapter,
         'quantize': quantize,
-        'infer': infer,
+        'test': test,
     })
