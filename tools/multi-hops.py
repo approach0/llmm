@@ -395,6 +395,12 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
             elif prompt_mode == 'cot':
                 prompt = cot2(query)
 
+            elif prompt_mode == 'cot_wizard':
+                prompt = cot_wizard(query)
+
+            elif prompt_mode == 'cot_mytrain':
+                prompt = cot_mytrain(query)
+
             elif prompt_mode == 'ia':
                 results = sota_search(query, None, topk=4, gt=gt)
                 if len(results) > 0:

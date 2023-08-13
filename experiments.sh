@@ -67,6 +67,12 @@ case $SETUP in
         --args="['approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
 
+    13B-mathy-fft-goodprompt)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot_mytrain --run_pass=utils --skip_existing True \
+        --args="['approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
+    ;;
+
     13B-mathy-fft-maj10)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
@@ -77,6 +83,12 @@ case $SETUP in
     13B-wizard-math)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
+    ;;
+
+    13B-wizard-math-goodprompt)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot_wizard --run_pass=utils --skip_existing True \
         --args="['WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
     ;;
 

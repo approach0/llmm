@@ -441,6 +441,38 @@ As a result, for this question, my rating for having such a key formula is prob[
     return prompt
 
 
+#########################
+####### version 3 #######
+#########################
+
+def cot_wizard(Q):
+    prompt = r'''Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+### Instruction:
+{Q}
+'''.format(Q=Q)
+
+    prompt += r'''
+### Response:
+'''
+    return prompt
+
+def cot_mytrain(Q):
+    prompt = '''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+Answer a math question in the input.\n\nIndicate your final answer in boxed LaTeX. For example, if the final answer is \\sqrt{3}, write it as \\boxed{\\sqrt{3}}.\n
+
+### Input:
+'''
+    prompt += Q + '\n'
+
+    prompt += r'''
+### Response:
+'''
+    return prompt
+
+
 if __name__ == '__main__':
     # precalculus/1185.json
     prompt = multihop1(r'Let $x$ be a real number such that $\sec x - \tan x = 2$. Find $\sec x + \tan x.$')
