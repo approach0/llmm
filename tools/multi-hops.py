@@ -230,8 +230,6 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
     metric_name, k = metric.split('@')
     k = int(k)
     assert logname is not None
-    assert (prompt_mode in ['cot', 'ia', 'direct', 'mh', 'manual', 'askkey']
-        or prompt_mode.startswith('example'))
     assert metric_name in ['pass', 'maj']
     assert k > 0
 
