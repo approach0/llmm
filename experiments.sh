@@ -75,7 +75,7 @@ case $SETUP in
 
     13B-mathy-fft-maj10)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --prompt_mode=cot_mytrain --run_pass=utils --skip_existing False \
         --metric maj@10 \
         --args="['approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
@@ -94,21 +94,23 @@ case $SETUP in
 
     13B-wizard-math-maj10)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --prompt_mode=cot_wizard --run_pass=utils --skip_existing False \
         --metric maj@10 \
         --args="['WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
+    ;;
+
+    batch_mathy_wizard)
+    detached_experiment 13B-wizard-math-maj10 precalculus 6
+    detached_experiment 13B-mathy-fft-maj10 precalculus 7
     ;;
 
     batch)
     detached_experiment askkey_chatgpt precalculus 0
     detached_experiment askkey_td003 precalculus 0
-
     detached_experiment askkey_chatgpt algebra 0
     detached_experiment askkey_td003 algebra 0
-
     detached_experiment askkey_chatgpt prealgebra 0
     detached_experiment askkey_td003 prealgebra 0
-
     detached_experiment askkey_chatgpt intermediate_algebra 0
     detached_experiment askkey_td003 intermediate_algebra 0
     ;;
