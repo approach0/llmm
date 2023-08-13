@@ -9,6 +9,7 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 
 export CUDA_VISIBLE_DEVICES=4
 python utils2.py test \
-    --model_path WizardLM/WizardMath-13B-V1.0 \
-    --cache_dir ./data \
     'Count to 10: 1, 2'
+
+    #--cache_dir ./data \
+    #--model_path WizardLM/WizardMath-13B-V1.0 \

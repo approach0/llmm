@@ -42,7 +42,7 @@ def quantize(tokenizer_path, model_path, quantized_model_path):
 
 
 @torch.inference_mode()
-def generate_stream(model, tokenizer, prompt, device, context_len=2048,
+def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=2048,
     max_new_tokens=512, stream_interval=2, mode='greedy', stop_token_ids=[]):
     len_prompt = len(prompt)
     stop_token_ids.append(tokenizer.eos_token_id)
@@ -169,17 +169,19 @@ def generate(debug=False, **kargs):
     return cur_text
 
 
-def test(prompt,
-    model_path='lmsys/vicuna-7b-v1.3',
-    cache_dir='./data'):
-    # maximum 2 gpus
-    gpus = os.environ["CUDA_VISIBLE_DEVICES"]
-    device = 'cuda:' + gpus.split(',')[0]
+prompt_template = "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:"
 
+
+def test(prompt, use_template=True,
+    model_path='lmsys/vicuna-7b-v1.5',
+    cache_dir='./data'):
+    if use_template:
+        prompt = prompt_template.format(instruction=prompt)
+        print(prompt)
     tokenizer, model = load_model(model_path, model_path,
         cache_dir=cache_dir)
     generate(tokenizer=tokenizer, model=model, prompt=prompt,
-        device=device, debug=True)
+        debug=True)
 
 
 if __name__ == '__main__':
