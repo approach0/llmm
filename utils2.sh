@@ -17,12 +17,12 @@ copy_for_publish() {
     cp $1/tokenizer_config.json $2
     cp $1/tokenizer.model $2
 }
-copy_for_publish output/13B-mathy-FFT ../azbert/ckpt/
+#copy_for_publish output/13B-mathy-FFT ../azbert/ckpt/
 
 export CUDA_VISIBLE_DEVICES=4
 python utils2.py test \
-    --model_path ../azbert/ckpt/ \
+    --cache_dir ./data \
+    --model_path approach0/mathy-vicuna-13B-FFT \
     'Solve $x^2 = 4$.'
 
-    #--cache_dir ./data \
     #--model_path WizardLM/WizardMath-13B-V1.0 \

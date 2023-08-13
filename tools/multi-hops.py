@@ -113,20 +113,26 @@ def sota_search(question, keywords, full_topk=30, topk=3, gt=None):
         return []
 
 
-def utils_search_init(device, *args):
+def utils_search_init(*raw_args):
     sys.path.insert(0, '.')
     import utils2
-    return device, *utils2.load_model(*args)
+    args = []
+    kargs = {}
+    for arg in raw_args:
+        if isinstance(arg, dict):
+            kargs.update(arg)
+        else:
+            args.append(arg)
+    return utils2.load_model(*args, **kargs)
 
 
 def utils_search(prompt, args, **kargs):
     sys.path.insert(0, '.')
     import utils2
-    device, tokenizer, model = args
+    tokenizer, model = args
     return utils2.generate(
         tokenizer=tokenizer, model=model,
-        prompt=prompt, device=device, debug=False
-    )
+        prompt=prompt, debug=False)
 
 
 def call_sympy(args):

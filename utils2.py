@@ -139,7 +139,7 @@ def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=2048,
 
 
 def load_model(tokenizer_path, model_path, adapter_path=None,
-    dtype=torch.float16, cache_dir=None):
+    cache_dir=None, dtype=torch.float16):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
         legacy=False, cache_dir=cache_dir)
     model = AutoModelForCausalLM.from_pretrained(model_path,

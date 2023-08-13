@@ -54,10 +54,17 @@ case $SETUP in
     ;;
 
 
-    13B-mathy)
+    13B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
-        --args="['cuda', 'output/13B-mathy', 'lmsys/vicuna-13b-v1.5', 'output/13B-mathy']"
+        --args="['output/13B-mathy', 'lmsys/vicuna-13b-v1.5', 'output/13B-mathy']"
+
+    ;;
+
+    13B-mathy-fft)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
 
     ;;
 
