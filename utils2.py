@@ -6,6 +6,8 @@ import torch
 
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
+from transformers import AutoTokenizer
+from transformers import AutoModelForCausalLM
 
 
 def merge_adapter(origin_model_path, adapter_path, output_path='./tmp',
@@ -136,11 +138,12 @@ def generate_stream(model, tokenizer, prompt, device, context_len=2048,
     torch.cuda.empty_cache()
 
 
-def load_model(tokenizer_path, model_path,
-    adapter_path=None, dtype=torch.float16):
-    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, legacy=False)
-    model = LlamaForCausalLM.from_pretrained(model_path, device_map="auto",
-        torch_dtype=dtype)
+def load_model(tokenizer_path, model_path, adapter_path=None,
+    dtype=torch.float16, cache_dir=None):
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
+        legacy=False, cache_dir=cache_dir)
+    model = AutoModelForCausalLM.from_pretrained(model_path,
+        device_map="auto", torch_dtype=dtype, cache_dir=cache_dir)
     if adapter_path:
         print('Loading adapter:', adapter_path)
         from peft import PeftModel
@@ -166,11 +169,12 @@ def generate(debug=False, **kargs):
     return cur_text
 
 
-def test(prompt):
+def test(prompt, model_path='lmsys/vicuna-7b-v1.3'):
     # maximum 2 gpus
     gpus = os.environ["CUDA_VISIBLE_DEVICES"]
-    tokenizer, model = load_model('lmsys/vicuna-7b-v1.3', 'lmsys/vicuna-7b-v1.3')
     device = 'cuda:' + gpus.split(',')[0]
+
+    tokenizer, model = load_model(model_path, model_path)
     generate(tokenizer=tokenizer, model=model, prompt=prompt,
         device=device, debug=True)
 

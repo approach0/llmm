@@ -7,5 +7,7 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 #export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
-export CUDA_VISIBLE_DEVICES=1,0
-python utils2.py test 'Count to 10: 1, 2'
+export CUDA_VISIBLE_DEVICES=4
+python utils2.py test \
+    --model_path WizardLM/WizardMath-13B-V1.0 \
+    'Count to 10: 1, 2'
