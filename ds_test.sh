@@ -20,19 +20,18 @@ deepspeed \
     ds_test.py \
     \
     --model_name_or_path lmsys/vicuna-13b-v1.5 \
-    --adapter_path output/13B-mathy \
-    --specified_tokenizer output/13B-mathy \
+    --specified_tokenizer output/13B-mathy-FFT \
     --ctx_length 2048 \
     --use_flash_att2 True \
     --load_8bit False \
-    --infer_interface flask \
+    --infer_interface gradio \
     --interface_port 8988 \
     \
     --deepspeed $(python ds_config.py \
         --remove_train_args \
-        --fp16 True \
-        --bf16 False \
+        --fp16 False \
+        --bf16 True \
         --en_param_offload False \
         --en_act_ackpt False \
-        --en_sparse_attn True \
+        --en_sparse_attn False \
     )
