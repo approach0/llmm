@@ -169,12 +169,15 @@ def generate(debug=False, **kargs):
     return cur_text
 
 
-def test(prompt, model_path='lmsys/vicuna-7b-v1.3'):
+def test(prompt,
+    model_path='lmsys/vicuna-7b-v1.3',
+    cache_dir='./data'):
     # maximum 2 gpus
     gpus = os.environ["CUDA_VISIBLE_DEVICES"]
     device = 'cuda:' + gpus.split(',')[0]
 
-    tokenizer, model = load_model(model_path, model_path)
+    tokenizer, model = load_model(model_path, model_path,
+        cache_dir=cache_dir)
     generate(tokenizer=tokenizer, model=model, prompt=prompt,
         device=device, debug=True)
 
