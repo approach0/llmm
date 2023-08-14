@@ -51,16 +51,17 @@ def utils_llm_init(*raw_args):
         else:
             args.append(arg)
     mode = args[0]
-    return mode, *utils2.load_model(*args[1:], **kargs)
+    ctx_len = args[1]
+    return mode, ctx_len, *utils2.load_model(*args[2:], **kargs)
 
 
 def utils_llm_gen(prompt, args, **kargs):
     sys.path.insert(0, '.')
     import utils2
-    mode, tokenizer, model = args
+    mode, ctx_len, tokenizer, model = args
     return utils2.generate(mode=mode,
         tokenizer=tokenizer, model=model,
-        prompt=prompt, debug=False)
+        prompt=prompt, debug=False, context_len=ctx_len)
 
 
 def call_sympy(query, args):

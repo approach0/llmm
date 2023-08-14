@@ -118,53 +118,53 @@ case $SETUP in
     33B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
-        --args="['greedy', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/', 'lmsys/vicuna-33b-v1.3', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/']"
+        --args="['greedy', 2048, 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/', 'lmsys/vicuna-33b-v1.3', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/']"
 
     ;;
 
     13B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
-        --args="['greedy', 'output/13B-mathy', 'lmsys/vicuna-13b-v1.5', 'output/13B-mathy']"
+        --args="['greedy', 4096, 'output/13B-mathy', 'lmsys/vicuna-13b-v1.5', 'output/13B-mathy']"
 
     ;;
 
     13B-mathy-fft)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
-        --args="['greedy', 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
+        --args="['greedy', 4096, 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
 
     13B-mathy-fft-goodprompt)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot_mytrain --run_pass=utils --skip_existing True \
-        --args="['greedy', 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
+        --args="['greedy', 4096, 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
 
     13B-mathy-fft-maj5)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot_mytrain --run_pass=utils --skip_existing False \
         --metric maj@5 \
-        --args="['sample', 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
+        --args="['sample', 4096, 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
 
     13B-wizard-math)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
-        --args="['greedy', 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
+        --args="['greedy', 4096, 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
     ;;
 
     13B-wizard-math-goodprompt)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot_wizard --run_pass=utils --skip_existing True \
-        --args="['greedy', 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
+        --args="['greedy', 4096, 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
     ;;
 
     13B-wizard-math-maj5)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot_wizard --run_pass=utils --skip_existing False \
         --metric maj@5 \
-        --args="['sample', 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
+        --args="['sample', 4096, 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
     ;;
 
     batch_mathy_wizard)
