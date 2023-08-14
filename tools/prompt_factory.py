@@ -169,7 +169,7 @@ Let's think step by step, and derive the final answer.
 
 
 def multihop1(Q):
-    # example is extracted from MATH precalculus/1183.json 
+    # example is extracted from MATH precalculus/1183.json
     prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
 Write in the Response section that appropriately completes the request.
 
@@ -183,6 +183,14 @@ SEARCH["apple", "banana"]
 Note that the SEARCH API supports math keywords, but you need to indicate math keywords by wrapping it with dollar signs, for example:
 
 SEARCH["$x^2 = -1$", "imaginary numbers"]
+
+DO NOT mix text and math in one JSON item, i.e. instead of writing:
+
+SEARCH['$what kind of curve is defined by $x^2 - y^2 = 4$']
+
+write keyword by keyword with only one type in each:
+
+SEARCH["curve", "defined by", "$x^2 - y^2 = 4$"]
 
 For the COMPUTE API, it is also followed by its parameters in JSON. The first parameter `mode' is chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
 
@@ -199,7 +207,7 @@ And to solve "$y = 1 - 2 y^2$" for y, you can do:
 COMPUTE["solve y", "$y = 1 - 2 y^2$"]
 
 For the SEARCH API, only consider helpful API results for your goal, ignore irrelevant ones.
-For the COMPUTE API, remember it is limited to simple tasks. It does not support linear algebra, nor matrix manipulations. 
+For the COMPUTE API, remember it is limited to simple tasks. It does not support linear algebra, nor matrix manipulations.
 
 When API returns any error, exam your query and check whether your argument is a valid JSON, if you find an error, call the same API with corrected argument(s) again!
 When results are not helpful, do explore alternative ways. You do not have to rely on the previous result(s)!
