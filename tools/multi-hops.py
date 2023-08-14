@@ -5,7 +5,9 @@ import time
 import torch
 import math
 import numpy as np
+from functools import partial
 from rich import print as rich_print
+from colorama import Fore, Style
 
 from test_chatgpt import OAI_API, agent as chatgpt_agent
 from test_gpt4 import gpt4_complete
@@ -13,28 +15,19 @@ from test_vicuna import api_init as vicuna_api_init, api as vicuna_api
 from test_sympy import compute as sympy_compute
 
 import sys
-sys.path.insert(0, './pya0')
+sys.path.insert(0, '.')
 sys.path.insert(0, '../Progressive-Hint')
 sys.path.insert(0, '../math/modeling')
-
-from pya0.index_manager import from_prebuilt_index
-from pya0.replace_post_tex import replace_dollar_tex, replace_display_tex, replace_inline_tex
-from pya0.transformer_eval import psg_encoder__dpr_default, searcher__docid_vec_flat_faiss
-from pya0.visualize import output_html
 
 from main_clean import extract_math_answer
 from math_equivalence import is_equiv
 from prompt_factory import *
-
-from functools import partial
-import requests
 
 
 dataset_prefix = 'MATH'
 default_tokenizer = 'approach0/dpr-cocomae-220'
 single_vec_model = 'approach0/dpr-cocomae-220'
 prebuilt_index = 'arqmath-task1-dpr-cocomae-220-hnsw'
-sota_searchd_url = 'http://tuna.cs.uwaterloo.ca:8080/search'
 
 
 def reproducible(seed=42):
@@ -47,73 +40,7 @@ def reproducible(seed=42):
     torch.backends.cudnn.deterministic = True
 
 
-def search_init():
-    index_path = from_prebuilt_index(prebuilt_index)
-    encoder, enc_utils = psg_encoder__dpr_default(default_tokenizer, single_vec_model, 0, 0, 'cpu')
-    searcher, _ = searcher__docid_vec_flat_faiss(index_path, None, enc_utils, 'cpu')
-    return encoder, searcher
-
-
-def search(encoder, searcher, query, topk=3):
-    query = replace_dollar_tex(query)
-    query = replace_display_tex(query)
-    query = replace_inline_tex(query)
-    results = searcher(query, encoder, topk=topk, debug=False)
-    imath_results, dollar_results = [], []
-    for i, res in enumerate(results):
-        d = res[2][1]
-        imath_results.append(d)
-        d = d.replace(r'[imath]', '$')
-        d = d.replace(r'[/imath]', '$')
-        dollar_results.append(d)
-    return imath_results, dollar_results
-
-
-def unwrap_dollars_for_text(test_str):
-    import string
-    allowed = set(
-        string.ascii_letters +
-        string.whitespace + '.' + '$')
-    if set(test_str) <= allowed:
-        return test_str.strip().strip('$')
-    else:
-        return test_str
-
-
-def sota_search(question, keywords, full_topk=30, topk=3, gt=None):
-    print('requesting:', sota_searchd_url)
-    json = {
-        'topk': full_topk
-    }
-    if gt is not None and 'manual_query' in gt:
-        question = None # for now...
-        if len(gt['manual_query']) > 0:
-            keywords = gt['manual_query']
-            keywords = list(map(lambda x: f'${x}$', keywords))
-            print('use ground truth.')
-    if question is not None:
-        json['question'] = question
-        print('query question:', question)
-    if keywords is not None:
-        keywords = list(map(unwrap_dollars_for_text, keywords))
-        json['keywords'] = keywords
-        print('query keywords:', keywords)
-
-    res = requests.post(sota_searchd_url, json=json)
-    if res.ok:
-        res = res.json()
-        res = res[:topk]
-        def mapper(item):
-            content, post_id, _ = item
-            url = ('https://math.stackexchange.com/' +
-                f'questions/{post_id}')
-            return f'URL: {url}\n\n' + content
-        return list(map(mapper, res))
-    else:
-        return []
-
-
-def utils_search_init(*raw_args):
+def utils_llm_init(*raw_args):
     sys.path.insert(0, '.')
     import utils2
     args = []
@@ -126,7 +53,7 @@ def utils_search_init(*raw_args):
     return utils2.load_model(*args, **kargs)
 
 
-def utils_search(prompt, args, **kargs):
+def utils_llm_gen(prompt, args, **kargs):
     sys.path.insert(0, '.')
     import utils2
     tokenizer, model = args
@@ -140,6 +67,94 @@ def call_sympy(args):
     if isinstance(args, dict):
         return 'Error: passed in a dictionary. Use array!'
     return sympy_compute(*args)
+
+
+def has_math(s):
+    if '+' in s:
+        return True
+    elif '\\' in s:
+        return True
+    elif '^' in s:
+        return True
+    elif '!' in s:
+        return True
+    elif '*' in s:
+        return True
+    elif '(' in s:
+        return True
+    elif ')' in s:
+        return True
+    elif '[' in s:
+        return True
+    elif ']' in s:
+        return True
+    elif '|' in s:
+        return True
+    elif '<' in s:
+        return True
+    elif '>' in s:
+        return True
+    elif '{' in s:
+        return True
+    elif '}' in s:
+        return True
+    elif '=' in s:
+        return True
+    elif ':' in s:
+        return True
+    else:
+        return False
+
+
+def smart_correct(kw):
+    import string
+    onlytext = set(
+        string.ascii_letters +
+        string.whitespace + '.' + ',' + '$')
+    kw = kw.strip()
+    if set(kw) <= onlytext:
+        return kw.strip().strip('$')
+    else:
+        if not kw.startswith('$') and has_math(kw):
+            kw = '$' + kw
+        if not kw.endswith('$') and has_math(kw):
+            kw = kw + '$'
+        return kw
+
+
+def search_wrapper(tool, question, keywords, gt=None, **kargs):
+    if gt is not None and 'manual_query' in gt:
+        if len(gt['manual_query']) > 0:
+            keywords = gt['manual_query']
+            keywords = list(map(lambda x: f'${x}$', keywords))
+
+    if keywords:
+        keywords = list(map(smart_correct, keywords))
+
+    print(Fore.CYAN)
+    print('requesting:', tool)
+    print('query question:', question)
+    print('query keywords:', keywords)
+    print(Style.RESET_ALL)
+
+    if tool == 'mabowdor':
+        from tools.test_mabowdor import search
+        return search('mabowdor', question, keywords)
+
+    elif tool == 'a0':
+        from tools.test_mabowdor import search
+        return search('mabowdor', None, keywords)
+
+    elif tool == 'MATH':
+        from tools.test_mabowdor import search
+        return search('MATH', question, None)
+
+    elif tool == 'online':
+        from tools.test_a0xyz_search import sleepy_search_api
+        return sleepy_search_api(keywords=keywords)
+
+    else:
+        raise NotImplemented
 
 
 def capture(string, par):
@@ -188,7 +203,7 @@ def has_any_captured(answer, api_map):
     return has_result(answer, api_map) or has_api_call(answer, api_map)
 
 
-def inject_result(answer, api_map):
+def inject_result(query, answer, api_map):
     for api_name in api_map:
         idx = answer.find(api_name)
         if idx == -1: continue
@@ -205,7 +220,7 @@ def inject_result(answer, api_map):
         api_args = answer[begin:end+1]
         try:
             api_args = json.loads(api_args)
-            results = api_map[api_name](api_args)
+            results = api_map[api_name](query, api_args)
             injected += multihop_results1(results)
         except json.decoder.JSONDecodeError:
             injected += multihop_err1('JSON decode error!\n' +
@@ -223,15 +238,17 @@ def map_query_log_path(inpath, run_name):
     return os.path.join('./output', outpath, fname)
 
 
-def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
-    prompt_mode=None, topic=None, fname_filter=None, skip_existing=True,
-    begin=0, end=None, metric='pass@1', ground_truth_dir=None, output_marking=True):
+def main(logname=None, run_pass=None, debug=False, topic=None,
+    search_tool='a0', max_ctx=8000, args=None, prompt_mode=None,
+    fname_filter=None, skip_existing=True, begin=0, end=None,
+    metric='pass@1', ground_truth_dir=None, output_marking=True):
+
+    assert logname is not None
 
     metric_name, k = metric.split('@')
     k = int(k)
-    assert logname is not None
-    assert metric_name in ['pass', 'maj']
     assert k > 0
+    assert metric_name in ['pass', 'maj']
 
     MATH_path = f'../{dataset_prefix}/test/{topic}'
     print('dataset path:', MATH_path)
@@ -273,7 +290,6 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
         llm_args = []
 
     elif run_pass == 'ds':
-        sys.path.insert(0, '.')
         from tools import test_ds_infer
         llm_init = lambda *_: args
         llm_api = test_ds_infer.test
@@ -281,13 +297,19 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
         llm_args = []
 
     elif run_pass == 'utils':
-        llm_init = utils_search_init
-        llm_api = utils_search
+        llm_init = utils_llm_init
+        llm_api = utils_llm_gen
         llm_rst = lambda *_: None
         llm_args = args
 
     else:
         raise NotImplemented
+
+    # setup API map
+    api_map = {
+        'SEARCH': partial(search_wrapper, search_tool),
+        'COMPUTE': call_sympy
+    }
 
     reproducible()
 
@@ -336,12 +358,6 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
         # set up judge buffer
         judge_buffer = []
         k_count = 0
-
-        # setup API map
-        api_map = {
-            'SEARCH': partial(sota_search, query, gt=gt),
-            'COMPUTE': call_sympy
-        }
         llm_api_kargs = {}
 
         prompt = ''
@@ -400,7 +416,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                 prompt = cot_mytrain(query)
 
             elif prompt_mode == 'ia':
-                results = sota_search(query, None, topk=4, gt=gt)
+                results = api_map['SEARCH'](query, None, gt=gt)
                 if len(results) > 0:
                     prompt = ia2(query, *results)
                 else:
@@ -410,15 +426,14 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                 prompt = multihop1(query)
 
             elif prompt_mode == 'manual':
-                use_text = query
                 if manual_query is None:
                     prompt = cot2(query)
                 elif len(manual_query) == 0:
-                    results = sota_search(use_text, None, topk=4)
+                    results = api_map['SEARCH'](query, None)
                     prompt = ia2(query, *results)
                 else:
                     kws = list(map(lambda x: '$' + x + '$', manual_query))
-                    results = sota_search(use_text, kws, topk=4)
+                    results = api_map['SEARCH'](query, kws)
                     prompt = ia2(query, *results)
 
             elif prompt_mode == 'askkey':
@@ -451,7 +466,7 @@ def main(logname=None, run_pass=None, debug=False, max_ctx=8000, args=None,
                     continue
 
                 if prompt_mode == 'mh':
-                    injected = inject_result(answer, api_map)
+                    injected = inject_result(query, answer, api_map)
 
                     if injected is not None:
                         print_title(f'Injected')

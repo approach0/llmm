@@ -21,8 +21,8 @@ def replace_imath(d):
 @timeout(seconds=30)
 def search_api(keywords=['$x+y=xy$', 'why'],
     topk=3, online=True):
-    keywords = list(map(lambda x: 'OR content:' + x, keywords))
 
+    keywords = list(map(lambda x: 'OR content:' + x, keywords))
     response = requests.get('https://approach0.xyz/search-relay/', params={
         'p': 1,
         'q': ','.join(keywords)
@@ -38,13 +38,13 @@ def search_api(keywords=['$x+y=xy$', 'why'],
                 if 'stackexchange' in url:
                     Q, posts = crawl_MSE(url)
                     posts = map(
-                        lambda x: f'### Solution {1+x[0]}\n\n' + x[1],
+                        lambda x: f'Solution {1+x[0]}:\n\n' + x[1],
                         enumerate(posts)
                     )
                     posts = '\n\n'.join(posts)
                     doc = Q + '\n\n' + posts
                 elif 'artofproblemsolving' in url:
-                    doc = crawl_AoPS(url)
+                    doc = crawl_AoPS(url)[:512]
                 else:
                     raise NotImplemented
             else:
@@ -53,7 +53,7 @@ def search_api(keywords=['$x+y=xy$', 'why'],
                 doc = title + '\n\n' + content
 
             result = url + '\n\n' + doc
-            results.append(result)
+            results.append(result.strip())
         return results
     else:
         return f'Error: {data["ret_str"]}'
@@ -219,18 +219,12 @@ def sleepy_search_api(**kargs):
     while True:
         try:
             time.sleep(sleep_time)
-            ret_txt = ''
             results = search_api(**kargs)
-            for i, res in enumerate(results):
-                ret_txt += f'## Search Result {i+1}\n\n'
-                ret_txt += res.strip()
-                if i + 1 < len(results):
-                    ret_txt += '\n\n'
             break
         except Exception as e:
             print(str(e))
             sleep_time *= 2
-    return ret_txt
+    return results
 
 
 if __name__ == '__main__':

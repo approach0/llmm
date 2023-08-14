@@ -27,6 +27,62 @@ detached_experiment() {
 }
 
 case $SETUP in
+    batch)
+    detached_experiment askkey_chatgpt precalculus 0
+    detached_experiment askkey_td003 precalculus 0
+    detached_experiment askkey_chatgpt algebra 0
+    detached_experiment askkey_td003 algebra 0
+    detached_experiment askkey_chatgpt prealgebra 0
+    detached_experiment askkey_td003 prealgebra 0
+    detached_experiment askkey_chatgpt intermediate_algebra 0
+    detached_experiment askkey_td003 intermediate_algebra 0
+    ;;
+
+    batch2)
+    #detached_experiment cot-vicuna-7b-w_groundtruth_query precalculus 7
+    #detached_experiment ia-vicuna-7b-w_groundtruth_query precalculus 7
+
+    #detached_experiment cot-vicuna-13b-w_groundtruth_query precalculus 5
+    #detached_experiment ia-vicuna-13b-w_groundtruth_query precalculus 6
+
+    #detached_experiment cot-vicuna-33b-w_groundtruth_query precalculus 3,4
+    #detached_experiment ia-vicuna-33b-w_groundtruth_query precalculus 5,6
+
+    detached_experiment cot-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
+    detached_experiment ia-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
+    ;;
+
+    batch3)
+    detached_experiment mh_chatgpt_online_pass3 precalculus 0
+    detached_experiment mh_chatgpt_MATH_pass3 precalculus 0
+    detached_experiment mh_chatgpt_a0_pass3 precalculus 0
+    detached_experiment mh_chatgpt_mabowdor_pass3 precalculus 0
+    ;;
+
+    mh_chatgpt_online_pass3)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --metric pass@3 --search_tool=online
+    ;;
+
+    mh_chatgpt_MATH_pass3)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --metric pass@3 --search_tool=MATH
+    ;;
+
+    mh_chatgpt_a0_pass3)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --metric pass@3 --search_tool=a0
+    ;;
+
+    mh_chatgpt_mabowdor_pass3)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --metric pass@3 --search_tool=mabowdor
+    ;;
+
     askkey_chatgpt)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=askkey --run_pass=chatgpt --args="[]" --skip_existing False \
@@ -102,31 +158,6 @@ case $SETUP in
     batch_mathy_wizard)
     detached_experiment 13B-wizard-math-maj10 precalculus 6
     detached_experiment 13B-mathy-fft-maj10 precalculus 7
-    ;;
-
-    batch)
-    detached_experiment askkey_chatgpt precalculus 0
-    detached_experiment askkey_td003 precalculus 0
-    detached_experiment askkey_chatgpt algebra 0
-    detached_experiment askkey_td003 algebra 0
-    detached_experiment askkey_chatgpt prealgebra 0
-    detached_experiment askkey_td003 prealgebra 0
-    detached_experiment askkey_chatgpt intermediate_algebra 0
-    detached_experiment askkey_td003 intermediate_algebra 0
-    ;;
-
-    batch2)
-    #detached_experiment cot-vicuna-7b-w_groundtruth_query precalculus 7
-    #detached_experiment ia-vicuna-7b-w_groundtruth_query precalculus 7
-
-    #detached_experiment cot-vicuna-13b-w_groundtruth_query precalculus 5
-    #detached_experiment ia-vicuna-13b-w_groundtruth_query precalculus 6
-
-    #detached_experiment cot-vicuna-33b-w_groundtruth_query precalculus 3,4
-    #detached_experiment ia-vicuna-33b-w_groundtruth_query precalculus 5,6
-
-    detached_experiment cot-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
-    detached_experiment ia-chatgpt-2023-03-15-w_groundtruth_query precalculus 0
     ;;
 
     direct-vicuna-7b)
