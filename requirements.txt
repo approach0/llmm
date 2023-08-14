@@ -13,3 +13,4 @@ python-dotenv
 beautifulsoup4
 slimit @ git+https://github.com/rspivak/slimit.git@3533eba9ad5b39f3a015ae6269670022ab310847
 colorama
+antlr4-python3-runtime==4.10

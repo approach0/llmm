@@ -37,8 +37,8 @@ def compute(mode, latex_expr, *args):
 
 
 if __name__ == '__main__':
-    #res = compute('solve x', r'\sin x = 1/2')
-    #print(res)
+    res = compute('solve x', r'\sin x = 1/2')
+    print(res)
     #res = compute('simplify', r'x + y - 3 + 2 + x')
     #print(res)
     #res = compute('calculate', r'\pi + \sin(\pi / 2)')
@@ -54,4 +54,4 @@ if __name__ == '__main__':
     #res = compute('simplify', r'$\begin{pmatrix} x \\ y \end{pmatrix} = \begin{pmatrix} 8 \\ -1 \end{pmatrix} + t \begin{pmatrix} 2 \\ 3 \end{pmatrix}$')
     #print(res)
 
-    print(compute('solve y', '$y^9+4y^6-4y^3-8$', 'foo'))
+    #print(compute('solve y', '$y^9+4y^6-4y^3-8$', 'foo'))
