@@ -37,6 +37,8 @@ def search_api(keywords=['$x+y=xy$', 'why'],
             if online:
                 if 'stackexchange' in url:
                     Q, posts = crawl_MSE(url)
+                    if Q is None:
+                        continue
                     posts = map(
                         lambda x: f'Solution {1+x[0]}:\n\n' + x[1],
                         enumerate(posts)
@@ -88,6 +90,8 @@ def crawl_MSE(url):
     s = BeautifulSoup(post_page, "html.parser")
     # get title
     question_header = s.find(id="question-header")
+    if question_header is None: # page not found anymore
+        return None, None
     question_txt = str(question_header.h1.string)
 
     # get question
@@ -229,6 +233,7 @@ def sleepy_search_api(**kargs):
 
 if __name__ == '__main__':
     keywords = [r'$(\sin x)^7 = a \sin 7x + b \sin 5x + c \sin 3x + d \sin x$']
+    keywords = ['dilation, centered at the origin, with scale factor -3, takes 4 - 5i to which complex number?']
     print(sleepy_search_api(keywords=keywords))
     #print(crawl_MSE('https://math.stackexchange.com/questions/1134379/find-sin-x7-reduced-in-specific-terms?noredirect=1'))
     #print(crawl_AoPS('https://artofproblemsolving.com/community/c164h1987630p13841342'))

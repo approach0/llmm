@@ -61,7 +61,7 @@ case $SETUP in
 
     mh_chatgpt_online_pass3)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
         --metric pass@3 --search_tool=online
     ;;
 
