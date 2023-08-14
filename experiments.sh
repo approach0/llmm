@@ -60,6 +60,7 @@ case $SETUP in
     ;;
 
     batch4)
+    #detached_experiment 33B-mathy-lora precalculus 0
     detached_experiment 13B-mathy-fft-maj5 precalculus 6
     detached_experiment 13B-wizard-math-maj5 precalculus 7
     ;;
@@ -114,6 +115,12 @@ case $SETUP in
         --prompt_mode=manual --run_pass=chatgpt --args="[]" --skip_existing True
     ;;
 
+    33B-mathy-lora)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['greedy', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/', 'lmsys/vicuna-13b-v1.5', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/']"
+
+    ;;
 
     13B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
