@@ -106,9 +106,11 @@ def generate(engine, prompt, stop=None, logprobs=None):
         )
 
 
-def streamout(response, verbose, **kargs)
+def streamout(response, verbose, **kargs):
     res_txt = ''
     res_logp = []
+    logprobs = kargs.get('logprobs', None)
+    api_map = kargs.get('api_map', {})
     for chunk in response:
         choices = chunk['choices']
         if len(choices) > 0:
@@ -146,10 +148,10 @@ class ChatGPT_Agent():
         #openai.api_version = "2023-07-01-preview"
         openai.api_version = "2023-03-15-preview"
         openai.api_base = 'https://corby.openai.azure.com'
-        api_map = kargs['api_map'] if 'api_map' in kargs else {}
-        stop = kargs['stop'] if 'stop' in kargs else None
-        logprobs = kargs['logprobs'] if 'logprobs' in kargs else None
+        api_map = kargs.get('api_map', {})
+        stop = kargs.get('stop', None)
         engine = kargs['engine']
+        logprobs = kargs.get('logprobs', None)
         assert engine in ['text-davinci-003', 'gpt-35-turbo']
 
         self.messages.append({
@@ -162,7 +164,8 @@ class ChatGPT_Agent():
             try:
                 response = generate(engine, prompt,
                     stop=stop, logprobs=logprobs)
-                res_txt, res_logp = streamout(response, verbose, kargs)
+                res_txt, res_logp = streamout(response, verbose,
+                    **kargs)
                 break
             except Exception as e:
                 print(str(e), f'sleep {sleep_time} secs.')
