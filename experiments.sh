@@ -59,6 +59,11 @@ case $SETUP in
     detached_experiment mh_chatgpt_mabowdor_pass3 precalculus 0
     ;;
 
+    batch4)
+    detached_experiment 13B-mathy-fft-maj5 precalculus 0
+    detached_experiment 13B-wizard-math-maj5 precalculus 0
+    ;;
+
     mh_chatgpt_online_pass3)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
@@ -129,10 +134,10 @@ case $SETUP in
         --args="['approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
 
-    13B-mathy-fft-maj10)
+    13B-mathy-fft-maj5)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot_mytrain --run_pass=utils --skip_existing False \
-        --metric maj@10 \
+        --metric maj@5 \
         --args="['approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data', 'mode': 'sample'}]"
     ;;
 
@@ -148,10 +153,10 @@ case $SETUP in
         --args="['WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
     ;;
 
-    13B-wizard-math-maj10)
+    13B-wizard-math-maj5)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot_wizard --run_pass=utils --skip_existing False \
-        --metric maj@10 \
+        --metric maj@5 \
         --args="['WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data', 'mode': 'sample'}]"
     ;;
 
