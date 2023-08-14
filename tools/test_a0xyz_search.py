@@ -1,5 +1,7 @@
 import re
 import sys
+import time
+from timeout import timeout
 import requests
 from requests.utils import requote_uri
 from bs4 import BeautifulSoup
@@ -16,6 +18,7 @@ def replace_imath(d):
     return d
 
 
+@timeout(seconds=30)
 def search_api(keywords=['$x+y=xy$', 'why'],
     topk=3, online=True):
     keywords = list(map(lambda x: 'OR content:' + x, keywords))
@@ -35,7 +38,7 @@ def search_api(keywords=['$x+y=xy$', 'why'],
                 if 'stackexchange' in url:
                     Q, posts = crawl_MSE(url)
                     posts = map(
-                        lambda x: f'### Post {1+x[0]}\n\n'+x[1],
+                        lambda x: f'### Solution {1+x[0]}\n\n' + x[1],
                         enumerate(posts)
                     )
                     posts = '\n\n'.join(posts)
@@ -211,12 +214,27 @@ def crawl_AoPS(url):
     return topic_txt
 
 
+def sleepy_search_api(**kargs):
+    sleep_time = 1
+    while True:
+        try:
+            time.sleep(sleep_time)
+            ret_txt = ''
+            results = search_api(**kargs)
+            for i, res in enumerate(results):
+                ret_txt += f'## Search Result {i+1}\n\n'
+                ret_txt += res.strip()
+                if i + 1 < len(results):
+                    ret_txt += '\n\n'
+            break
+        except Exception as e:
+            print(str(e))
+            sleep_time *= 2
+    return ret_txt
+
+
 if __name__ == '__main__':
     keywords = [r'$(\sin x)^7 = a \sin 7x + b \sin 5x + c \sin 3x + d \sin x$']
-    results = search_api(keywords, topk=10)
-    for i, res in enumerate(results):
-        print(f'## Search Result {i+1}\n')
-        print(res)
-
+    print(sleepy_search_api(keywords=keywords))
     #print(crawl_MSE('https://math.stackexchange.com/questions/1134379/find-sin-x7-reduced-in-specific-terms?noredirect=1'))
     #print(crawl_AoPS('https://artofproblemsolving.com/community/c164h1987630p13841342'))
