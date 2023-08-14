@@ -67,7 +67,7 @@ case $SETUP in
 
     mh_chatgpt_online_pass3)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True \
         --metric pass@3 --search_tool=online
     ;;
 
@@ -104,7 +104,7 @@ case $SETUP in
     ds_infer)
     python tools/multi-hops.py --logname mathy --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=ds --args='http://127.0.0.1:8988/generate' \
-	--skip_existing False
+	--skip_existing True
     ;;
 
     manual)
@@ -143,7 +143,7 @@ case $SETUP in
 
     13B-mathy-fft-maj5)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot_mytrain --run_pass=utils --skip_existing False \
+        --prompt_mode=cot_mytrain --run_pass=utils --skip_existing True \
         --metric maj@5 \
         --args="['sample', 4096, 'approach0/mathy-vicuna-13B-FFT', 'approach0/mathy-vicuna-13B-FFT', {'cache_dir': './data'}]"
     ;;
@@ -162,7 +162,7 @@ case $SETUP in
 
     13B-wizard-math-maj5)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot_wizard --run_pass=utils --skip_existing False \
+        --prompt_mode=cot_wizard --run_pass=utils --skip_existing True \
         --metric maj@5 \
         --args="['sample', 4096, 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
     ;;
