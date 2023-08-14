@@ -66,6 +66,8 @@ def call_sympy(args):
     print('computing:', args)
     if isinstance(args, dict):
         return 'Error: passed in a dictionary. Use array!'
+    elif len(args) < 2:
+        return 'Error: at least two arguments needed!'
     return sympy_compute(*args)
 
 
