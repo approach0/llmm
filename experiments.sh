@@ -118,7 +118,7 @@ case $SETUP in
     33B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
-        --args="['greedy', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/', 'lmsys/vicuna-13b-v1.5', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/']"
+        --args="['greedy', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/', 'lmsys/vicuna-33b-v1.3', 'output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt/']"
 
     ;;
 
