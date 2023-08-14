@@ -16,7 +16,8 @@ def replace_imath(d):
     return d
 
 
-def search_api(keywords=['$x+y=xy$', 'why'], topk=3):
+def search_api(keywords=['$x+y=xy$', 'why'],
+    topk=3, online=True):
     keywords = list(map(lambda x: 'OR content:' + x, keywords))
 
     response = requests.get('https://approach0.xyz/search-relay/', params={
@@ -30,9 +31,25 @@ def search_api(keywords=['$x+y=xy$', 'why'], topk=3):
         results = []
         for hit in hits:
             url = hit['field_url']
-            title = replace_imath(hit['field_title'])
-            content = replace_imath(hit['field_content'])
-            result = url + '\n\n' + title + '\n\n' + content
+            if online:
+                if 'stackexchange' in url:
+                    Q, posts = crawl_MSE(url)
+                    posts = map(
+                        lambda x: f'### Post {1+x[0]}\n\n'+x[1],
+                        enumerate(posts)
+                    )
+                    posts = '\n\n'.join(posts)
+                    doc = Q + '\n\n' + posts
+                elif 'artofproblemsolving' in url:
+                    doc = crawl_AoPS(url)
+                else:
+                    raise NotImplemented
+            else:
+                title = replace_imath(hit['field_title'])
+                content = replace_imath(hit['field_content'])
+                doc = title + '\n\n' + content
+
+            result = url + '\n\n' + doc
             results.append(result)
         return results
     else:
@@ -195,11 +212,11 @@ def crawl_AoPS(url):
 
 
 if __name__ == '__main__':
-    #keywords = [r'$(\sin x)^7 = a \sin 7x + b \sin 5x + c \sin 3x + d \sin x$']
-    #results = search_api(keywords, topk=4)
-    #for res in results:
-    #    print(res)
-    #    print('\n\n')
+    keywords = [r'$(\sin x)^7 = a \sin 7x + b \sin 5x + c \sin 3x + d \sin x$']
+    results = search_api(keywords, topk=10)
+    for i, res in enumerate(results):
+        print(f'## Search Result {i+1}\n')
+        print(res)
 
     #print(crawl_MSE('https://math.stackexchange.com/questions/1134379/find-sin-x7-reduced-in-specific-terms?noredirect=1'))
-    print(crawl_AoPS('https://artofproblemsolving.com/community/c164h1987630p13841342'))
+    #print(crawl_AoPS('https://artofproblemsolving.com/community/c164h1987630p13841342'))
