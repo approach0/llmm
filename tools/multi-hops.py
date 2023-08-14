@@ -50,14 +50,18 @@ def utils_llm_init(*raw_args):
             kargs.update(arg)
         else:
             args.append(arg)
-    return utils2.load_model(*args, **kargs)
+    if 'mode' in kargs:
+        mode = kargs['mode']
+        del kargs['mode']
+    else:
+        mode = kargs['mode']
+    return mode, utils2.load_model(*args, **kargs)
 
 
 def utils_llm_gen(prompt, args, **kargs):
     sys.path.insert(0, '.')
     import utils2
-    tokenizer, model = args
-    mode = kargs.get('mode', 'sample')
+    mode, tokenizer, model = args
     return utils2.generate(mode=mode,
         tokenizer=tokenizer, model=model,
         prompt=prompt, debug=False)
