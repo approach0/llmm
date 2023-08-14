@@ -10,9 +10,11 @@ from timeout import timeout
 
 @timeout(seconds=20)
 def compute(mode, latex_expr, *args):
-    latex_expr = latex_expr.strip().strip('$')
+    if not isinstance(latex_expr, str):
+        return 'Error: Wrong format, formula should be a string!'
     def wrap_math(r):
         return '$' + str(r) + '$'
+    latex_expr = latex_expr.strip().strip('$')
     try:
         if mode == 'calculate':
             res = parse_latex(latex_expr).evalf(3, subs={
