@@ -42,15 +42,13 @@ def quantize(tokenizer_path, model_path, quantized_model_path):
 
 
 @torch.inference_mode()
-def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=2048,
-    max_new_tokens=512, stream_interval=2, mode='greedy', stop_token_ids=[]):
-    len_prompt = len(prompt)
+def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=4096,
+    stream_interval=2, mode='greedy', stop_token_ids=[]):
     stop_token_ids.append(tokenizer.eos_token_id)
     input_ids = tokenizer(prompt).input_ids
-    max_src_len = context_len - max_new_tokens - 1
-    input_ids = input_ids[-max_src_len:]
     output_ids = list(input_ids)
-    input_echo_len = len(input_ids)
+    prompt_len = len(input_ids)
+    max_new_tokens = context_len - prompt_len - 1
     past_key_values = out = None
     sent_interrupt = False
     for i in range(max_new_tokens):
@@ -91,7 +89,7 @@ def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=2048,
 
         # Yield the output tokens
         if i % stream_interval == 0 or i == max_new_tokens - 1 or stopped:
-            tmp_output_ids = output_ids[input_echo_len:]
+            tmp_output_ids = output_ids[prompt_len:]
             rfind_start = 0
 
             output = tokenizer.decode(
@@ -104,9 +102,9 @@ def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=2048,
             yield {
                 "text": output,
                 "usage": {
-                    "prompt_tokens": input_echo_len,
+                    "prompt_tokens": prompt_len,
                     "completion_tokens": i,
-                    "total_tokens": input_echo_len + i,
+                    "total_tokens": prompt_len + i,
                 },
                 "finish_reason": None,
             }
@@ -125,9 +123,9 @@ def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=2048,
     yield {
         "text": output,
         "usage": {
-            "prompt_tokens": input_echo_len,
+            "prompt_tokens": prompt_len,
             "completion_tokens": i,
-            "total_tokens": input_echo_len + i,
+            "total_tokens": prompt_len + i,
         },
         "finish_reason": finish_reason,
     }

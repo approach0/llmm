@@ -60,8 +60,8 @@ case $SETUP in
     ;;
 
     batch4)
-    detached_experiment 13B-mathy-fft-maj5 precalculus 0
-    detached_experiment 13B-wizard-math-maj5 precalculus 0
+    detached_experiment 13B-mathy-fft-maj5 precalculus 6
+    detached_experiment 13B-wizard-math-maj5 precalculus 7
     ;;
 
     mh_chatgpt_online_pass3)
