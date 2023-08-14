@@ -176,7 +176,7 @@ Write in the Response section that appropriately completes the request.
 ### Instruction:
 Answer a math question in the input. You can invoke a math-aware search engine API (SEARCH) or a computation API (COMPUTE) as you like, and I will insert the returned API results for you right after SEARCH or COMPUTE calls.
 
-The SEARCH API is followed by its parameters which are a list of keywords in JSON format, for example:
+The SEARCH API is followed by its parameters which are a list of keywords in JSON format (DO NOT use "and" to separate keywords, use comma!), for example:
 
 SEARCH["apple", "banana"]
 
