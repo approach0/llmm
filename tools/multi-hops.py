@@ -62,10 +62,10 @@ def utils_llm_gen(prompt, args, **kargs):
         prompt=prompt, debug=False)
 
 
-def call_sympy(args):
+def call_sympy(query, args):
     print('computing:', args)
-    if isinstance(args, dict):
-        return 'Error: passed in a dictionary. Use array!'
+    if not isinstance(args, list):
+        return 'Passed argument format error. Use array!'
     elif len(args) < 2:
         return 'Error: at least two arguments needed!'
     return sympy_compute(*args)
