@@ -50,12 +50,8 @@ def utils_llm_init(*raw_args):
             kargs.update(arg)
         else:
             args.append(arg)
-    if 'mode' in kargs:
-        mode = kargs['mode']
-        del kargs['mode']
-    else:
-        mode = kargs['mode']
-    return mode, utils2.load_model(*args, **kargs)
+    mode = args[0]
+    return mode, *utils2.load_model(*args[1:], **kargs)
 
 
 def utils_llm_gen(prompt, args, **kargs):
