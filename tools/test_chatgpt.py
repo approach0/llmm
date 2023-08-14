@@ -106,6 +106,33 @@ def generate(engine, prompt, stop=None, logprobs=None):
         )
 
 
+def streamout(response, verbose, **kargs)
+    res_txt = ''
+    res_logp = []
+    for chunk in response:
+        choices = chunk['choices']
+        if len(choices) > 0:
+            choice = choices[0]
+            if 'text' in choice:
+                delta = choice['text']
+                if len(delta) == 0:
+                    continue
+                if verbose: print(delta, end="")
+
+                res_txt += delta
+                if logprobs is not None:
+                    logprobs = choice['logprobs']
+                    top_logprobs = logprobs['top_logprobs'][0].items()
+                    res_logp.append(
+                        (logprobs['tokens'][0], list(top_logprobs))
+                    )
+
+                abort = kargs.get('abort_criteria', None)
+                if abort and abort(res_txt, api_map):
+                    break
+    return res_txt, res_logp
+
+
 class ChatGPT_Agent():
     def __init__(self):
         self.messages = []
@@ -135,6 +162,7 @@ class ChatGPT_Agent():
             try:
                 response = generate(engine, prompt,
                     stop=stop, logprobs=logprobs)
+                res_txt, res_logp = streamout(response, verbose, kargs)
                 break
             except Exception as e:
                 print(str(e), f'sleep {sleep_time} secs.')
@@ -142,40 +170,17 @@ class ChatGPT_Agent():
                 sleep_time *= 2
                 continue
 
-        response_text = ''
-        res_logprobs = []
-        for chunk in response:
-            choices = chunk['choices']
-            if len(choices) > 0:
-                choice = choices[0]
-                if 'text' in choice:
-                    delta = choice['text']
-                    if len(delta) == 0:
-                        continue
-                    if verbose: print(delta, end="")
-
-                    response_text += delta
-                    if logprobs is not None:
-                        logprobs = choice['logprobs']
-                        top_logprobs = logprobs['top_logprobs'][0].items()
-                        res_logprobs.append(
-                            (logprobs['tokens'][0], list(top_logprobs))
-                        )
-
-                    abort = kargs.get('abort_criteria', None)
-                    if abort and abort(response_text, api_map):
-                        break
         if verbose: print()
 
         self.messages.append({
             'role': 'assistant',
-            'content': response_text
+            'content': res_txt
         })
 
         if logprobs is not None:
-            return res_logprobs
+            return res_logp
         else:
-            return response_text
+            return res_txt
 
 
 agent = ChatGPT_Agent()
