@@ -21,7 +21,12 @@ def get_stats_v2(j, detail, logpath, metric):
     judge_buffer = j['judge_buffer']
     ground_truth = j['ground_truth']
 
-    gt = 1 if ("manual_query" in j and len(j["manual_query"]) > 0) else 0
+    if ('manual_query' in j and
+        isinstance(j['manual_query'], list) and
+        len(j["manual_query"]) > 0):
+        gt = 1
+    else:
+        gt = 0
 
     vote_dict = defaultdict(int)
     for judge in judge_buffer:

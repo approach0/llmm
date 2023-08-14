@@ -57,7 +57,8 @@ def utils_llm_gen(prompt, args, **kargs):
     sys.path.insert(0, '.')
     import utils2
     tokenizer, model = args
-    return utils2.generate(
+    mode = kargs.get('mode', 'sample')
+    return utils2.generate(mode=mode,
         tokenizer=tokenizer, model=model,
         prompt=prompt, debug=False)
 
