@@ -47,6 +47,8 @@ def search_api(keywords=['$x+y=xy$', 'why'],
                     doc = Q + '\n\n' + posts
                 elif 'artofproblemsolving' in url:
                     doc = crawl_AoPS(url)[:512]
+                    if doc is None:
+                        continue
                 else:
                     raise NotImplemented
             else:
@@ -193,7 +195,10 @@ def crawl_AoPS(url):
         raise
 
     parsed = get_aops_data(topic_page)
-    topic_data = parsed["AoPS.bootstrap_data"]["preload_cmty_data"]["topic_data"]
+    data = parsed["AoPS.bootstrap_data"]["preload_cmty_data"]
+    if 'topic_data' not in data: # post deleted
+        return None
+    topic_data = ["topic_data"]
     session_data = parsed["AoPS.session"]
 
     # get title
@@ -233,7 +238,7 @@ def sleepy_search_api(**kargs):
 
 if __name__ == '__main__':
     keywords = [r'$(\sin x)^7 = a \sin 7x + b \sin 5x + c \sin 3x + d \sin x$']
-    keywords = ['dilation, centered at the origin, with scale factor -3, takes 4 - 5i to which complex number?']
+    keywords = ['$\\psi(1) = \\sqrt{2 + \\sqrt{2 + \\sqrt{2}}}$']
     print(sleepy_search_api(keywords=keywords))
     #print(crawl_MSE('https://math.stackexchange.com/questions/1134379/find-sin-x7-reduced-in-specific-terms?noredirect=1'))
-    #print(crawl_AoPS('https://artofproblemsolving.com/community/c164h1987630p13841342'))
+    #print(crawl_AoPS('https://artofproblemsolving.com/community/c3h1295904p6875852'))
