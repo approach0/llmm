@@ -89,6 +89,34 @@ def get_topic_stats(logdir, detail=0, metric='pass'):
     return correct_cnt, total_cnt
 
 
+def compare_differences(logdir1, logdir2, metric='pass'):
+    win1, win2 = 0, 0
+    for fname in os.listdir(logdir1):
+        logpath1 = os.path.join(logdir1, fname)
+        logpath2 = os.path.join(logdir2, fname)
+        if not os.path.exists(logpath1) or logpath1.split('.')[-1] != 'log':
+            continue
+        if not os.path.exists(logpath2) or logpath2.split('.')[-1] != 'log':
+            continue
+        with open(logpath1, 'r') as fh:
+            j1 = json.load(fh)
+            assert not 'agent_answer' in j1
+        with open(logpath2, 'r') as fh:
+            j2 = json.load(fh)
+            assert not 'agent_answer' in j2
+        good1, _ = get_stats_v2(j1, 0, None, metric)
+        good2, _ = get_stats_v2(j2, 0, None, metric)
+        if good1 != good2:
+            if good1:
+                win1 += 1
+            else:
+                win2 += 1
+            print(fname, good1, good2)
+    def name(path):
+        return os.path.basename(os.path.normpath(path))
+    return name(logdir1), win1, name(logdir2), win2
+
+
 def textify_v1(items):
     return [f'<b>{key}</b>: {val}' for key, val in j.items()]
 
@@ -228,6 +256,7 @@ if __name__ == '__main__':
     os.environ["PAGER"] = 'cat'
     fire.Fire({
         'get_stats': get_topic_stats,
+        'diff': compare_differences,
         'output_html': _output_html,
         'output_htmls': output_html,
         'get_class_hist': get_class_hist,
