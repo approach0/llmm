@@ -35,6 +35,10 @@ def get_stats_v2(j, detail, logpath, metric):
     votes = vote_dict.items()
     okays = [is_equiv(j['boxed_answer'], ground_truth) for j in judge_buffer]
 
+    if '@' in metric:
+        metric, k = metric.split('@')
+        okays = okays[:int(k)]
+
     if metric == 'pass':
         good = any(okays)
     elif metric == 'all':
