@@ -1,14 +1,84 @@
+import os
+import configparser
+
 import torch
 import transformers
-from transformers import LlamaTokenizer
-from transformers import LlamaForCausalLM
-import bitsandbytes as bnb
 
-from trl import PPOConfig, PPOTrainer, AutoModelForCausalLMWithValueHead
-from trl import create_reference_model
-from trl.core import respond_to_batch
 
-from rerope_patch import replace_llama_attn_with_rerope
+ADAPT_CFG = "adapter_config.json"
+
+
+class State():
+    def __init__(self, prompt):
+        self.prompt = prompt
+        self.children = []
+
+    def branch(self, child_state):
+        self.children.append(child_state)
+
+
+def get_cfg_json(config, name, default):
+    import json
+    value = config.get(name, default)
+    if value:
+        try:
+            return json.loads(value)
+        except Exception as e:
+            print(value, '\n', e)
+            quit(1)
+    else:
+        return value
+
+
+def config_rerope(config):
+    from rerope_patch import restore_llama_attn
+    from rerope_patch import replace_llama_attn_with_rerope
+    restore_llama_attn()
+    if rerope := get_cfg_json(config, 'rerope', False):
+        replace_llama_attn_with_rerope(**rerope)
+
+
+def get_model(tokenizer_path, model_path,
+    peft_attach_new=False,
+    peft_lora_rank=16,
+    peft_lora_dropout=0.05,
+    peft_lora_alpha=32):
+
+    from transformers import LlamaTokenizer
+    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
+
+    if peft_attach_new:
+        adapter_config = {
+            'task_type': "CAUSAL_LM",
+            'r': peft_lora_rank,
+            'lora_dropout': peft_lora_dropout,
+            'lora_alpha': peft_lora_alpha,
+            'bias': 'none',
+            'target_modules': [
+                "q_proj",
+                "v_proj",
+            ]
+        }
+
+        from peft import LoraConfig
+        lora_config = LoraConfig(**adapter_config)
+    else:
+        lora_config = None
+    
+    from trl import AutoModelForCausalLMWithValueHead as M
+    model = M.from_pretrained(
+        model_path, device_map="auto",
+        peft_config=lora_config
+    )
+
+    is_peft_model = getattr(model, "is_peft_model", False)
+    if is_peft_model:
+        model.pretrained_model.print_trainable_parameters()
+        ref_model = None
+    else:
+        ref_model = create_reference_model(model)
+
+    return tokenizer, model, ref_model
 
 
 def get_rl_trainer(model):
@@ -17,6 +87,7 @@ def get_rl_trainer(model):
         optimize_cuda_cache=True
     )
 
+    import bitsandbytes as bnb
     optimizer = bnb.optim.Adam8bit(model.parameters(), lr=3e-5)
     ppo_trainer = PPOTrainer(
         config,
@@ -29,50 +100,57 @@ def get_rl_trainer(model):
     return ppo_trainer
 
 
+def do_experiment(config):
+    config_rerope(config)
+
+    kwargs = get_cfg_json(config, 'peft', {})
+    tokenizer, model, ref_model = get_model(
+        config.get('tokenizer'),
+        config.get('model'),
+        **kwargs
+    )
+
+
+def main(*experiments, config_file='rl.ini'):
+    cfg = configparser.ConfigParser()
+    cfg.read(config_file)
+
+    for ex in experiments:
+        assert ex in cfg.sections()
+
+    for ex in experiments:
+        do_experiment(cfg[ex])
+
+
 if __name__ == '__main__':
-    attn = transformers.models.llama.modeling_llama.LlamaAttention
-    replace_llama_attn_with_rerope(attn)
+    import fire
+    os.environ["PAGER"] = 'cat'
+    fire.Fire(main)
+    #model_path = 'lmsys/vicuna-7b-v1.5'
 
-    model_path = 'lmsys/vicuna-7b-v1.5'
-    tokenizer = LlamaTokenizer.from_pretrained(model_path)
+    #tokens = tokenizer(
+    #    'I need ',
+    #    return_tensors="pt",
+    #    padding="longest",
+    #    max_length=12,
+    #    truncation=True,
+    #)
 
-    from peft import LoraConfig, get_peft_model
-    TARGET_MODULES = [
-        "q_proj",
-        "v_proj",
-    ]
-    lora_config = LoraConfig(
-        task_type="CAUSAL_LM",
-        r=16, lora_dropout=0.05,
-        lora_alpha=32, bias='none',
-        target_modules=TARGET_MODULES
-    )
+    #device = model.pretrained_model.device
+    #prompt_ids = tokens['input_ids'].to(device) # bs, L
+    #response = respond_to_batch(model, prompt_ids) # bs, L
+    #print(tokenizer.decode(response[0]))
 
-    model = AutoModelForCausalLMWithValueHead.from_pretrained(
-        model_path, device_map="auto",
-        peft_config=lora_config
-    )
-
-    is_peft_model = getattr(model, "is_peft_model", False)
-
-    if is_peft_model:
-        model.pretrained_model.print_trainable_parameters()
-
-    tokens = tokenizer(
-        'I need ',
-        return_tensors="pt",
-        padding="longest",
-        max_length=12,
-        truncation=True,
-    )
-
-    device = model.pretrained_model.device
-    question_tensors = tokens['input_ids'].to(device)
-    response_tensors = respond_to_batch(model, question_tensors)
-    print(tokenizer.decode(response_tensors[0]))
-
-    rl_trainer = get_rl_trainer(model)
-
-    rewards = [torch.tensor(1.0)]
-    stats = rl_trainer.step([question_tensors[0]], [response_tensors[0]], rewards)
-    #print(stats)
+    #rl_trainer = get_rl_trainer(model)
+    #rewards = [torch.tensor(1.0)]
+    #stats = rl_trainer.step(
+    #    [prompt_ids[0]],
+    #    [response[0]],
+    #    rewards
+    #)
+#
+#from trl import PPOConfig, PPOTrainer, 
+#from trl import create_reference_model
+#from trl.core import respond_to_batch
+#
+#from rerope_patch import replace_llama_attn_with_rerope
