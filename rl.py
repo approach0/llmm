@@ -4,6 +4,7 @@ import configparser
 
 import sys
 sys.path.insert(0, './trl')
+from trl.core import respond_to_batch
 
 
 ADAPT_CFG = "adapter_config.json"
@@ -77,23 +78,23 @@ def get_model(tokenizer_path, model_path,
         model.pretrained_model.print_trainable_parameters()
         ref_model = None
     else:
+        from trl import create_reference_model
         ref_model = create_reference_model(model)
 
     return tokenizer, model, ref_model
 
 
-def get_rl_trainer(model):
-    config = PPOConfig(
-        batch_size=1,
-        optimize_cuda_cache=True
-    )
-
+def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     import bitsandbytes as bnb
-    optimizer = bnb.optim.Adam8bit(model.parameters(), lr=3e-5)
+    lr = ppo_kwargs.pop('lr')
+    optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
+
+    from trl import PPOConfig, PPOTrainer
+    config = PPOConfig(**ppo_kwargs)
     ppo_trainer = PPOTrainer(
         config,
         model,
-        ref_model=None,
+        ref_model=ref_model,
         tokenizer=tokenizer,
         optimizer=optimizer
     )
@@ -101,15 +102,47 @@ def get_rl_trainer(model):
     return ppo_trainer
 
 
+def simple_test(config, tokenizer, model):
+    inputs = tokenizer(
+        config.get('test_prompt'),
+        return_tensors="pt",
+        padding="longest",
+        max_length=config.getint("context_length"),
+        truncation=True,
+    )
+
+    device = model.pretrained_model.device
+
+    input_ids = inputs['input_ids'].to(device) # bs, L
+    print(tokenizer.decode(input_ids[0]))
+
+    response = respond_to_batch(model, input_ids) # bs, L
+    print(tokenizer.decode(response[0]))
+
+    rewards = [torch.tensor(1.0)]
+    stats = rl_trainer.step(
+        [input_ids[0]], [response[0]], rewards
+    )
+    print(stats)
+
+
 def do_experiment(config):
     config_rerope(config)
 
-    kwargs = get_cfg_json(config, 'peft', {})
-    tokenizer, model, ref_model = get_model(
+    peft_kwargs = get_cfg_json(config, 'peft', {})
+    models = get_model(
         config.get('tokenizer'),
         config.get('model'),
-        **kwargs
+        **peft_kwargs
     )
+    tokenizer, model, ref_model = models
+
+    ppo_kwargs = get_cfg_json(config, 'ppo', {})
+    trainer = get_rl_trainer(*models, **ppo_kwargs)
+
+    if config.get('test_prompt', False):
+        simple_test(config, tokenizer, model)
+        quit(0)
 
 
 def main(*experiments, config_file='rl.ini'):
@@ -127,31 +160,3 @@ if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
     fire.Fire(main)
-    #model_path = 'lmsys/vicuna-7b-v1.5'
-
-    #tokens = tokenizer(
-    #    'I need ',
-    #    return_tensors="pt",
-    #    padding="longest",
-    #    max_length=12,
-    #    truncation=True,
-    #)
-
-    #device = model.pretrained_model.device
-    #prompt_ids = tokens['input_ids'].to(device) # bs, L
-    #response = respond_to_batch(model, prompt_ids) # bs, L
-    #print(tokenizer.decode(response[0]))
-
-    #rl_trainer = get_rl_trainer(model)
-    #rewards = [torch.tensor(1.0)]
-    #stats = rl_trainer.step(
-    #    [prompt_ids[0]],
-    #    [response[0]],
-    #    rewards
-    #)
-#
-#from trl import PPOConfig, PPOTrainer, 
-#from trl import create_reference_model
-#from trl.core import respond_to_batch
-#
-#from rerope_patch import replace_llama_attn_with_rerope
