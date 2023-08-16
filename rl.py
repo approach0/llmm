@@ -1,8 +1,9 @@
 import os
+import torch
 import configparser
 
-import torch
-import transformers
+import sys
+sys.path.insert(0, './trl')
 
 
 ADAPT_CFG = "adapter_config.json"
