@@ -27,7 +27,6 @@ def forward_with_rerope(
     use_cache: bool = False,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
     bsz, q_len, _ = hidden_states.size()
-    print('a')
 
     if self.pretraining_tp > 1:
         key_value_slicing = (self.num_key_value_heads * self.head_dim) // self.pretraining_tp
