@@ -1,4 +1,5 @@
 import torch
+import transformers
 from transformers import LlamaTokenizer
 from transformers import LlamaForCausalLM
 import bitsandbytes as bnb
@@ -6,6 +7,8 @@ import bitsandbytes as bnb
 from trl import PPOConfig, PPOTrainer, AutoModelForCausalLMWithValueHead
 from trl import create_reference_model
 from trl.core import respond_to_batch
+
+from rerope_patch import replace_llama_attn_with_rerope
 
 
 def get_rl_trainer(model):
@@ -27,6 +30,9 @@ def get_rl_trainer(model):
 
 
 if __name__ == '__main__':
+    attn = transformers.models.llama.modeling_llama.LlamaAttention
+    replace_llama_attn_with_rerope(attn)
+
     model_path = 'lmsys/vicuna-7b-v1.5'
     tokenizer = LlamaTokenizer.from_pretrained(model_path)
 
@@ -69,4 +75,4 @@ if __name__ == '__main__':
 
     rewards = [torch.tensor(1.0)]
     stats = rl_trainer.step([question_tensors[0]], [response_tensors[0]], rewards)
-    print(stats)
+    #print(stats)
