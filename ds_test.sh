@@ -19,9 +19,10 @@ deepspeed \
     --master_port 8922 \
     ds_test.py \
     \
-    --model_name_or_path lmsys/vicuna-13b-v1.5 \
-    --specified_tokenizer output/13B-mathy-FFT \
-    --ctx_length 2048 \
+    --model_name_or_path lmsys/vicuna-33b-v1.3 \
+    --specified_tokenizer output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt \
+    --adapter_path output/runs/Aug10_22-57-43_GCRAZGDL1578_ckpt \
+    --ctx_length 1500 \
     --use_flash_att2 True \
     --load_8bit False \
     --infer_interface gradio \
@@ -33,5 +34,5 @@ deepspeed \
         --bf16 True \
         --en_param_offload False \
         --en_act_ackpt False \
-        --en_sparse_attn False \
+        --en_sparse_attn True \
     )
