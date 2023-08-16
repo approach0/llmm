@@ -281,7 +281,7 @@ case $SETUP in
     cot-chatgpt-2023-03-15-w_groundtruth_query)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC \
-	--ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+        --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
     ;;
 
     ia-chatgpt-2023-03-15)
@@ -292,7 +292,7 @@ case $SETUP in
     ia-chatgpt-2023-03-15-w_groundtruth_query)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC \
-	    --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
+        --ground_truth_dir=./output/datasets/MATH/test/precalculus/run__manual/
     ;;
 
     cot-gpt4-2023-july)
@@ -318,7 +318,8 @@ case $SETUP in
 
     mh-chatgpt-2023-03-15)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing True --metric $METRIC
+        --prompt_mode=mh --run_pass=chatgpt --args="[]" --skip_existing False \
+        --metric $METRIC
     ;;
 
     mh-vicuna-7b)

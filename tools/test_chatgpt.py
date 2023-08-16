@@ -89,7 +89,7 @@ def generate(engine, prompt, stop=None, logprobs=None):
         return openai.Completion.create(
             engine=engine,
             prompt=prompt,
-            temperature=0,
+            temperature=0.7,
             max_tokens=2048,
             stream=True,
             logprobs=logprobs,
@@ -99,7 +99,7 @@ def generate(engine, prompt, stop=None, logprobs=None):
         return openai.Completion.create(
             engine=engine,
             prompt=prompt,
-            temperature=0,
+            temperature=0.7,
             max_tokens=2048,
             stream=True,
             stop=stop

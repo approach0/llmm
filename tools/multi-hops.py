@@ -243,7 +243,7 @@ def map_query_log_path(inpath, run_name):
 
 
 def main(logname=None, run_pass=None, debug=False, topic=None,
-    search_tool='a0', max_ctx=8000, args=None, prompt_mode=None,
+    search_tool='a0', max_ctx=16_000, args=None, prompt_mode=None,
     fname_filter=None, skip_existing=True, begin=0, end=None,
     metric='pass@1', ground_truth_dir=None, output_marking=True):
 
@@ -453,12 +453,15 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             else:
                 raise NotImplemented
 
-            print_title(f'Prompt (len = {len(prompt)})')
-            print(prompt)
-            #import pdb; pdb.set_trace()
+            #print_title(f'Prompt (len = {len(prompt)})')
+            #print(prompt)
+
+            print_title('Question')
+            print(query)
 
             # answering
             answer = ''
+            save_ans = ''
             while len(prompt) < max_ctx:
                 print_title(f'Answer (total prompt len: {len(prompt)})')
                 answer = llm_api(prompt,
@@ -473,38 +476,39 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                     injected = inject_result(query, answer, api_map)
 
                     if injected is not None:
-                        print_title(f'Injected')
-                        print(injected)
                         answer = injected
 
+                    print(answer)
+                    save_ans += answer
                     if has_result(answer, api_map):
                         break
 
                     prompt += answer
                 else:
-                    if isinstance(answer, str): print(answer)
+                    print(answer)
+                    save_ans = answer
                     break
 
-            if not isinstance(answer, str):
-                likelihood = -1
-                for i, _ in enumerate(answer):
-                    token = answer[i][0]
-                    if (token.strip() in ['yes', 'no'] and
-                        '[' in answer[i-1][0] and
-                        ']' in answer[i+1][0]):
-                        logprob = dict(answer[i][1])[token]
-                        likelihood = math.exp(logprob)
-                        if token.strip() == 'no':
-                            likelihood = 1.0 - likelihood
-                answer = f'{likelihood:.3f}'
-                print(answer)
+            #if not isinstance(answer, str):
+            #    likelihood = -1
+            #    for i, _ in enumerate(answer):
+            #        token = answer[i][0]
+            #        if (token.strip() in ['yes', 'no'] and
+            #            '[' in answer[i-1][0] and
+            #            ']' in answer[i+1][0]):
+            #            logprob = dict(answer[i][1])[token]
+            #            likelihood = math.exp(logprob)
+            #            if token.strip() == 'no':
+            #                likelihood = 1.0 - likelihood
+            #    answer = f'{likelihood:.3f}'
+            #    print(answer)
 
             boxed_answer = extract_math_answer(answer)
 
             # marking
             if output_marking:
-                print_title('Ground Truth')
-                print(solution)
+                #print_title('Ground Truth')
+                #print(solution)
 
                 print_title(f'Marking ({filename} pass#{k_count}/{k})')
                 print('agent answer:', boxed_answer)
@@ -523,7 +527,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             print(f'Total: {tot_okcnt} / {tot_cnt} = {tot_accuracy:.2f}%')
 
             judge_buffer.append({
-                'answer': answer,
+                'answer': save_ans,
                 'boxed_answer': boxed_answer,
                 'is_equiv': equiv
             })
