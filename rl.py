@@ -102,7 +102,7 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     return ppo_trainer
 
 
-def simple_test(config, tokenizer, model):
+def simple_test(config, tokenizer, model, trainer):
     inputs = tokenizer(
         config.get('test_prompt'),
         return_tensors="pt",
@@ -120,7 +120,7 @@ def simple_test(config, tokenizer, model):
     print(tokenizer.decode(response[0]))
 
     rewards = [torch.tensor(1.0)]
-    stats = rl_trainer.step(
+    stats = trainer.step(
         [input_ids[0]], [response[0]], rewards
     )
     print(stats)
@@ -141,7 +141,7 @@ def do_experiment(config):
     trainer = get_rl_trainer(*models, **ppo_kwargs)
 
     if config.get('test_prompt', False):
-        simple_test(config, tokenizer, model)
+        simple_test(config, tokenizer, model, trainer)
         quit(0)
 
 
