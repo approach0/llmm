@@ -44,10 +44,15 @@ def get_model(tokenizer_path, model_path,
     peft_attach_new=False,
     peft_lora_rank=16,
     peft_lora_dropout=0.05,
-    peft_lora_alpha=32):
+    peft_lora_alpha=32,
+    tokenizer_init_kwargs=None,
+    tokenizer_special_tokens=None):
 
-    from transformers import LlamaTokenizer
-    tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path)
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
+        **tokenizer_init_kwargs)
+    if tokenizer_special_tokens:
+        tokenizer.add_special_tokens(tokenizer_special_tokens)
 
     if peft_attach_new:
         adapter_config = {
@@ -106,7 +111,6 @@ def simple_test(config, tokenizer, model, trainer):
     inputs = tokenizer(
         config.get('test_prompt'),
         return_tensors="pt",
-        padding="longest",
         max_length=config.getint("context_length"),
         truncation=True,
     )
@@ -130,10 +134,14 @@ def do_experiment(config):
     config_rerope(config)
 
     peft_kwargs = get_cfg_json(config, 'peft', {})
+    tokenizer_kwargs = get_cfg_json(config, 'tokenizer_init_kwargs', None)
+    special_tokens = get_cfg_json(config, 'tokenizer_special_tokens', None)
     models = get_model(
         config.get('tokenizer'),
         config.get('model'),
-        **peft_kwargs
+        tokenizer_init_kwargs=tokenizer_kwargs,
+        tokenizer_special_tokens=special_tokens,
+        **peft_kwargs,
     )
     tokenizer, model, ref_model = models
 
@@ -142,7 +150,10 @@ def do_experiment(config):
 
     if config.get('test_prompt', False):
         simple_test(config, tokenizer, model, trainer)
-        quit(0)
+    else:
+        from rl_mcts import mcts_query
+        #mcts_query(config, tokenizer, model, trainer)
+        quit()
 
 
 def main(*experiments, config_file='rl.ini'):
