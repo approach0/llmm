@@ -1,6 +1,6 @@
 [submodule "BMTrain"]
 	path = BMTrain
 	url = git@github.com:OpenBMB/BMTrain.git
-[submodule "rl"]
-	path = rl
-	url = git@github.com:w32zhong/MOSS-RLHF.git
+[submodule "trl"]
+	path = trl
+	url = git@github.com:w32zhong/trl.git
