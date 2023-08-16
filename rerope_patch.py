@@ -3,7 +3,9 @@ from transformers.models.llama.modeling_llama import *
 import numpy as np
 
 
-window, training_length = None, None
+_window = None
+_training_length = None
+_original_forward = None
 
 
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
@@ -51,7 +53,7 @@ def forward_with_rerope(
     query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
     key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
     value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-    query_states *= ((position_ids + 1)[:, None, :, None].log() / np.log(training_length)).clip(1).to(query_states.dtype)
+    query_states *= ((position_ids + 1)[:, None, :, None].log() / np.log(_training_length)).clip(1).to(query_states.dtype)
 
     kv_seq_len = key_states.shape[-2]
     if past_key_value is not None:
@@ -65,15 +67,15 @@ def forward_with_rerope(
 
     if q_len == 1:
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        position_ids = (position_ids[:, -1] - position_ids).clip(max=window)
+        position_ids = (position_ids[:, -1] - position_ids).clip(max=_window)
         _, key_states = apply_rotary_pos_emb(None, key_states, cos, -sin, position_ids)
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
     else:
-        cos, sin = self.rotary_emb(value_states, seq_len=max(kv_seq_len, window + 1))
+        cos, sin = self.rotary_emb(value_states, seq_len=max(kv_seq_len, _window + 1))
         query_states1, key_states1 = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
-        query_states2, _ = apply_rotary_pos_emb(query_states, None, cos, sin, position_ids * 0 + window)
+        query_states2, _ = apply_rotary_pos_emb(query_states, None, cos, sin, position_ids * 0 + _window)
 
         # repeat k/v heads if n_kv_heads < n_heads
         key_states1 = repeat_kv(key_states1, self.num_key_value_groups)
@@ -82,7 +84,7 @@ def forward_with_rerope(
 
         attn_weights1 = torch.matmul(query_states1, key_states1.transpose(2, 3)) / math.sqrt(self.head_dim)
         attn_weights2 = torch.matmul(query_states2, key_states2.transpose(2, 3)) / math.sqrt(self.head_dim)
-        rectified_mask = (position_ids[:, -q_len:, None] - position_ids[:, None]).abs() < window
+        rectified_mask = (position_ids[:, -q_len:, None] - position_ids[:, None]).abs() < _window
         attn_weights = torch.where(rectified_mask, attn_weights1, attn_weights2)
 
     if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
@@ -124,8 +126,22 @@ def forward_with_rerope(
     return attn_output, attn_weights, past_key_value
 
 
-def replace_llama_attn_with_rerope(_llama_attn, _window=512, _training_length=4096):
-    global window, training_length
-    window = _window
-    training_length = _training_length
-    _llama_attn.forward = forward_with_rerope
+def replace_llama_attn_with_rerope(window=512,
+    training_length=4096):
+    global _window, _training_length
+    _window = window
+    _training_length = training_length
+
+    global _original_forward
+    assert _original_forward is None
+    _original_forward = LlamaAttention.forward
+    LlamaAttention.forward = forward_with_rerope
+
+def restore_llama_attn():
+    global _original_forward
+    if _original_forward is None:
+        return
+    import transformers.models.llama.modeling_llama
+    LlamaAttention = modeling_llama.LlamaAttention
+    LlamaAttention.forward = _original_forward
+    _original_forward = None
