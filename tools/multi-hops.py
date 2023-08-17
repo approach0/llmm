@@ -546,6 +546,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                     prompt = None
                     solution = None
                     boxed_solution = None
+                    manual_query = []
 
                 break # next question
 
