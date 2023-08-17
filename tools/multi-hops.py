@@ -243,7 +243,7 @@ def map_query_log_path(inpath, run_name):
 
 
 def main(logname=None, run_pass=None, debug=False, topic=None,
-    search_tool='a0', max_ctx=16_000, args=None, prompt_mode=None,
+    search_tool='a0', max_ctx=10_000, args=None, prompt_mode=None,
     fname_filter=None, skip_existing=True, begin=0, end=None,
     metric='pass@1', ground_truth_dir=None, output_marking=True):
 
