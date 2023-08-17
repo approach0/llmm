@@ -22,6 +22,7 @@ sys.path.insert(0, '../math/modeling')
 from main_clean import extract_math_answer
 from math_equivalence import is_equiv
 from prompt_factory import *
+from inspect_output import _output_html
 
 
 dataset_prefix = 'MATH'
@@ -372,36 +373,8 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             print_title('Problem')
             print(json_path)
 
-            # manual prompt?
-            if prompt_mode == 'manual':
-                while True:
-                    print('current manual query:', manual_query)
-                    cmd = input('formula, "save", "clear", "none", or "skip":\n')
-                    if cmd.strip() == '':
-                        k_count = 0
-                        break
-                    elif cmd == 'save':
-                        k_count = k
-                        break
-                    elif cmd == 'clear':
-                        manual_query = []
-
-                    elif cmd == 'none':
-                        manual_query = None
-                        break
-                    elif cmd == 'skip':
-                        manual_query = None
-                        k_count = k
-                        break
-                    else:
-                        if manual_query is None:
-                            manual_query = []
-                        manual_query.append(cmd)
-
-                metric_name = 'maj' # pass@k would break the loop.
-                if k_count == k: continue
-            else:
-                k_count += 1
+            print_title('Question')
+            print(query)
 
             # determine the prompt
             if prompt_mode == 'direct':
@@ -430,15 +403,42 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                 prompt = multihop1(query)
 
             elif prompt_mode == 'manual':
+                while True:
+                    print('current manual query:', manual_query)
+                    cmd = input('formula, "save", "clear", "none", or "skip":\n')
+                    if cmd.strip() == '':
+                        k_count = 0
+                        break
+                    elif cmd == 'save':
+                        k_count = k
+                        break
+                    elif cmd == 'clear':
+                        manual_query = []
+
+                    elif cmd == 'none':
+                        manual_query = None
+                        break
+                    elif cmd == 'skip':
+                        manual_query = None
+                        k_count = k
+                        break
+                    else:
+                        if manual_query is None:
+                            manual_query = []
+                        manual_query.append(cmd)
+
+                metric_name = 'maj' # pass@k would break the loop.
+                if k_count == k: continue
+
                 if manual_query is None:
-                    prompt = cot2(query)
+                    prompt = cot_mytrain(query)
+
                 elif len(manual_query) == 0:
                     results = api_map['SEARCH'](query, None)
-                    prompt = ia2(query, *results)
+                    prompt = ia_mytrain(query, *results)
                 else:
-                    kws = list(map(lambda x: '$' + x + '$', manual_query))
-                    results = api_map['SEARCH'](query, kws)
-                    prompt = ia2(query, *results)
+                    results = api_map['SEARCH'](query, manual_query)
+                    prompt = ia_mytrain(query, manual_query, *results)
 
             elif prompt_mode == 'askkey':
                 if run_pass == 'td003':
@@ -453,11 +453,10 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             else:
                 raise NotImplemented
 
-            #print_title(f'Prompt (len = {len(prompt)})')
-            #print(prompt)
+            k_count += 1
 
-            print_title('Question')
-            print(query)
+            print_title(f'Prompt (len = {len(prompt)})')
+            print(prompt)
 
             # answering
             answer = ''
@@ -552,6 +551,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
         with open(logpath, 'w') as fh:
             json.dump(log_json, fh, indent=2)
             print('Written log:', logpath)
+        _output_html(logpath)
 
 
 if __name__ == '__main__':

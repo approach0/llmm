@@ -139,9 +139,12 @@ def textify_v1(items):
     return [f'<b>{key}</b>: {val}' for key, val in j.items()]
 
 
-def textify_v2(items):
+def textify_v2(j_dict):
+    order = ['problem', 'query', 'ground_truth', 'prompt', 'judge_buffer', 'solution']
     text_list = []
-    for key, val in items:
+    for key in order:
+        if key not in j_dict: continue
+        val = j_dict[key]
         # for each log item ...
         if key == 'judge_buffer':
             if len(val) == 0: continue
@@ -150,12 +153,10 @@ def textify_v2(items):
                 boxed_answer = j['boxed_answer']
                 correct = j['is_equiv']
                 if correct or i >= len(val):
-                    text_list.append(f'<b>Answer</b>: {answer}')
-                    text_list.append(f'<b>Boxed answer</b>: {boxed_answer}')
+                    text_list.append(f'<b>answer</b>: {answer}')
+                    text_list.append(f'<b>boxed answer</b>: {boxed_answer}')
                     text_list.append(f'<b>Correct</b>: {correct}')
                     break
-        elif key in ['args', 'manual_query']:
-            continue
         else:
             text_list.append(f'<b>{key}</b>: {val}')
     return text_list
@@ -170,7 +171,7 @@ def _output_html(logpath):
         if 'agent_answer' in j:
             results = textify_v1(j.items())
         else:
-            results = textify_v2(j.items())
+            results = textify_v2(j)
 
         def html(fh, query, hit, page, idx):
             hit = hit.replace('\n', '<br/>')

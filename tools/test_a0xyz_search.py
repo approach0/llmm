@@ -40,11 +40,13 @@ def search_api(keywords=['$x+y=xy$', 'why'],
                     if Q is None:
                         continue
                     posts = map(
-                        lambda x: f'Solution {1+x[0]}:\n\n' + x[1],
+                        lambda x: '#### User Answer\n' + x[1],
                         enumerate(posts)
                     )
-                    posts = '\n\n'.join(posts)
-                    doc = Q + '\n\n' + posts
+                    doc = (
+                        '#### Similar Question\n' + Q + '\n\n' +
+                        '\n\n'.join(posts) + '\n\n'
+                    )
                 elif 'artofproblemsolving' in url:
                     doc = crawl_AoPS(url)
                     if doc is None:
@@ -58,7 +60,7 @@ def search_api(keywords=['$x+y=xy$', 'why'],
                 content = replace_imath(hit['field_content'])
                 doc = title + '\n\n' + content
 
-            result = url + '\n\n' + doc
+            result = f'URL: {url}' + '\n\n' + doc
             results.append(result.strip())
         return results
     else:

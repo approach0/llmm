@@ -1,11 +1,14 @@
-def example(Q):
-    with open(f'prompt_{Q}.txt', 'r') as fh:
-        return fh.read()
+import json
 
 
 #########################
 ####### version 1 #######
 #########################
+
+
+def example(Q):
+    with open(f'prompt_{Q}.txt', 'r') as fh:
+        return fh.read()
 
 
 def direct1(Q):
@@ -503,8 +506,57 @@ Q: {}
     return prompt
 
 
+def ia_mytrain(Q, Qry, *P):
+    prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+Answer a math question in the input.
+
+Indicate your final answer in boxed LaTeX. For example, if the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}}.
+
+To assist you, you can invoke a math-aware search engine API (SEARCH) to find potentially relevant search results and I will insert these results for you right after API call(s).
+
+SEARCH APIs should be followed by its parameters which are a list of keywords in JSON format.
+Note that the SEARCH API supports math keywords, it is better to enclose math formulas with dollar signs, for example:
+
+SEARCH["$x^2 = -1$", "imaginary numbers"]
+
+DO NOT mix text and math in one JSON item, for example:
+
+SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
+
+Do separate keywords by comma with only one type in each JSON item, for example:
+
+SEARCH["curve", "defined by", "$x^2 - y^2 = 4$"]
+
+Only consider helpful API results for your goal, ignore irrelevant ones.
+
+When an API returns any error or unexpected messages, exam your parameters carefully (e.g., look for format issues in JSON).
+You may call the same API with corrected argument(s) again.
+
+When results are not helpful, do explore alternative ways. You do not have to rely on API results.
+
+### Input:
+'''
+    prompt += Q
+
+    prompt += r'''
+
+### Response:
+SEARCH{QryJson}
+'''.format(QryJson=json.dumps(Qry))
+
+    prompt += f'\n--- BEGIN of API results ---\n'
+    for i, p in enumerate(P):
+        prompt += f'{p}\n'
+        if i < len(P):
+            prompt += '\n'
+
+    prompt += f'--- END of API results ---\n'
+    return prompt
+
+
 if __name__ == '__main__':
-    # precalculus/1185.json
-    prompt = multihop1(r'Let $x$ be a real number such that $\sec x - \tan x = 2$. Find $\sec x + \tan x.$')
+    prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
     print(prompt)
     print('length:', len(prompt))
