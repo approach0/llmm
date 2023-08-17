@@ -153,7 +153,7 @@ def textify_v2(j_dict):
                 boxed_answer = j['boxed_answer']
                 correct = j['is_equiv']
                 if correct or i >= len(val):
-                    text_list.append(f'<b>answer</b>: {answer}')
+                    text_list.append(f'<b>agent answer</b>: {answer}')
                     text_list.append(f'<b>boxed answer</b>: {boxed_answer}')
                     text_list.append(f'<b>Correct</b>: {correct}')
                     break
@@ -174,7 +174,8 @@ def _output_html(logpath):
             results = textify_v2(j)
 
         def html(fh, query, hit, page, idx):
-            hit = hit.replace('\n', '<br/>')
+            hit = re.sub(r"#+ (.+)", r"<h5>\1</h5>", hit)
+            hit = hit.replace('\n', '<br/>\n')
             fh.write(f'<p>{hit}</p>\n\n')
 
         logdir = os.path.dirname(logpath)
