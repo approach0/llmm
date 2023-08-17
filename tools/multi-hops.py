@@ -541,6 +541,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
 
         log_json = {
             'problem': json_path,
+            'query': query,
             'prompt': prompt,
             'solution': solution,
             'ground_truth': boxed_solution,

@@ -89,7 +89,7 @@ def generate(engine, prompt, stop=None, logprobs=None):
         return openai.Completion.create(
             engine=engine,
             prompt=prompt,
-            temperature=0.7,
+            temperature=0.3,
             max_tokens=2048,
             stream=True,
             logprobs=logprobs,
@@ -99,7 +99,7 @@ def generate(engine, prompt, stop=None, logprobs=None):
         return openai.Completion.create(
             engine=engine,
             prompt=prompt,
-            temperature=0.7,
+            temperature=0.3,
             max_tokens=2048,
             stream=True,
             stop=stop
@@ -145,7 +145,7 @@ class ChatGPT_Agent():
     def complete(self, prompt='count to 10', verbose=False, **kargs):
         openai.api_key = os.environ.get('OAIKey')
         openai.api_type = 'azure'
-        #openai.api_version = "2023-07-01-preview"
+        #openai.api_version = "2023-08-01-preview"
         openai.api_version = "2023-03-15-preview"
         openai.api_base = 'https://corby.openai.azure.com'
         api_map = kargs.get('api_map', {})
