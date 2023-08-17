@@ -104,7 +104,7 @@ case $SETUP in
     ds_infer)
     python tools/multi-hops.py --logname mathy --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=ds --args='http://127.0.0.1:8988/generate' \
-	--skip_existing True
+        --skip_existing True
     ;;
 
     manual)
@@ -113,7 +113,7 @@ case $SETUP in
 
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=manual --run_pass=chatgpt --args="[]" --skip_existing True \
-	--search_tool=online
+        --search_tool=mabowdor
     ;;
 
     33B-mathy-lora)
