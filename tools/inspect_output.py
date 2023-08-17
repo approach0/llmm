@@ -140,7 +140,8 @@ def textify_v1(items):
 
 
 def textify_v2(j_dict):
-    order = ['problem', 'query', 'ground_truth', 'prompt', 'judge_buffer', 'solution']
+    order = ['problem', 'query', 'ground_truth', 'prompt',
+        'manual_rating', 'judge_buffer', 'solution']
     text_list = []
     for key in order:
         if key not in j_dict: continue

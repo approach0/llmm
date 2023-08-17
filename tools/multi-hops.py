@@ -523,10 +523,11 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                     print(query)
 
                 for i, (res, rate) in enumerate(zip(results, rates)):
-                    prompt = picky_prompt(query, manual_query, res, rate)
+                    prompt = ia_mytrain(query, manual_query, res)
 
-                    print_title(f'Prompt (len = {len(prompt)})')
-                    print(prompt)
+                    print_title(f'Search Result')
+                    print(res)
+                    print('manual_rating:', rate)
 
                     part_logpath = map_query_log_path(json_path,
                         f'run__{logname}', suffix=f'.{search_tool}-{i}.log')
@@ -536,6 +537,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                         'prompt': prompt,
                         'solution': solution,
                         'ground_truth': boxed_solution,
+                        'manual_rating': rate,
                         'logpath': part_logpath
                     })
                 else:
@@ -649,6 +651,7 @@ def save_log(**kwargs):
             'ground_truth': kwargs.get('boxed_solution'),
             'judge_buffer': kwargs.get('judge_buffer'),
             'manual_query': kwargs.get('manual_query'),
+            'manual_rating': kwargs.get('manual_rating'),
             'args': json.dumps(kwargs.get('args'))
         }
         logpath = kwargs.get('logpath')

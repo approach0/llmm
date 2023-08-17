@@ -558,11 +558,6 @@ SEARCH{QryJson}
     return prompt
 
 
-def picky_prompt(Q, Qry, result, score):
-    init_prompt = ia_mytrain(Q, Qry, result)
-    return init_prompt + 'foobar'
-
-
 if __name__ == '__main__':
     prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
     print(prompt)
