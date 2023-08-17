@@ -234,10 +234,10 @@ def inject_result(query, answer, api_map):
     return None
 
 
-def map_query_log_path(inpath, run_name):
+def map_query_log_path(inpath, run_name, suffix='.log'):
     inpath = inpath.rstrip('/')
     inpath = inpath.split('/')
-    fname = inpath[-1] + '.log'
+    fname = inpath[-1] + suffix
     start, end = inpath.index(dataset_prefix), -1
     outpath = '/'.join(inpath[start:end] + [run_name])
     return os.path.join('./output', outpath, fname)
@@ -344,6 +344,9 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                     gt = json.load(fh)
             else:
                 continue
+
+            if 'manual_query' in gt:
+                manual_query = gt['manual_query']
         else:
             gt = None
 
@@ -405,7 +408,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             elif prompt_mode == 'manual':
                 while True:
                     print('current manual query:', manual_query)
-                    cmd = input('formula, "save", "clear", "none", or "skip":\n')
+                    cmd = input('keyword, "save", "clear", "none", or "skip":\n')
                     if cmd.strip() == '':
                         k_count = 0
                         break
@@ -435,7 +438,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
 
                 elif len(manual_query) == 0:
                     results = api_map['SEARCH'](query, None)
-                    prompt = ia_mytrain(query, *results)
+                    prompt = ia_mytrain(query, [], *results)
                 else:
                     results = api_map['SEARCH'](query, manual_query)
                     prompt = ia_mytrain(query, manual_query, *results)
@@ -449,6 +452,100 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
 
                 k_count = k
                 llm_api_kargs = {'stop': '\n\n', 'stream': False}
+
+            elif prompt_mode == 'manual-picky':
+                while True:
+                    while True:
+                        print('current manual query:', manual_query)
+                        cmd = input('formula, "save", "clear", "none", or "skip":\n')
+                        if cmd.strip() == '':
+                            k_count = k
+                            break
+
+                        elif cmd == 'clear':
+                            manual_query = []
+
+                        elif cmd == 'skip':
+                            manual_query = []
+                            k_count = 0
+                            break
+
+                        else:
+                            if manual_query is None:
+                                manual_query = []
+                            manual_query.append(cmd)
+
+                    if k_count == 0:
+                        results, rates = [], []
+                        break
+
+                    if len(manual_query) == 0:
+                        results = api_map['SEARCH'](query, None)
+
+                    else:
+                        results = api_map['SEARCH'](query, manual_query)
+
+                    prompt = ia_mytrain(query, manual_query, *results)
+                    save_log(**{
+                        'json_path': json_path,
+                        'query': query,
+                        'prompt': prompt,
+                        'solution': solution,
+                        'ground_truth': boxed_solution,
+                        'logpath': 'output/MATH/preview.json'
+                    })
+
+                    rates = []
+                    for res in results:
+                        rate = 0
+                        print(res, end='\n\n')
+                        inp = input('Is the result relevant? [yes/NO/redo]')
+                        if inp == 'yes':
+                            inp = input('Can you extract the final answer? [yes/NO/redo]')
+                            if inp == 'yes':
+                                rate = 2
+                            elif inp == 'redo':
+                                break
+                            else:
+                                rate = 1
+                        elif inp == 'redo':
+                            break
+                        rates.append(rate)
+                    else:
+                        # next question
+                        break
+
+                    # redo
+                    print_title('Problem')
+                    print(json_path)
+
+                    print_title('Question')
+                    print(query)
+
+                for i, (res, rate) in enumerate(zip(results, rates)):
+                    prompt = picky_prompt(query, manual_query, res, rate)
+
+                    print_title(f'Prompt (len = {len(prompt)})')
+                    print(prompt)
+
+                    part_logpath = map_query_log_path(json_path,
+                        f'run__{logname}', suffix=f'.{search_tool}-{i}.log')
+                    save_log(**{
+                        'json_path': json_path,
+                        'query': query,
+                        'prompt': prompt,
+                        'solution': solution,
+                        'ground_truth': boxed_solution,
+                        'logpath': part_logpath
+                    })
+                else:
+                    json_path = None
+                    query = None
+                    prompt = None
+                    solution = None
+                    boxed_solution = None
+
+                break # next question
 
             else:
                 raise NotImplemented
@@ -535,19 +632,26 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             if metric_name == 'pass' and equiv:
                 break
 
+        # after the metric@k break, before the next question... 
         if prompt_mode.startswith('example'):
             input('Press Enter to save this example output...')
 
+        if k_count == k:
+            save_log(**locals())
+
+
+def save_log(**kwargs):
         log_json = {
-            'problem': json_path,
-            'query': query,
-            'prompt': prompt,
-            'solution': solution,
-            'ground_truth': boxed_solution,
-            'judge_buffer': judge_buffer,
-            'manual_query': manual_query if gt is None else gt['manual_query'],
-            'args': json.dumps(args)
+            'problem': kwargs.get('json_path'),
+            'query': kwargs.get('query'),
+            'prompt': kwargs.get('prompt'),
+            'solution': kwargs.get('solution'),
+            'ground_truth': kwargs.get('boxed_solution'),
+            'judge_buffer': kwargs.get('judge_buffer'),
+            'manual_query': kwargs.get('manual_query'),
+            'args': json.dumps(kwargs.get('args'))
         }
+        logpath = kwargs.get('logpath')
         with open(logpath, 'w') as fh:
             json.dump(log_json, fh, indent=2)
             print('Written log:', logpath)

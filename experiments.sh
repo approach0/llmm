@@ -113,6 +113,12 @@ case $SETUP in
         --search_tool=online
     ;;
 
+    manual-picky)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=manual-picky --run_pass=chatgpt --args="[]" --skip_existing True \
+        --search_tool=mabowdor
+    ;;
+
     33B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \

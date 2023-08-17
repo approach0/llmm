@@ -145,6 +145,7 @@ def textify_v2(j_dict):
     for key in order:
         if key not in j_dict: continue
         val = j_dict[key]
+        if val is None: continue
         # for each log item ...
         if key == 'judge_buffer':
             if len(val) == 0: continue
@@ -175,6 +176,7 @@ def _output_html(logpath):
 
         def html(fh, query, hit, page, idx):
             hit = re.sub(r"#+ (.+)", r"<h5>\1</h5>", hit)
+            hit = re.sub(r"URL: (.+)", r"<h3>\1</h3>", hit)
             hit = hit.replace('\n', '<br/>\n')
             fh.write(f'<p>{hit}</p>\n\n')
 
