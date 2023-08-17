@@ -536,6 +536,8 @@ You may call the same API with corrected argument(s) again.
 
 When results are not helpful, do explore alternative ways. You do not have to rely on API results.
 
+However, when a result is useful or it contains the exact or partial solution, just rely on the result or extract the answer from the result directly without the need to redo any previous derivation.
+
 ### Input:
 '''
     prompt += Q

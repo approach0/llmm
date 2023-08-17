@@ -271,6 +271,12 @@ def save_hist(name, x, verbose=False):
     plt.savefig(name + '.png')
 
 
+def get_json_val(logpath, key='prompt'):
+    with open(logpath, 'r') as fh:
+        j = json.load(fh)
+    print(j[key])
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
@@ -278,6 +284,7 @@ if __name__ == '__main__':
         'get_stats': get_topic_stats,
         'diff': compare_differences,
         'find': find_correct_samples,
+        'get': get_json_val,
         'output_html': _output_html,
         'output_htmls': output_html,
         'get_class_hist': get_class_hist,
