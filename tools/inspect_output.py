@@ -117,6 +117,24 @@ def compare_differences(logdir1, logdir2, metric='pass'):
     return name(logdir1), win1, name(logdir2), win2
 
 
+def find_correct_samples(logdir):
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if logpath.split('.')[-1] != 'log':
+            continue
+        with open(logpath, 'r') as fh:
+            j = json.load(fh)
+        judge_buffer = j['judge_buffer']
+        for judge in judge_buffer:
+            if not judge['is_equiv']: continue
+            #print(j['problem'])
+            #print(j['query'])
+            #print(judge['answer'])
+            #print(judge['boxed_answer'])
+            _output_html(logpath)
+            #input('Enter to continue...')
+
+
 def textify_v1(items):
     return [f'<b>{key}</b>: {val}' for key, val in j.items()]
 
@@ -257,6 +275,7 @@ if __name__ == '__main__':
     fire.Fire({
         'get_stats': get_topic_stats,
         'diff': compare_differences,
+        'find': find_correct_samples,
         'output_html': _output_html,
         'output_htmls': output_html,
         'get_class_hist': get_class_hist,
