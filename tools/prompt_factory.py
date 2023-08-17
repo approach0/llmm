@@ -481,6 +481,28 @@ Answer a math question in the input.\n\nIndicate your final answer in boxed LaTe
     return prompt
 
 
+def multihop_simple(Q):
+    prompt = r'''Answer a math question in the input, with the help of a SEARCH engine API.
+
+Given an example math question:
+
+Q: Find the number of solutions in the interval $[0,2\pi]$ to equation $\tan x + \sec x = 2 \cos x.$
+
+You might want to invoke the search API like this:
+
+SEARCH["$\\tan x +\\sec x =2\\cos x$"]
+
+Now, answer the following math question:
+'''
+
+    prompt += '''
+Q: {}
+
+'''.format(Q)
+
+    return prompt
+
+
 if __name__ == '__main__':
     # precalculus/1185.json
     prompt = multihop1(r'Let $x$ be a real number such that $\sec x - \tan x = 2$. Find $\sec x + \tan x.$')

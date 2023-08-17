@@ -71,7 +71,7 @@ def get_model(tokenizer_path, model_path,
         lora_config = LoraConfig(**adapter_config)
     else:
         lora_config = None
-    
+
     from trl import AutoModelForCausalLMWithValueHead as M
     model = M.from_pretrained(
         model_path, device_map="auto",
