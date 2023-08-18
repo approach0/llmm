@@ -160,7 +160,7 @@ def textify_v2(j_dict):
                     text_list.append(f'<b>Correct</b>: {correct}')
                     break
         else:
-            text_list.append(f'<h2>{key}</h2>: {val}')
+            text_list.append(f'<h3>{key}</h3>: {val}')
     return text_list
 
 
@@ -176,14 +176,15 @@ def _output_html(logpath):
             results = textify_v2(j)
 
         def html(fh, query, hit, page, idx):
-            hit = re.sub(r"#+ (.+)", r"<h5>\1</h5>", hit)
-            hit = re.sub(r"URL: (.+)", r"<h3>\1</h3>", hit)
+            hit = re.sub("#+ (.+)\n", r"<h4>\1</h4>", hit)
+            hit = re.sub("URL: (.+)\n", r"<h4>\1</h4>", hit)
             hit = hit.replace('\n', '<br/>\n')
             fh.write(f'<p>{hit}</p>\n\n')
 
         logdir = os.path.dirname(logpath)
         logbase = os.path.basename(logpath)
-        output(logdir, logbase, '_', j['problem'], results,
+        head = j['query'] if 'query' in j else j['question']
+        output(logdir, logbase, '_', head, results,
             None, False, 100, html, create_parent_dir=False)
 
 
