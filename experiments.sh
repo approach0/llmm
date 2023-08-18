@@ -119,6 +119,12 @@ case $SETUP in
         --search_tool=mabowdor --train_or_test train
     ;;
 
+    ia-chatgpt-315-train-pass3)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=ia --run_pass=chatgpt --args="[]" --skip_existing True \
+        --search_tool=mabowdor --train_or_test train --metric maj@3
+    ;;
+
     33B-mathy-lora)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=cot --run_pass=utils --skip_existing True \
