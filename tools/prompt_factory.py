@@ -189,7 +189,7 @@ SEARCH["$x^2 = -1$", "imaginary numbers"]
 
 DO NOT mix text and math in one JSON item, i.e. instead of writing:
 
-SEARCH['$what kind of curve is defined by $x^2 - y^2 = 4$']
+SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
 
 write keyword by keyword with only one type in each:
 
