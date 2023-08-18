@@ -151,9 +151,14 @@ def do_experiment(config):
     if config.get('test_prompt', False):
         simple_test(config, tokenizer, model, trainer)
     else:
-        from rl_mcts import mcts_query
+        #from rl_mcts import mcts_query
         #mcts_query(config, tokenizer, model, trainer)
-        quit()
+        #quit()
+        from datasets import load_dataset
+        dataset_path = config.get('dataset')
+        dataset = load_dataset(dataset_path, split="train")
+        ds = dataset.map(lambda x: tokenizer(x['query']), batched=True)
+        breakpoint()
 
 
 def main(*experiments, config_file='rl.ini'):
