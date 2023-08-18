@@ -177,7 +177,8 @@ def _output_html(logpath):
 
         def html(fh, query, hit, page, idx):
             hit = re.sub("#+ (.+)\n", r"<h4>\1</h4>", hit)
-            hit = re.sub("URL: (.+)\n", r"<h4>\1</h4>", hit)
+            hit = re.sub("URL: (.+)\n+", r"<h4>\1</h4>", hit)
+            print(hit)
             hit = hit.replace('\n', '<br/>\n')
             fh.write(f'<p>{hit}</p>\n\n')
 
