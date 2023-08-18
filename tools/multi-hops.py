@@ -458,7 +458,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                 while True:
                     while True:
                         print('current manual query:', manual_query)
-                        cmd = input('formula, "clear", or "skip":\n')
+                        cmd = input('keyword, "clear", or "skip":\n')
                         if cmd.strip() == '':
                             k_count = k
                             break
@@ -502,7 +502,8 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                         print(res, end='\n\n')
                         inp = input('Is the result relevant? [yes/NO/redo]')
                         if inp == 'yes':
-                            inp = input('Can you extract the final answer? [yes/NO/redo]')
+                            inp = input('Can we easily derive or extract '
+                                'the final answer from it? [yes/NO/redo]')
                             if inp == 'yes':
                                 rate = 2
                             elif inp == 'redo':

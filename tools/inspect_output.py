@@ -160,7 +160,7 @@ def textify_v2(j_dict):
                     text_list.append(f'<b>Correct</b>: {correct}')
                     break
         else:
-            text_list.append(f'<h3>{key}</h3>: {val}')
+            text_list.append(f'<h3>{key}</h3>{val}')
     return text_list
 
 
