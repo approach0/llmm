@@ -246,7 +246,8 @@ def map_query_log_path(inpath, run_name, suffix='.log'):
 def main(logname=None, run_pass=None, debug=False, topic=None,
     search_tool='a0', max_ctx=10_000, args=None, prompt_mode=None,
     fname_filter=None, skip_existing=True, begin=0, end=None,
-    metric='pass@1', ground_truth_dir=None, output_marking=True):
+    metric='pass@1', ground_truth_dir=None, output_marking=True,
+    train_or_test='test'):
 
     assert logname is not None
 
@@ -255,7 +256,7 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
     assert k > 0
     assert metric_name in ['pass', 'maj']
 
-    MATH_path = f'../{dataset_prefix}/test/{topic}'
+    MATH_path = f'../{dataset_prefix}/{train_or_test}/{topic}'
     print('dataset path:', MATH_path)
     filenames = os.listdir(MATH_path)
     print('number of tests:', len(filenames))

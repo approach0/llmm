@@ -116,7 +116,7 @@ case $SETUP in
     manual-picky)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=manual-picky --run_pass=chatgpt --args="[]" --skip_existing True \
-        --search_tool=mabowdor
+        --search_tool=mabowdor --train_or_test train
     ;;
 
     33B-mathy-lora)
