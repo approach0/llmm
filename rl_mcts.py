@@ -1,6 +1,15 @@
 from tools.prompt_factory import *
 
 
+class State():
+    def __init__(self, prompt):
+        self.prompt = prompt
+        self.children = []
+
+    def branch(self, child_state):
+        self.children.append(child_state)
+
+
 def mcts_query(config, tokenizer, model, trainer):
     inputs = tokenizer(
         multihop_simple('Solve $x^2 = 4$.'),

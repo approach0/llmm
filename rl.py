@@ -1,6 +1,7 @@
 import os
 import torch
 import configparser
+from functools import partial
 
 import sys
 sys.path.insert(0, './trl')
@@ -8,15 +9,6 @@ from trl.core import respond_to_batch
 
 
 ADAPT_CFG = "adapter_config.json"
-
-
-class State():
-    def __init__(self, prompt):
-        self.prompt = prompt
-        self.children = []
-
-    def branch(self, child_state):
-        self.children.append(child_state)
 
 
 def get_cfg_json(config, name, default):
@@ -45,7 +37,7 @@ def get_model(tokenizer_path, model_path,
     peft_lora_rank=16,
     peft_lora_dropout=0.05,
     peft_lora_alpha=32,
-    tokenizer_init_kwargs=None,
+    tokenizer_init_kwargs={},
     tokenizer_special_tokens=None):
 
     from transformers import AutoTokenizer
@@ -107,16 +99,20 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     return ppo_trainer
 
 
-def simple_test(config, tokenizer, model, trainer):
-    inputs = tokenizer(
-        config.get('test_prompt'),
+def batch_tokenize(config, tokenizer, texts):
+    return tokenizer(texts,
         return_tensors="pt",
         max_length=config.getint("context_length"),
         truncation=True,
+        padding=True
     )
 
-    device = model.pretrained_model.device
 
+def test(config, tokenizer, model, trainer):
+    inputs = batch_tokenize(config, tokenizer,
+        [config.get('test_prompt')])
+
+    device = model.pretrained_model.device
     input_ids = inputs['input_ids'].to(device) # bs, L
     print(tokenizer.decode(input_ids[0]))
 
@@ -130,11 +126,11 @@ def simple_test(config, tokenizer, model, trainer):
     print(stats)
 
 
-def do_experiment(config):
+def prepare_experiment(config):
     config_rerope(config)
 
     peft_kwargs = get_cfg_json(config, 'peft', {})
-    tokenizer_kwargs = get_cfg_json(config, 'tokenizer_init_kwargs', None)
+    tokenizer_kwargs = get_cfg_json(config, 'tokenizer_init_kwargs', {})
     special_tokens = get_cfg_json(config, 'tokenizer_special_tokens', None)
     models = get_model(
         config.get('tokenizer'),
@@ -143,22 +139,45 @@ def do_experiment(config):
         tokenizer_special_tokens=special_tokens,
         **peft_kwargs,
     )
-    tokenizer, model, ref_model = models
 
     ppo_kwargs = get_cfg_json(config, 'ppo', {})
     trainer = get_rl_trainer(*models, **ppo_kwargs)
+    return models, trainer
+
+
+def do_experiment(config):
+    models, trainer = prepare_experiment(config)
+    tokenizer, model, ref_model = models
 
     if config.get('test_prompt', False):
-        simple_test(config, tokenizer, model, trainer)
-    else:
+        test(config, tokenizer, model, trainer)
+        return
+
+    from datasets import load_dataset
+    from torch.utils.data import DataLoader
+    dataset_path = config.get('dataset')
+    dataset = load_dataset(dataset_path, split="train")
+
+    import rl_data
+    bs = config.getint('batch_size')
+    tok_fn = partial(batch_tokenize, config, tokenizer)
+    col_fn = getattr(rl_data, config.get('collate_fn'))
+    dataloader = DataLoader(dataset,
+        collate_fn=partial(col_fn, tok_fn),
+        batch_size=bs
+    )
+    device = model.pretrained_model.device
+    for dict_batch, batch_raw in dataloader:
+        input_ids = dict_batch['input_ids']
+        input_ids = input_ids.to(device) # bs, L
+        response = respond_to_batch(model, input_ids)
+
+        for b in range(bs):
+            print(tokenizer.decode(response[b]))
+
         #from rl_mcts import mcts_query
         #mcts_query(config, tokenizer, model, trainer)
         #quit()
-        from datasets import load_dataset
-        dataset_path = config.get('dataset')
-        dataset = load_dataset(dataset_path, split="train")
-        ds = dataset.map(lambda x: tokenizer(x['query']), batched=True)
-        breakpoint()
 
 
 def main(*experiments, config_file='rl.ini'):
