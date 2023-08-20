@@ -217,6 +217,35 @@ def test_np(fpath='data/MATH_np.json'):
     print(cnt, d)
 
 
+def get_auto_judge_stats(logdir, suffix='.log',
+    partial_relevance=False):
+    correct_cnt, invalid_cnt, total_cnt = 0, 0, 0
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if not logpath.endswith(suffix):
+            continue
+        with open(logpath, 'r') as fh:
+            j = json.load(fh)
+        judge_buffer = j['judge_buffer']
+        jj = judge_buffer[0]
+        answer = jj['answer']
+        m_rate = j['manual_rating']
+        if m := re.search(r'rate\[(\d+)\]', answer):
+            rate = int(m.group(1))
+            if partial_relevance:
+                correct = (bool(m_rate) == bool(rate))
+            else:
+                correct = (m_rate == rate)
+            if correct:
+                correct_cnt += 1
+        else:
+            #print('wrong format:', answer)
+            invalid_cnt += 1
+        total_cnt += 1
+    accuracy = correct_cnt / total_cnt * 100
+    print(f'invalid coutn: {invalid_cnt}')
+    print(f'{correct_cnt} / {total_cnt} = {accuracy:.2f}%')
+
 
 def get_class_hist(logdir, suffix, mode='gpt3.5', verbose=False):
     assert mode in ['gpt3.5', 'td003']
@@ -293,5 +322,6 @@ if __name__ == '__main__':
         'output_html': _output_html,
         'output_htmls': output_html,
         'get_class_hist': get_class_hist,
+        'auto_judge_stats': get_auto_judge_stats,
         'test_np': test_np,
     })
