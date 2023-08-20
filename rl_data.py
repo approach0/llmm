@@ -53,7 +53,8 @@ def step_ask_relevance(cfg, inp, out, trainer, rewards):
     output_dir = os.path.join(cfg.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
     for log in rewards:
-        log_name = os.path.basename(log['problem']) + '.log'
+        log_name = log['problem'].strip('.').replace('/', '_')
+        log_name = log_name + '.log'
         log['logpath'] = os.path.join(
             output_dir, log_name,
         )
