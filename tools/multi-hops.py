@@ -650,22 +650,22 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
 
 
 def save_log(**kwargs):
-        log_json = {
-            'problem': kwargs.get('json_path'),
-            'query': kwargs.get('query'),
-            'prompt': kwargs.get('prompt'),
-            'solution': kwargs.get('solution'),
-            'ground_truth': kwargs.get('boxed_solution'),
-            'judge_buffer': kwargs.get('judge_buffer'),
-            'manual_query': kwargs.get('manual_query'),
-            'manual_rating': kwargs.get('manual_rating'),
-            'args': json.dumps(kwargs.get('args'))
-        }
-        logpath = kwargs.get('logpath')
-        with open(logpath, 'w') as fh:
-            json.dump(log_json, fh, indent=2)
-            print('Written log:', logpath)
-        _output_html(logpath)
+    log_json = {
+        'problem': kwargs.get('json_path'),
+        'query': kwargs.get('query'),
+        'prompt': kwargs.get('prompt'),
+        'solution': kwargs.get('solution'),
+        'ground_truth': kwargs.get('boxed_solution'),
+        'judge_buffer': kwargs.get('judge_buffer'),
+        'manual_query': kwargs.get('manual_query'),
+        'manual_rating': kwargs.get('manual_rating'),
+        'args': json.dumps(kwargs.get('args'))
+    }
+    logpath = kwargs.get('logpath')
+    with open(logpath, 'w') as fh:
+        json.dump(log_json, fh, indent=2)
+        print('Written log:', logpath)
+    _output_html(logpath)
 
 
 if __name__ == '__main__':

@@ -45,8 +45,9 @@ class OpenAI_API():
 
     def complete(self, prompts, kwargs):
         assert isinstance(prompts, list)
-        sleep_time = 1
+        sleep_time = kwargs.pop('sleep_time')
         while True:
+            time.sleep(sleep_time)
             try:
                 bs = len(prompts)
                 stream = kwargs.pop('stream')
@@ -54,9 +55,8 @@ class OpenAI_API():
                 res_txt = self.streamout(response, bs, stream)
                 break
             except Exception as e:
-                print(str(e), f'sleep {sleep_time} secs.')
-                time.sleep(sleep_time)
                 sleep_time *= 2
+                print(str(e), f'sleep {sleep_time} secs.')
                 continue
         return res_txt
 

@@ -169,6 +169,7 @@ def batch_respond(config, models, batch_in):
 
 
 def prepare_experiment(config):
+    os.makedirs(config.get('output_dir', '.'), exist_ok=True)
     set_seed(config.getint('seed', 42))
     config_rerope(config)
 
@@ -196,20 +197,22 @@ def do_experiment(config):
         collate_fn=partial(col_fn, tok_fn),
         batch_size=bs
     )
+
+    rwd_fn = getattr(rl_data, config.get('reward_fn'))
+    stp_fn = getattr(rl_data, config.get('step_fn'))
+
     for batch_in in dataloader:
         batch_out = batch_respond(config, models, batch_in)
-        print(batch_in[1][0]['prompt'])
-        print(batch_out[0])
-        quit()
+        rewards = rwd_fn(config, batch_in, batch_out)
+        stp_fn(config, batch_in, batch_out, trainer, rewards)
+        #print(batch_in[1][b]['prompt'])
+        #print(batch_out[b])
         #rewards = [torch.tensor(1.0)]
-        #if trainer:
-        #    stats = trainer.step(
-        #        [input_ids[b]], [response[b]], rewards
-        #    )
-
+        #stats = trainer.step(
+        #    [input_ids[b]], [response[b]], rewards
+        #)
         #from rl_mcts import mcts_query
         #mcts_query(config, tokenizer, model, trainer)
-        #quit()
 
 
 def main(*experiments, config_file='rl.ini'):
