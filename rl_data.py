@@ -17,6 +17,15 @@ def collate_prompts(batch_tok_fn, batch_data):
     return batch_tok_fn(prompts), batch_data
 
 
+def collate_ask_relevance(batch_tok_fn, batch_data):
+    from tools.prompt_factory import ask_relevance
+    prompts = [
+        ask_relevance(d['prompt'].split('### Input:\n')[1])
+        for d in batch_data
+    ]
+    return batch_tok_fn(prompts), batch_data
+
+
 if __name__ == '__main__':
     json_file = './output/merged_test.json'
     ds = Dataset.from_generator(data_generator,

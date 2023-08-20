@@ -552,6 +552,10 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
 
                 break # next question
 
+            elif prompt_mode == 'askrel':
+                #prompt = ask_relevance(...)
+                raise NotImplemented
+
             else:
                 raise NotImplemented
 

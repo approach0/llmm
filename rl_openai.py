@@ -24,8 +24,8 @@ class OpenAI_API():
             **kwargs
         )
 
-    def streamout(self, response):
-        res_txt = ''
+    def streamout(self, response, bs, stream):
+        res_txt = [''] * bs
         for chunk in response:
             choices = chunk['choices']
             if len(choices) > 0:
@@ -34,17 +34,24 @@ class OpenAI_API():
                     delta = choice['text']
                     if len(delta) == 0:
                         continue
-                    res_txt += delta
+                    index = choice['index']
+                    res_txt[index] += delta
+                    if stream:
+                        os.system('clear')
+                        print(res_txt[index])
                     if self.abort and self.abort(res_txt):
                         break
         return res_txt
 
-    def complete(self, prompt, gen_kwargs, stream_kwargs):
+    def complete(self, prompts, kwargs):
+        assert isinstance(prompts, list)
         sleep_time = 1
         while True:
             try:
-                response = self.generate(prompt, **gen_kwargs)
-                res_txt = self.streamout(response)
+                bs = len(prompts)
+                stream = kwargs.pop('stream')
+                response = self.generate(prompts, **kwargs)
+                res_txt = self.streamout(response, bs, stream)
                 break
             except Exception as e:
                 print(str(e), f'sleep {sleep_time} secs.')
@@ -58,13 +65,15 @@ if __name__ == '__main__':
     import configparser
     cfg = configparser.ConfigParser()
     cfg.read('rl.ini')
-    config = cfg['open_ai_gpt3_5']
+    config = cfg['open_ai_gpt3_5_judge_relevance']
 
     from rl import get_cfg_json
     kwargs = get_cfg_json(config, 'openai_init', {})
     api = OpenAI_API(**kwargs)
 
-    gen_kwargs = get_cfg_json(config, 'openai_generate', {})
-    stream_kwargs = get_cfg_json(config, 'openai_stream', {})
-    r = api.complete('count to 10', gen_kwargs, stream_kwargs)
-    print(r)
+    gen_kwargs = get_cfg_json(config, 'openai_gen', {})
+    responses = api.complete([
+        'find the root: $x^2=4$',
+        'count to 10.'
+    ], gen_kwargs)
+    print(responses)

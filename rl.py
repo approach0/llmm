@@ -1,6 +1,8 @@
 import os
+import random
 import torch
 import configparser
+import numpy as np
 from functools import partial
 
 import sys
@@ -9,6 +11,16 @@ from trl.core import respond_to_batch
 
 
 ADAPT_CFG = "adapter_config.json"
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
 
 
 def get_cfg_json(config, name, default):
@@ -32,19 +44,10 @@ def config_rerope(config):
         replace_llama_attn_with_rerope(**rerope)
 
 
-def get_model(tokenizer_path, model_path,
-    peft_attach_new=False,
+def get_peft_config(peft_attach_new=False,
     peft_lora_rank=16,
     peft_lora_dropout=0.05,
-    peft_lora_alpha=32,
-    tokenizer_init_kwargs={},
-    tokenizer_special_tokens=None):
-
-    from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
-        **tokenizer_init_kwargs)
-    if tokenizer_special_tokens:
-        tokenizer.add_special_tokens(tokenizer_special_tokens)
+    peft_lora_alpha=32):
 
     if peft_attach_new:
         adapter_config = {
@@ -61,27 +64,57 @@ def get_model(tokenizer_path, model_path,
 
         from peft import LoraConfig
         lora_config = LoraConfig(**adapter_config)
+        return lora_config
     else:
-        lora_config = None
+        return None
 
-    from trl import AutoModelForCausalLMWithValueHead as M
-    model = M.from_pretrained(
-        model_path, device_map="auto",
-        peft_config=lora_config
-    )
 
-    is_peft_model = getattr(model, "is_peft_model", False)
-    if is_peft_model:
-        model.pretrained_model.print_trainable_parameters()
+def get_model(config):
+    tokenizer_path = config.get('tokenizer', None)
+    if tokenizer_path:
+        from transformers import AutoTokenizer
+        tokenizer_init_kwargs = get_cfg_json(config,
+            'tokenizer_init_kwargs', {})
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
+            **tokenizer_init_kwargs)
+        special_tokens = get_cfg_json(config,
+            'tokenizer_special_tokens', None)
+        if special_tokens:
+            tokenizer.add_special_tokens(special_tokens)
+    else:
+        tokenizer = None
+
+    model_path = config.get('model')
+    if model_path == 'openai_api':
+        from rl_openai import OpenAI_API
+        kwargs = get_cfg_json(config, 'openai_init', {})
+        model = OpenAI_API(**kwargs)
         ref_model = None
     else:
-        from trl import create_reference_model
-        ref_model = create_reference_model(model)
+        peft_kwargs = get_cfg_json(config, 'peft', {})
+        lora_config = get_peft_config(**peft_kwargs)
+
+        from trl import AutoModelForCausalLMWithValueHead as M
+        model = M.from_pretrained(
+            model_path, device_map="auto",
+            peft_config=lora_config
+        )
+
+        is_peft_model = getattr(model, "is_peft_model", False)
+        if is_peft_model:
+            model.pretrained_model.print_trainable_parameters()
+            ref_model = None
+        else:
+            from trl import create_reference_model
+            ref_model = create_reference_model(model)
 
     return tokenizer, model, ref_model
 
 
 def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
+    if 'lr' not in ppo_kwargs:
+        return None
+
     import bitsandbytes as bnb
     lr = ppo_kwargs.pop('lr')
     optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
@@ -100,45 +133,46 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
 
 
 def batch_tokenize(config, tokenizer, texts):
-    return tokenizer(texts,
-        return_tensors="pt",
-        max_length=config.getint("context_length"),
-        truncation=True,
-        padding=True
-    )
+    if tokenizer is None:
+        return {
+            'texts': [text for text in texts]
+        }
+    else:
+        max_length = config.getint("context_length")
+        return tokenizer(texts,
+            return_tensors="pt",
+            max_length=max_length,
+            truncation=True,
+            padding=True
+        )
 
 
-def test(config, tokenizer, model, trainer):
-    inputs = batch_tokenize(config, tokenizer,
-        [config.get('test_prompt')])
+def batch_respond(config, models, batch_in):
+    bs = config.getint('batch_size')
+    tokenizer, model, ref_model = models
+    dict_batch, batch_raw = batch_in
 
-    device = model.pretrained_model.device
-    input_ids = inputs['input_ids'].to(device) # bs, L
-    print(tokenizer.decode(input_ids[0]))
+    if hasattr(model, 'pretrained_model'):
+        device = model.pretrained_model.device
 
-    response = respond_to_batch(model, input_ids) # bs, L
-    print(tokenizer.decode(response[0]))
-
-    rewards = [torch.tensor(1.0)]
-    stats = trainer.step(
-        [input_ids[0]], [response[0]], rewards
-    )
-    print(stats)
+        input_ids = dict_batch['input_ids']
+        input_ids = input_ids.to(device) # bs, L
+        response = respond_to_batch(model, input_ids)
+        return [
+            tokenizer.decode(response[b])
+            for b in range(bs)
+        ]
+    else:
+        gen_kwargs = get_cfg_json(config, 'openai_gen', {})
+        in_texts = dict_batch['texts']
+        return model.complete(in_texts, gen_kwargs)
 
 
 def prepare_experiment(config):
+    set_seed(config.getint('seed', 42))
     config_rerope(config)
 
-    peft_kwargs = get_cfg_json(config, 'peft', {})
-    tokenizer_kwargs = get_cfg_json(config, 'tokenizer_init_kwargs', {})
-    special_tokens = get_cfg_json(config, 'tokenizer_special_tokens', None)
-    models = get_model(
-        config.get('tokenizer'),
-        config.get('model'),
-        tokenizer_init_kwargs=tokenizer_kwargs,
-        tokenizer_special_tokens=special_tokens,
-        **peft_kwargs,
-    )
+    models = get_model(config)
 
     ppo_kwargs = get_cfg_json(config, 'ppo', {})
     trainer = get_rl_trainer(*models, **ppo_kwargs)
@@ -147,11 +181,7 @@ def prepare_experiment(config):
 
 def do_experiment(config):
     models, trainer = prepare_experiment(config)
-    tokenizer, model, ref_model = models
-
-    if config.get('test_prompt', False):
-        test(config, tokenizer, model, trainer)
-        return
+    tokenizer, model, _ = models
 
     from datasets import load_dataset
     from torch.utils.data import DataLoader
@@ -166,14 +196,16 @@ def do_experiment(config):
         collate_fn=partial(col_fn, tok_fn),
         batch_size=bs
     )
-    device = model.pretrained_model.device
-    for dict_batch, batch_raw in dataloader:
-        input_ids = dict_batch['input_ids']
-        input_ids = input_ids.to(device) # bs, L
-        response = respond_to_batch(model, input_ids)
-
-        for b in range(bs):
-            print(tokenizer.decode(response[b]))
+    for batch_in in dataloader:
+        batch_out = batch_respond(config, models, batch_in)
+        print(batch_in[1][0]['prompt'])
+        print(batch_out[0])
+        quit()
+        #rewards = [torch.tensor(1.0)]
+        #if trainer:
+        #    stats = trainer.step(
+        #        [input_ids[b]], [response[b]], rewards
+        #    )
 
         #from rl_mcts import mcts_query
         #mcts_query(config, tokenizer, model, trainer)

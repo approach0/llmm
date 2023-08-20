@@ -452,6 +452,76 @@ As a result, for this question, my rating for having such a key formula is prob[
     return prompt
 
 
+def ask_relevance(after_input_sect):
+    prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
+Write a response in the Response section that appropriately completes the request.
+
+### Instruction
+Given a math problem, and a provided search result potentially relevant to this problem.
+
+Please indicate, on a scale of 0 to 2 and in the format of "rate[x]", the relevance of this search result.
+
+The criteria of judging the relevance of a provided search result passage is:
+
+rate[0]: The provided passage is not helpful in solving the given math problem;
+
+rate[1]: The provided passage is relevant, but it requires some further derivations and efforts in solving the given math problem;
+
+rate[2]: The provided passage is fully relevant, we can follow the process and easily derive the answer, or we can even find the solution directly in the provided passage.
+
+Here is an example math problem:
+
+Show $\frac{a_1^2}{a_1+a_2}+\frac{a_2^2}{a_2+a_3}+ \cdots \frac{a_n^2}{a_n+a_1} \geq \frac12$.
+
+I will give a judgement for each of search results below for your reference:
+
+--- BEGIN of API results ---
+URL: https://math.stackexchange.com/questions/zzz
+
+#### User Answer (Upvotes: 8)
+AM-GM gives: $\frac{\left(\frac{s-a_1}{n-1}\right)a_1 + \left(\frac{s-a_2}{n-1}\right)a_2+ \cdots +\left(\frac{s- a_n}{n-1}\right)a_n}{a_1 + a_2 +\cdots+a_n} \ge \left(\left(\frac{s-a_1}{n-1}\right)^{a_1} \cdot \left(\frac{s-a_2}{n-1}\right)^{a_2}\cdots \left(\frac{s-a_n}{n-1}\right)^{a_n}\right)^{\frac{1}{s}}$
+
+We can show AM of the numbers:
+$$
+\frac{s}{n} \ge \frac {2\sum\limits_{1\le i\lt j\le n} a_ia_j}{(n-1)s}
+$$
+$\implies (n-1)\sum\limits_{i=1}^n a_i^2 \ge 2\sum\limits_{1\le i\lt j\le n} a_ia_j$.
+--- END of API results ---
+
+This result is indeed showing a proof for an inequality, but I do not see any relation between it and the given math question.
+Without noticing any relevant part that is truly helpful, I will give a relevance of rate[0].
+
+--- BEGIN of API results ---
+URL: https://math.stackexchange.com/questions/xxx
+
+#### User Answer (Upvotes: 8)
+By the Cauchy-Schwarz inequality we have:
+$$
+\frac{a_1^2}{a_1+a_2}+\frac{a_2^2}{a_2+a_3}+ \cdots \frac{a_n^2}{a_n+a_1}=\frac{a_1^2}{(\sqrt{a_1+a_2})^2}+\frac{a_2^2}{(\sqrt{a_2+a_3})^2}+ \cdots+ \frac{a_n^2}{(\sqrt{a_n+a_1})^2} \geq \frac{1}{a_1+\cdots + a_n+a_1+ \cdots + a_n}\left(\frac{a_1 \cdot \sqrt{a_1+a_2}}{\sqrt{a_1+a_2}} + \frac{a_2 \cdot \sqrt{a_2+a_3}}{\sqrt{a_2+a_3}}+ \cdots + \frac{a_n \cdot \sqrt{a_n+a_1}}{\sqrt{a_n+a_1}}\right)\\=\frac{a_1+a_2+a_3+ \cdots a_n}{{2(a_1+a_2+a_3+ \cdots a_n)}}=...
+$$
+
+Can you handle the rest?
+--- END of API results ---
+
+This one is an fully relevant answer to an identical math question, although it require one more step to derive, it is easy to see the following step will complete the proof. So the relevance should be rate[2].
+
+--- BEGIN of API results ---
+URL: https://math.stackexchange.com/questions/yyy
+
+#### User Answer (Upvotes: 8)
+Use the CBS inequality:
+$\frac{x_{1}^{2}}{a_{1}} + \cdots + \frac{x_{n}^{2}}{a_{n}} \geq \frac{(x_{1} + \cdots + x_{n})^{2}}{a_{1}+\cdots+a_{n}}.$
+--- END of API results ---
+
+This result might be answering the same question, but it may take a few more steps to check if the CBS inequality is indeed useful for our proof. At least the proof cannot be followed directly and clearly from this inequality, so the relevance should be rate[1].
+
+Got it? Now, it is your turn!
+
+### Input:
+'''
+    return prompt + after_input_sect
+
+
 #########################
 ####### version 3 #######
 #########################
