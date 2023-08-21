@@ -220,6 +220,8 @@ def test_np(fpath='data/MATH_np.json'):
 def get_auto_judge_stats(logdir, suffix='.log',
     partial_relevance=False):
     correct_cnt, invalid_cnt, total_cnt = 0, 0, 0
+    auto_scores, man_scores = [], []
+    overlap_scores = []
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if not logpath.endswith(suffix):
@@ -230,14 +232,19 @@ def get_auto_judge_stats(logdir, suffix='.log',
         jj = judge_buffer[0]
         answer = jj['answer']
         m_rate = j['manual_rating']
+        man_scores.append(m_rate)
+
         if m := re.search(r'rate\[(\d+)\]', answer):
             rate = int(m.group(1))
+            auto_scores.append(rate)
+
             if partial_relevance:
                 correct = (bool(m_rate) == bool(rate))
             else:
                 correct = (m_rate == rate)
             if correct:
                 correct_cnt += 1
+                overlap_scores.append(rate)
         else:
             #print('wrong format:', answer)
             invalid_cnt += 1
@@ -245,6 +252,10 @@ def get_auto_judge_stats(logdir, suffix='.log',
     accuracy = correct_cnt / total_cnt * 100
     print(f'invalid coutn: {invalid_cnt}')
     print(f'{correct_cnt} / {total_cnt} = {accuracy:.2f}%')
+
+    save_hist('manu_judge_stats', man_scores, verbose=False, th=1)
+    save_hist('auto_judge_stats', auto_scores, verbose=False, th=1)
+    save_hist('overlap_judge_stats', overlap_scores, verbose=False, th=1)
 
 
 def get_class_hist(logdir, suffix, mode='gpt3.5', verbose=False):
@@ -288,7 +299,7 @@ def get_class_hist(logdir, suffix, mode='gpt3.5', verbose=False):
     return data
 
 
-def save_hist(name, x, verbose=False):
+def save_hist(name, x, verbose=False, th=5):
     import matplotlib.pyplot as plt
     import numpy as np
     if verbose: print('Saving:', name)
@@ -298,7 +309,7 @@ def save_hist(name, x, verbose=False):
     axis[0].hist(x)
     axis[0].set_title(name)
 
-    x = list(map(lambda x: 1 if x > 5 else 0, x))
+    x = list(map(lambda x: 1 if x >= th else 0, x))
     axis[1].hist(x)
     axis[1].set_title('yes=1, no=0')
 
