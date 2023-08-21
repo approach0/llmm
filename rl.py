@@ -201,10 +201,11 @@ def do_experiment(config):
     rwd_fn = getattr(rl_data, config.get('reward_fn'))
     stp_fn = getattr(rl_data, config.get('step_fn'))
 
-    for batch_in in dataloader:
+    for step, batch_in in enumerate(dataloader):
         batch_out = batch_respond(config, models, batch_in)
-        rewards = rwd_fn(config, batch_in, batch_out)
-        stp_fn(config, batch_in, batch_out, trainer, rewards)
+        rewards = rwd_fn(config, batch_in, batch_out, models)
+        stp_fn(config, step, trainer, rewards)
+
         #print(batch_in[1][b]['prompt'])
         #print(batch_out[b])
         #rewards = [torch.tensor(1.0)]

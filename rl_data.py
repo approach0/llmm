@@ -33,7 +33,7 @@ def collate_ask_relevance(batch_tok_fn, batch_data):
     return batch_tok_fn(prompts), batch_data
 
 
-def reward_ask_relevance(config, inp, out):
+def reward_ask_relevance(config, inp, out, model):
     rewards = []
     for raw, inp_str, out_str in zip(
         inp[1], inp[0]['texts'], out):
@@ -48,13 +48,13 @@ def reward_ask_relevance(config, inp, out):
     return rewards
 
 
-def step_ask_relevance(cfg, inp, out, trainer, rewards):
+def step_ask_relevance(cfg, step, trainer, rewards):
     run_name = cfg.name
     output_dir = os.path.join(cfg.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
-    for log in rewards:
+    for b, log in enumerate(rewards):
         log_name = log['problem'].strip('.').replace('/', '_')
-        log_name = log_name + '.log'
+        log_name = log_name + f'.{step}_{b}.log'
         log['logpath'] = os.path.join(
             output_dir, log_name,
         )
