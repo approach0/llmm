@@ -1,7 +1,10 @@
 import re
 import os
+import copy
 import json
 from datasets import Dataset
+
+IGNORE_INDEX = -100
 
 
 def data_generator(json_file):
@@ -17,6 +20,37 @@ def data_generator(json_file):
 def collate_prompts(batch_tok_fn, batch_data):
     prompts = [d['prompt'] for d in batch_data]
     return batch_tok_fn(prompts), batch_data
+
+
+def collate_prompts_finetune(batch_tok_fn, batch_data):
+    def rate2outputs(rate):
+        if rate == 0:
+            return 'This search result is not helpful.'
+        elif rate == 1:
+            return 'This search result might be useful.'
+        else:
+            return 'This search result looks very relevant!'
+
+    sources = [d['prompt'] + '\n' for d in batch_data]
+    targets = [rate2outputs(d['manual_rating']) for d in batch_data]
+    examples = [s + t for s, t in zip(sources, targets)]
+
+    sources_tokenized = batch_tok_fn(sources)
+    targets_tokenized = batch_tok_fn(targets)
+    examples_tokenized = batch_tok_fn(examples)
+    labels = examples_tokenized["input_ids"].clone()
+
+    for label, src_len, exm_len in zip(labels,
+        sources_tokenized["attention_mask"].sum(-1).tolist(),
+        examples_tokenized["attention_mask"].sum(-1).tolist()):
+        label[:src_len] = IGNORE_INDEX
+        label[exm_len:] = IGNORE_INDEX
+
+    examples_tokenized.update({
+        'labels': labels
+    })
+
+    return examples_tokenized
 
 
 def collate_ask_relevance(batch_tok_fn, batch_data):

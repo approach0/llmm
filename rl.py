@@ -1,4 +1,5 @@
 import os
+import json
 import random
 import torch
 import configparser
@@ -24,7 +25,6 @@ def set_seed(seed):
 
 
 def get_cfg_json(config, name, default):
-    import json
     value = config.get(name, default)
     if value:
         try:
@@ -69,7 +69,7 @@ def get_peft_config(peft_attach_new=False,
         return None
 
 
-def get_model(config):
+def get_models(config):
     tokenizer_path = config.get('tokenizer', None)
     if tokenizer_path:
         from transformers import AutoTokenizer
@@ -81,6 +81,9 @@ def get_model(config):
             'tokenizer_special_tokens', None)
         if special_tokens:
             tokenizer.add_special_tokens(special_tokens)
+        print('tokenizer pad_token_id:', tokenizer.pad_token_id)
+        print('tokenizer bos_token_id:', tokenizer.bos_token_id)
+        print('tokenizer eos_token_id:', tokenizer.eos_token_id)
     else:
         tokenizer = None
 
@@ -94,19 +97,37 @@ def get_model(config):
         peft_kwargs = get_cfg_json(config, 'peft', {})
         lora_config = get_peft_config(**peft_kwargs)
 
-        from trl import AutoModelForCausalLMWithValueHead as M
-        model = M.from_pretrained(
-            model_path, device_map="auto",
-            peft_config=lora_config
-        )
+        if config.getboolean('use_rl', True):
+            from trl import AutoModelForCausalLMWithValueHead as M
+            model = M.from_pretrained(
+                model_path, device_map="auto",
+                peft_config=lora_config
+            )
 
-        is_peft_model = getattr(model, "is_peft_model", False)
-        if is_peft_model:
-            model.pretrained_model.print_trainable_parameters()
-            ref_model = None
+            is_peft_model = getattr(model, "is_peft_model", False)
+            if is_peft_model:
+                model.pretrained_model.print_trainable_parameters()
+                ref_model = None
+            else:
+                from trl import create_reference_model
+                ref_model = create_reference_model(model)
         else:
-            from trl import create_reference_model
-            ref_model = create_reference_model(model)
+            from transformers import LlamaForCausalLM
+            from transformers import BitsAndBytesConfig
+            model = LlamaForCausalLM.from_pretrained(
+                model_path,
+                load_in_8bit=True,
+                quantization_config=BitsAndBytesConfig(
+                    load_in_8bit=True,
+                    llm_int8_threshold=6.0,
+                    llm_int8_has_fp16_weight=False,
+                )
+            )
+
+            from peft import get_peft_model
+            model = get_peft_model(model, lora_config)
+            model.print_trainable_parameters()
+            ref_model = None
 
     return tokenizer, model, ref_model
 
@@ -138,6 +159,7 @@ def batch_tokenize(config, tokenizer, texts):
             'texts': [text for text in texts]
         }
     else:
+        texts = [t + tokenizer.eos_token for t in texts]
         max_length = config.getint("context_length")
         return tokenizer(texts,
             return_tensors="pt",
@@ -169,19 +191,8 @@ def batch_respond(config, models, batch_in):
 
 
 def prepare_experiment(config):
-    os.makedirs(config.get('output_dir', '.'), exist_ok=True)
-    set_seed(config.getint('seed', 42))
     config_rerope(config)
-
-    models = get_model(config)
-
-    ppo_kwargs = get_cfg_json(config, 'ppo', {})
-    trainer = get_rl_trainer(*models, **ppo_kwargs)
-    return models, trainer
-
-
-def do_experiment(config):
-    models, trainer = prepare_experiment(config)
+    models = get_models(config)
     tokenizer, model, _ = models
 
     from datasets import load_dataset
@@ -190,21 +201,64 @@ def do_experiment(config):
     dataset = load_dataset(dataset_path, split="train")
 
     import rl_data
-    bs = config.getint('batch_size')
     tok_fn = partial(batch_tokenize, config, tokenizer)
     col_fn = getattr(rl_data, config.get('collate_fn'))
-    dataloader = DataLoader(dataset,
-        collate_fn=partial(col_fn, tok_fn),
-        batch_size=bs
-    )
 
-    rwd_fn = getattr(rl_data, config.get('reward_fn'))
-    stp_fn = getattr(rl_data, config.get('step_fn'))
+    if config.getboolean('use_rl', True):
+        bs = config.getint('batch_size')
+        dataloader = DataLoader(dataset,
+            collate_fn=partial(col_fn, tok_fn),
+            batch_size=bs
+        )
 
-    for step, batch_in in enumerate(dataloader):
-        batch_out = batch_respond(config, models, batch_in)
-        rewards = rwd_fn(config, batch_in, batch_out, models)
-        stp_fn(config, step, trainer, rewards)
+        trainer_kwargs = get_cfg_json(config, 'trainer', {})
+        trainer = get_rl_trainer(*models, **trainer_kwargs)
+    else:
+        dataloader=None
+
+        from transformers import Trainer, TrainingArguments
+        from transformers import HfArgumentParser
+        parser = HfArgumentParser(TrainingArguments)
+        trainer_args = get_cfg_json(config, 'trainer', [])
+        trainer_args = list(map(str, trainer_args))
+        hg_trainer_args = parser.parse_args_into_dataclasses(
+            args=trainer_args
+        )[0]
+        # we need to force some values ...
+        hg_trainer_args.remove_unused_columns = False
+        hg_trainer_args._n_gpu = 1
+
+        trainer = Trainer(
+            model=model,
+            tokenizer=tokenizer,
+            args=hg_trainer_args,
+            train_dataset=dataset,
+            eval_dataset=None,
+            data_collator=partial(col_fn, tok_fn)
+        )
+
+    return models, trainer, dataloader
+
+
+def do_experiment(config):
+    os.makedirs(config.get('output_dir', '.'), exist_ok=True)
+    set_seed(config.getint('seed', 42))
+
+    models, trainer, dataloader = prepare_experiment(config)
+    tokenizer, model, _ = models
+
+    if config.getboolean('use_rl', True):
+        rwd_fn = getattr(rl_data, config.get('reward_fn'))
+        stp_fn = getattr(rl_data, config.get('step_fn'))
+
+        for step, batch_in in enumerate(dataloader):
+            batch_out = batch_respond(config, models, batch_in)
+            rewards = rwd_fn(config, batch_in, batch_out, models)
+            stp_fn(config, step, trainer, rewards)
+    else:
+        from torch import autocast
+        with autocast(device_type="cuda"):
+            trainer.train()
 
         #print(batch_in[1][b]['prompt'])
         #print(batch_out[b])
@@ -219,6 +273,7 @@ def do_experiment(config):
 def main(*experiments, config_file='rl.ini'):
     cfg = configparser.ConfigParser()
     cfg.read(config_file)
+    #json.loads(cfg['finetune__7b_vicuna_v1_5']['trainer'])
 
     for ex in experiments:
         assert ex in cfg.sections()
