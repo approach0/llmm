@@ -21,8 +21,6 @@ copy_for_publish() {
 
 export CUDA_VISIBLE_DEVICES=4
 python utils2.py test \
-    --cache_dir ./data \
-    --model_path approach0/mathy-vicuna-13B-FFT \
+    --cache_dir None \
+    --model_path output/finetune_phase2__mathy_fft \
     'Solve $x^2 = 4$.'
-
-    #--model_path WizardLM/WizardMath-13B-V1.0 \

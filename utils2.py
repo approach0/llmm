@@ -9,6 +9,11 @@ from transformers import LlamaForCausalLM
 from transformers import AutoTokenizer
 from transformers import AutoModelForCausalLM
 
+prompt_template = "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:"
+
+from tools.prompt_factory import tool_prompt1
+prompt_template = tool_prompt1(r'Find the number of solutions to $\sec \theta + \csc \theta = \sqrt{15}$ where $0 \le \theta \le 2 \pi.$') + '\n\n' + '### Response:'
+
 
 def merge_adapter(origin_model_path, adapter_path, output_path='./tmp',
     load_in_8bit=False, cache_dir=None, is_trainable=False):
@@ -141,7 +146,8 @@ def load_model(tokenizer_path, model_path, adapter_path=None,
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
         legacy=False, cache_dir=cache_dir)
     model = AutoModelForCausalLM.from_pretrained(model_path,
-        device_map="auto", torch_dtype=dtype, cache_dir=cache_dir)
+        device_map="auto", torch_dtype=dtype,
+        cache_dir=cache_dir)
     if adapter_path:
         print('Loading adapter:', adapter_path)
         from peft import PeftModel
@@ -167,19 +173,16 @@ def generate(debug=False, **kargs):
     return cur_text
 
 
-prompt_template = "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:"
-
-
 def test(prompt, use_template=True,
     model_path='lmsys/vicuna-7b-v1.5',
     cache_dir='./data'):
     if use_template:
-        prompt = prompt_template.format(instruction=prompt)
+        prompt = prompt_template
         print(prompt)
     tokenizer, model = load_model(model_path, model_path,
         cache_dir=cache_dir)
-    generate(tokenizer=tokenizer, model=model, prompt=prompt,
-        debug=True)
+    generate(tokenizer=tokenizer, model=model,
+        prompt=prompt, debug=True)
 
 
 if __name__ == '__main__':
