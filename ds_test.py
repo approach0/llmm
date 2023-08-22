@@ -23,6 +23,27 @@ from flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
 
+
+default_prompt = r'''
+Below is an instruction that describes a task, paired with an input that provides further context.
+Write a response that appropriately completes the request.
+
+### Instruction:
+Answer a math question in the input.
+The input is also followed by some potentially relevant passages to assist you.
+
+If you find any passage(s) very helpful, feel free to tell me, and utilize them to guide your answer as much as possible.
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
+
+### Input:
+
+### Response:
+'''
+
+from tools.prompt_factory import tool_prompt1
+new_prompt = tool_prompt1(r'Find the number of solutions to $\sec \theta + \csc \theta = \sqrt{15}$ where $0 \le \theta \le 2 \pi.$') + '\n\n' + '### Response:\n'
+
 local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
 
@@ -89,22 +110,6 @@ model = ds_engine.module
 model.eval() # for inference
 
 
-default_prompt = r'''
-Below is an instruction that describes a task, paired with an input that provides further context.
-Write a response that appropriately completes the request.
-
-### Instruction:
-Answer a math question in the input.
-The input is also followed by some potentially relevant passages to assist you.
-
-If you find any passage(s) very helpful, feel free to tell me, and utilize them to guide your answer as much as possible.
-
-Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
-
-### Input:
-
-### Response:
-'''
 def inference(prompt):
     print('inference rank', local_rank, end='\n\n')
     #inputs = tokenizer(prompt, return_tensors="pt")
