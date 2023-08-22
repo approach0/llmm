@@ -15,4 +15,5 @@ set -x
 deepspeed \
     --include=localhost:$devices \
     --master_port $port \
+    --no_local_rank \
     rl.py $experiment
