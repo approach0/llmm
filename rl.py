@@ -242,6 +242,7 @@ def prepare_experiment(config):
             eval_dataset=None,
             data_collator=partial(col_fn, tok_fn)
         )
+        trainer.deepspeed = trainer.model_wrapped
 
     return models, trainer, dataloader
 
@@ -252,6 +253,9 @@ def do_experiment(config):
 
     models, trainer, dataloader = prepare_experiment(config)
     tokenizer, model, _ = models
+    final_save_path = os.path.join(
+        config.get('output_dir'), config.name
+    )
 
     if config.getboolean('use_rl', True):
         import rl_data
@@ -262,19 +266,20 @@ def do_experiment(config):
             batch_out = batch_respond(config, models, batch_in)
             rewards = rwd_fn(config, batch_in, batch_out, models)
             stp_fn(config, step, trainer, rewards)
+
+        model.save_pretrained(final_save_path)
     else:
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
+        trainer.save_model(final_save_path)
 
-        #print(batch_in[1][b]['prompt'])
-        #print(batch_out[b])
-        #rewards = [torch.tensor(1.0)]
-        #stats = trainer.step(
-        #    [input_ids[b]], [response[b]], rewards
-        #)
-        #from rl_mcts import mcts_query
-        #mcts_query(config, tokenizer, model, trainer)
+    #rewards = [torch.tensor(1.0)]
+    #stats = trainer.step(
+    #    [input_ids[b]], [response[b]], rewards
+    #)
+    #from rl_mcts import mcts_query
+    #mcts_query(config, tokenizer, model, trainer)
 
 
 def main(*experiments, config_file='rl.ini'):
