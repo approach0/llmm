@@ -584,29 +584,28 @@ Answer a math question in the input.
 
 Indicate your final answer in boxed LaTeX. For example, if the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}}.
 
-To assist you, you can invoke a math-aware search engine API (SEARCH) to find potentially relevant search results and I will insert these results for you right after API call(s).
+To assist you, you can invoke a math-aware search engine API (i.e., SEARCH) to find potentially relevant search results to the math question, and I will insert these results for you right after every API call.
 
-SEARCH APIs should be followed by its parameters which are a list of keywords in JSON format.
-Note that the SEARCH API supports math keywords, it is better to enclose math formulas with dollar signs, for example:
+An API call should be followed by its arguments which are a list of keywords in JSON format, for example:
 
 SEARCH["$x^2 = -1$", "imaginary numbers"]
 
-DO NOT mix text and math in one JSON item, for example:
+DO NOT mix text and math in one JSON item, for example, this is NOT good:
 
 SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
 
-Do separate keywords by comma with only one type in each JSON item, for example:
+Instead, separate different types of keywords by comma, and pick only important keyword(s):
 
 SEARCH["curve", "defined by", "$x^2 - y^2 = 4$"]
 
-Only consider helpful API results for your goal, ignore irrelevant ones.
-
-When an API returns any error or unexpected messages, exam your parameters carefully (e.g., look for format issues in JSON).
+When an API returns any error or unexpected messages, exam your arguments carefully (e.g., look for format issues in JSON).
 You may call the same API with corrected argument(s) again.
 
-When results are not helpful, do explore alternative ways. You do not have to rely on API results.
+Only consider helpful API results for your goal, ignore irrelevant ones.
+When search results are not helpful, do explore alternative ways. You do not have to rely on every API result.
 
-However, when a result is useful or it contains the exact or partial solution, just rely on the result or extract the answer from the result directly without the need to redo any previous derivation.
+When a search result is helpful, you can just rely on the result or extract the final answer from it directly,
+in such case, there is no need to answer from the begining and redo any existing derivations in the result.
 
 ### Input:
 '''
