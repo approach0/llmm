@@ -254,6 +254,7 @@ def do_experiment(config):
     tokenizer, model, _ = models
 
     if config.getboolean('use_rl', True):
+        import rl_data
         rwd_fn = getattr(rl_data, config.get('reward_fn'))
         stp_fn = getattr(rl_data, config.get('step_fn'))
 

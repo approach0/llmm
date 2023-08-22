@@ -87,15 +87,14 @@ def collate_finetune_phase2(batch_tok_fn, batch_data):
 
 def collate_ask_relevance(batch_tok_fn, batch_data):
     from tools.prompt_factory import ask_relevance
-    prompts = [
-        ask_relevance(
-            d['prompt']
+    for data in batch_data:
+        data['prompt'] = ask_relevance(
+            data['prompt']
             .split('### Input:\n')[1]
             .replace('### Response:\n', '')
             + '\n\n' + '### Response:'
         )
-        for d in batch_data
-    ]
+    prompts = [d['prompt'] for d in batch_data]
     return batch_tok_fn(prompts), batch_data
 
 
