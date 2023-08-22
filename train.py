@@ -160,10 +160,18 @@ class DataCollatorForSupervisedDataset(object):
         )
         labels = [torch.tensor(x) for x in labels]
         labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
+        attention_mask=input_ids.ne(self.tokenizer.pad_token_id)
+
+        #input_text = self.tokenizer.decode(input_ids[0])
+        #label_ids = labels[0].clone()
+        #label_ids[label_ids == -100] = tokenizer.bos_token_id
+        #label_text = self.tokenizer.decode(label_ids)
+        #breakpoint()
+
         return dict(
             input_ids=input_ids,
             labels=labels,
-            attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
+            attention_mask=attention_mask,
         )
 
 
