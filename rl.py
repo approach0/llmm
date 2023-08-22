@@ -113,15 +113,8 @@ def get_models(config):
                 ref_model = create_reference_model(model)
         else:
             from transformers import LlamaForCausalLM
-            from transformers import BitsAndBytesConfig
             model = LlamaForCausalLM.from_pretrained(
-                model_path,
-                load_in_8bit=True,
-                quantization_config=BitsAndBytesConfig(
-                    load_in_8bit=True,
-                    llm_int8_threshold=6.0,
-                    llm_int8_has_fp16_weight=False,
-                )
+                model_path, torch_dtype=torch.float16
             )
 
             from peft import get_peft_model
@@ -165,7 +158,7 @@ def batch_tokenize(config, tokenizer, texts):
             return_tensors="pt",
             max_length=max_length,
             truncation=True,
-            padding=True
+            padding="longest"
         )
 
 
@@ -192,6 +185,31 @@ def batch_respond(config, models, batch_in):
 
 def prepare_experiment(config):
     config_rerope(config)
+
+    if not config.getboolean('use_rl', True):
+        deepspeed = get_cfg_json(config, 'deepspeed', None)
+        deepspeed_arg = []
+        if deepspeed is not None:
+            import ds_config
+            ds_config_file = ds_config.create_json(**deepspeed)
+            deepspeed_arg = ['--deepspeed', ds_config_file]
+            local_rank = int(os.getenv("LOCAL_RANK", "0"))
+            torch.cuda.set_device(local_rank)
+            print('deepspeed', local_rank, ds_config_file)
+
+        from transformers import Trainer, TrainingArguments
+        from transformers import HfArgumentParser
+        parser = HfArgumentParser(TrainingArguments)
+        trainer_args = get_cfg_json(config, 'trainer', [])
+        trainer_args = list(map(str, trainer_args))
+        hg_trainer_args = parser.parse_args_into_dataclasses(
+            args=(trainer_args + deepspeed_arg) # call __post_init__
+        )[0]
+
+        # we need to force some values ...
+        hg_trainer_args.remove_unused_columns = False
+        hg_trainer_args._n_gpu = 1
+
     models = get_models(config)
     tokenizer, model, _ = models
 
@@ -215,19 +233,6 @@ def prepare_experiment(config):
         trainer = get_rl_trainer(*models, **trainer_kwargs)
     else:
         dataloader=None
-
-        from transformers import Trainer, TrainingArguments
-        from transformers import HfArgumentParser
-        parser = HfArgumentParser(TrainingArguments)
-        trainer_args = get_cfg_json(config, 'trainer', [])
-        trainer_args = list(map(str, trainer_args))
-        hg_trainer_args = parser.parse_args_into_dataclasses(
-            args=trainer_args
-        )[0]
-        # we need to force some values ...
-        hg_trainer_args.remove_unused_columns = False
-        hg_trainer_args._n_gpu = 1
-
         trainer = Trainer(
             model=model,
             tokenizer=tokenizer,
