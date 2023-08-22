@@ -7,7 +7,12 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 #export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
+experiment=$1
+devices=${2:0,1}
+port=${3:8921}
+
+set -x
 deepspeed \
-    --include=localhost:0,1 \
-    --master_port 8921 \
-    rl.py finetune__7b_vicuna_v1_5
+    --include=localhost:$devices \
+    --master_port $port \
+    rl.py experiment

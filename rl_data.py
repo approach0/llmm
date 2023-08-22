@@ -53,7 +53,7 @@ def collate_finetune_phase1(batch_tok_fn, batch_data):
     return examples_tokenized
 
 
-def collate_prompts_finetune(batch_tok_fn, batch_data):
+def collate_finetune_phase2(batch_tok_fn, batch_data):
     def rate2outputs(rate):
         if rate == 0:
             return 'This search result is not helpful.'
@@ -65,6 +65,7 @@ def collate_prompts_finetune(batch_tok_fn, batch_data):
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [rate2outputs(d['manual_rating']) for d in batch_data]
     examples = [s + t for s, t in zip(sources, targets)]
+    breakpoint()
 
     sources_tokenized = batch_tok_fn(sources)
     targets_tokenized = batch_tok_fn(targets)

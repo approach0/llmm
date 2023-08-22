@@ -117,9 +117,10 @@ def get_models(config):
                 model_path, torch_dtype=torch.float16
             )
 
-            from peft import get_peft_model
-            model = get_peft_model(model, lora_config)
-            model.print_trainable_parameters()
+            if lora_config is not None:
+                from peft import get_peft_model
+                model = get_peft_model(model, lora_config)
+                model.print_trainable_parameters()
             ref_model = None
 
     return tokenizer, model, ref_model
