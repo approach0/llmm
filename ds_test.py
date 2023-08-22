@@ -42,7 +42,7 @@ Remember to indicate your final answer in boxed LaTeX. For example, if you think
 '''
 
 from tools.prompt_factory import tool_prompt1
-new_prompt = tool_prompt1(r'Find the number of solutions to $\sec \theta + \csc \theta = \sqrt{15}$ where $0 \le \theta \le 2 \pi.$') + '\n\n' + '### Response:\n'
+default_prompt = tool_prompt1(r'Find the number of solutions to $\sec \theta + \csc \theta = \sqrt{15}$ where $0 \le \theta \le 2 \pi.$') + '\n\n' + '### Response:\n'
 
 local_rank = int(os.getenv("LOCAL_RANK", "0"))
 world_size = int(os.getenv("WORLD_SIZE", "1"))
