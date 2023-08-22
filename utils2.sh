@@ -22,5 +22,5 @@ copy_for_publish() {
 export CUDA_VISIBLE_DEVICES=4
 python utils2.py test \
     --cache_dir None \
-    --model_path output/finetune_phase2__mathy_fft \
+    --model_path output/checkpoint-10/ \
     'Solve $x^2 = 4$.'

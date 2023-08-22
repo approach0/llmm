@@ -12,7 +12,7 @@ from transformers import AutoModelForCausalLM
 prompt_template = "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:"
 
 from tools.prompt_factory import tool_prompt1
-prompt_template = tool_prompt1(r'Find the number of solutions to $\sec \theta + \csc \theta = \sqrt{15}$ where $0 \le \theta \le 2 \pi.$') + '\n\n' + '### Response:'
+prompt_template = tool_prompt1(r'Find the number of solutions to $\sec \theta + \csc \theta = \sqrt{15}$ where $0 \le \theta \le 2 \pi.$') + '\n\n' + '### Response:\n'
 
 
 def merge_adapter(origin_model_path, adapter_path, output_path='./tmp',
@@ -142,7 +142,7 @@ def generate_stream(model, tokenizer, prompt, device='cuda:0', context_len=4096,
 
 
 def load_model(tokenizer_path, model_path, adapter_path=None,
-    cache_dir=None, dtype=torch.float16):
+    cache_dir=None, dtype=torch.bfloat16):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
         legacy=False, cache_dir=cache_dir)
     model = AutoModelForCausalLM.from_pretrained(model_path,
