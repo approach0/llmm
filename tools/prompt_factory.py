@@ -577,6 +577,29 @@ Q: {}
 
 
 def ia_mytrain(Q, Qry, *P):
+    prompt = tool_prompt1(Q)
+    prompt += r'''
+
+### Response:
+SEARCH{QryJson}
+'''.format(QryJson=json.dumps(Qry))
+
+    prompt += f'\n--- BEGIN of API results ---\n'
+    for i, p in enumerate(P):
+        prompt += f'{p}\n'
+        if i < len(P):
+            prompt += '\n'
+
+    prompt += f'--- END of API results ---\n'
+    return prompt
+
+
+#########################
+####### version 4 #######
+#########################
+
+
+def tool_prompt1(Q):
     prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
 ### Instruction:
@@ -610,20 +633,6 @@ in such case, there is no need to answer from the begining and redo any existing
 ### Input:
 '''
     prompt += Q
-
-    prompt += r'''
-
-### Response:
-SEARCH{QryJson}
-'''.format(QryJson=json.dumps(Qry))
-
-    prompt += f'\n--- BEGIN of API results ---\n'
-    for i, p in enumerate(P):
-        prompt += f'{p}\n'
-        if i < len(P):
-            prompt += '\n'
-
-    prompt += f'--- END of API results ---\n'
     return prompt
 
 

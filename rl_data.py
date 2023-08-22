@@ -22,21 +22,10 @@ def collate_prompts(batch_tok_fn, batch_data):
     return batch_tok_fn(prompts), batch_data
 
 
-def collate_finetune_phase1(batch_tok_fn, batch_data):
-    template = (
-            "Below is an instruction that describes a task, paired with an input that provides further context. "
-            "Write a response that appropriately completes the request.\n\n"
-            "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
-        )
-    sources = [
-        template.format_map(dict(instruction=d['instruction'], input=d['input']))
-        for d in batch_data
-    ]
-    targets = [d['output'] for d in batch_data]
+def collate_pr(batch_tok_fn, sources, targets):
     examples = [s + t for s, t in zip(sources, targets)]
 
     sources_tokenized = batch_tok_fn(sources)
-    targets_tokenized = batch_tok_fn(targets)
     examples_tokenized = batch_tok_fn(examples)
     labels = examples_tokenized["input_ids"].clone()
 
@@ -51,6 +40,20 @@ def collate_finetune_phase1(batch_tok_fn, batch_data):
     })
 
     return examples_tokenized
+
+
+def collate_finetune_phase1(batch_tok_fn, batch_data):
+    template = (
+            "Below is an instruction that describes a task, paired with an input that provides further context. "
+            "Write a response that appropriately completes the request.\n\n"
+            "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
+        )
+    sources = [
+        template.format_map(dict(instruction=d['instruction'], input=d['input']))
+        for d in batch_data
+    ]
+    targets = [d['output'] for d in batch_data]
+    return collate_pr(batch_tok_fn, sources, targets)
 
 
 def collate_finetune_phase2(batch_tok_fn, batch_data):
@@ -64,25 +67,7 @@ def collate_finetune_phase2(batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [rate2outputs(d['manual_rating']) for d in batch_data]
-    examples = [s + t for s, t in zip(sources, targets)]
-    breakpoint()
-
-    sources_tokenized = batch_tok_fn(sources)
-    targets_tokenized = batch_tok_fn(targets)
-    examples_tokenized = batch_tok_fn(examples)
-    labels = examples_tokenized["input_ids"].clone()
-
-    for label, src_len, exm_len in zip(labels,
-        sources_tokenized["attention_mask"].sum(-1).tolist(),
-        examples_tokenized["attention_mask"].sum(-1).tolist()):
-        label[:src_len] = IGNORE_INDEX
-        label[exm_len:] = IGNORE_INDEX
-
-    examples_tokenized.update({
-        'labels': labels
-    })
-
-    return examples_tokenized
+    return collate_pr(batch_tok_fn, sources, targets)
 
 
 def collate_ask_relevance(batch_tok_fn, batch_data):
@@ -124,6 +109,24 @@ def step_ask_relevance(cfg, step, trainer, rewards):
             output_dir, log_name,
         )
         save_log(**log)
+
+
+def collate_phase2_learn_query(batch_tok_fn, batch_data):
+    from tools.prompt_factory import tool_prompt1
+    for data in batch_data:
+        query = data['query']
+        example = data['prompt']
+        prompt = tool_prompt1(query)
+        response_sect = '### Response:\n'
+        response = example.split(response_sect)[1]
+        srch_query = response.split('\n\n')[0]
+        new_prompt = prompt + '\n\n' + response_sect
+        data['prompt'] = new_prompt
+        data['output'] = srch_query
+
+    sources = [d['prompt'] + '\n' for d in batch_data]
+    targets = [d['output'] for d in batch_data]
+    return collate_pr(batch_tok_fn, sources, targets)
 
 
 def save_log(**kwargs):

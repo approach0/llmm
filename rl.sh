@@ -8,11 +8,11 @@ export NCCL_P2P_DISABLE=1 # direct access between GPUs? using NVLink or PCI.
 export TORCH_DISTRIBUTED_DEBUG=OFF
 
 experiment=$1
-devices=${2:0,1}
-port=${3:8921}
+devices=${2-0,1}
+port=${3-8921}
 
 set -x
 deepspeed \
     --include=localhost:$devices \
     --master_port $port \
-    rl.py experiment
+    rl.py $experiment
