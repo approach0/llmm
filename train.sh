@@ -14,19 +14,19 @@ deepspeed \
     --master_port 8921 \
     train.py \
     \
-    --model_name_or_path lmsys/vicuna-33b-v1.3 \
-    --data_file ./data/finetune-pairs.json \
+    --model_name_or_path approach0/mathy-vicuna-13B-FFT \
+    --data_file approach0/MATH-picky-test \
     --debug_single_layer False \
     --dryrun False \
     --ctx_length 1500 \
     --datamap_nprocs 10 \
     --use_flash_att2 True \
-    --load_8bit True \
-    --num_train_epochs 3 \
+    --load_8bit False \
+    --num_train_epochs 2 \
     \
     --output_dir ./output \
     --save_strategy "steps" \
-    --save_steps 100 \
+    --save_steps 10 \
     --save_total_limit 2 \
     --logging_steps 1 \
     --report_to "tensorboard" \
@@ -35,11 +35,11 @@ deepspeed \
     --gradient_accumulation_steps 12 \
     --max_grad_norm 1.0 \
     --learning_rate 2e-5 \
-    --warmup_ratio 0.03 \
+    --warmup_steps 10 \
     --fp16 False \
     --bf16 True \
     --deepspeed $(python ds_config.py \
-        --en_param_offload True \
+        --en_param_offload False \
         --en_act_ackpt False \
-        --en_sparse_attn True \
+        --en_sparse_attn False \
     )

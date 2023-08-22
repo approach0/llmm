@@ -207,27 +207,34 @@ def preprocess(sources, targets, tokenizer):
 
 
 def train_tokenize_function(examples, tokenizer):
-    prompt_input = PROMPT_DICT["prompt_input"]
-    prompt_no_input = PROMPT_DICT["prompt_no_input"]
-    if 'input' in examples:
-        sources = [
-            prompt_input.format_map(dict(instruction=instr, input=input)) if input != "" \
-            else prompt_no_input.format_map(dict(instruction=instr)) \
-            for instr, input in zip(examples['instruction'], examples['input'])
-        ]
-    else:
-        sources = [
-            prompt_no_input.format_map(dict(instruction=instr)) \
-            for instr in examples['instruction']
-        ]
-    targets = [f"{output}{tokenizer.eos_token}" for output in examples['output']]
+    #prompt_input = PROMPT_DICT["prompt_input"]
+    #prompt_no_input = PROMPT_DICT["prompt_no_input"]
+    #if 'input' in examples:
+    #    sources = [
+    #        prompt_input.format_map(dict(instruction=instr, input=input)) if input != "" \
+    #        else prompt_no_input.format_map(dict(instruction=instr)) \
+    #        for instr, input in zip(examples['instruction'], examples['input'])
+    #    ]
+    #else:
+    #    sources = [
+    #        prompt_no_input.format_map(dict(instruction=instr)) \
+    #        for instr in examples['instruction']
+    #    ]
+    #targets = [f"{output}{tokenizer.eos_token}" for output in examples['output']]
+
+    from tools.prompt_factory import tool_prompt1
+    res_sect = '### Response:\n'
+    sources = [tool_prompt1(q) + '\n\n' + res_sect for q in examples['query']]
+    targets = [p.split(res_sect)[1].split('\n\n')[0] + tokenizer.eos_token
+        for p in examples['prompt']]
 
     data_dict = preprocess(sources, targets, tokenizer)
     return data_dict
 
 
-raw_train_datasets = load_dataset('json', encoding='utf-8',
-    data_files=my_args.data_file, split="train", cache_dir='./cache')
+#raw_train_datasets = load_dataset('json', encoding='utf-8',
+#    data_files=my_args.data_file, split="train", cache_dir='./cache')
+raw_train_datasets = load_dataset(my_args.data_file, split="train")
 
 train_dataset = raw_train_datasets.map(
     train_tokenize_function,
