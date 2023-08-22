@@ -181,8 +181,9 @@ def test(prompt, use_template=True,
         print(prompt)
     tokenizer, model = load_model(model_path, model_path,
         cache_dir=cache_dir)
-    generate(tokenizer=tokenizer, model=model,
-        prompt=prompt, debug=True)
+    answer = generate(tokenizer=tokenizer, model=model,
+        prompt=prompt, debug=False, mode='sample')
+    print(answer)
 
 
 if __name__ == '__main__':

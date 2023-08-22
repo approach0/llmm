@@ -19,8 +19,12 @@ copy_for_publish() {
 }
 #copy_for_publish output/13B-mathy-FFT ../azbert/ckpt/
 
-export CUDA_VISIBLE_DEVICES=4
+
+MODEL_PATH=$1
+CUDA_DEVICES=${2-0}
+
+export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
 python utils2.py test \
     --cache_dir None \
-    --model_path output/checkpoint-10/ \
+    --model_path $MODEL_PATH \
     'Solve $x^2 = 4$.'
