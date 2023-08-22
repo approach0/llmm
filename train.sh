@@ -10,7 +10,7 @@ export TORCH_DISTRIBUTED_DEBUG=OFF
 #--data_file ./data/finetune-pairs.json \
 
 deepspeed \
-    --include=localhost:0 \
+    --include=localhost:0,1,2,3 \
     --master_port 8921 \
     train.py \
     \
@@ -32,7 +32,7 @@ deepspeed \
     --report_to "tensorboard" \
     \
     --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 12 \
+    --gradient_accumulation_steps 1 \
     --max_grad_norm 1.0 \
     --learning_rate 2e-5 \
     --warmup_steps 10 \
