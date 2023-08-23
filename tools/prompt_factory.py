@@ -609,7 +609,9 @@ Indicate your final answer in boxed LaTeX. For example, if the final answer is \
 
 To assist you, you can invoke a math-aware search engine API (i.e., SEARCH) to find potentially relevant search results to the math question, and I will insert these results for you right after every API call.
 
-An API call should be followed by its arguments which are a list of keywords in JSON format, for example:
+An API call should be followed by its arguments which are a list of keywords in JSON format.
+
+API arguments for the SEARCH API may contain useful keywords for finding relevant results, for example:
 
 SEARCH["$x^2 = -1$", "imaginary numbers"]
 

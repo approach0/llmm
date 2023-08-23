@@ -222,6 +222,8 @@ def prepare_experiment(config):
     from torch.utils.data import DataLoader
     dataset_path = config.get('dataset')
     dataset = load_dataset(dataset_path, split="train")
+    dataset = dataset.shuffle(seed=config.getint('seed'))
+    dataset = dataset.train_test_split(test_size=1)
 
     import rl_data
     tok_fn = partial(batch_tokenize, config, tokenizer)
@@ -229,7 +231,7 @@ def prepare_experiment(config):
 
     if config.getboolean('use_rl', True):
         bs = config.getint('batch_size')
-        dataloader = DataLoader(dataset,
+        dataloader = DataLoader(dataset['train'],
             collate_fn=partial(col_fn, tok_fn),
             batch_size=bs
         )
@@ -242,8 +244,8 @@ def prepare_experiment(config):
             model=model,
             tokenizer=tokenizer,
             args=hg_trainer_args,
-            train_dataset=dataset,
-            eval_dataset=None,
+            train_dataset=dataset['train'],
+            eval_dataset=dataset['test'],
             data_collator=partial(col_fn, tok_fn)
         )
         trainer.deepspeed = trainer.model_wrapped

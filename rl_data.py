@@ -21,7 +21,7 @@ def decode_pr(batch_tok_fn, ids):
     ids = ids.clone()
     ids[ids == -100] = 0
     text = batch_tok_fn(ids, decode=True)
-    print(text)
+    print(text, len(ids))
 
 
 def collate_prompts(batch_tok_fn, batch_data):
@@ -138,7 +138,7 @@ def collate_phase2_learn_query(batch_tok_fn, batch_data):
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [d['output'] + '\n' for d in batch_data]
     return collate_pr(batch_tok_fn, sources, targets,
-        eos=False, debug=True)
+        eos=True, debug=False)
 
 
 def save_log(**kwargs):
