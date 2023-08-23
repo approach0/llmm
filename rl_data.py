@@ -147,14 +147,15 @@ def reward_by_answer(config, inp, out, model):
     for raw, inp_str, out_str in zip(
         inp[1], inp[0]['texts'], out):
 
-        ground_truth = raw['ground_truth']
-        equiv = is_equiv(ground_truth, out_str)
+        ground_truth = extract_math_answer(raw['solution'])
+        out_boxed = extract_math_answer(out_str)
+        equiv = is_equiv(ground_truth, out_boxed)
 
         if 'judge_buffer' not in raw or raw['judge_buffer'] is None:
             raw['judge_buffer'] = []
         raw['judge_buffer'].append({
             'answer': out_str,
-            'boxed_answer': extract_math_answer(out_str),
+            'boxed_answer': out_boxed,
             'is_equiv': equiv
         })
         rewards.append(1. if equiv else 0.)
@@ -163,7 +164,7 @@ def reward_by_answer(config, inp, out, model):
         if equiv:
             rich_print('[green]correct[/green]')
         else:
-            rich_print('[red]wrong[/red]', out_str)
+            rich_print('[red]wrong[/red]', out_boxed)
 
     return rewards
 
@@ -172,6 +173,7 @@ def reward_by_answer(config, inp, out, model):
 # log func
 ###############
 def default_log(config, values):
+    verbose = config.getboolean('log_verbose', False)
     run_name = config.name
     output_dir = os.path.join(config.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -183,17 +185,16 @@ def default_log(config, values):
         log_name = log['problem'].strip('.').replace('/', '_')
         log_name = log_name + f'.step{step}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
-        save_log(logpath, **log)
+        save_log(logpath, verbose=verbose, **log)
 
 
-def save_log(logpath, **kwargs):
+def save_log(logpath, verbose=False, **kwargs):
     from tools.inspect_output import _output_html
     with open(logpath, 'w') as fh:
         json.dump(kwargs, fh, indent=2)
-    _output_html(logpath)
-    print(kwargs.keys())
-    print('Written log:', logpath)
-    quit(0)
+    _output_html(logpath, verbose=False)
+    if verbose: print(kwargs.keys())
+    if verbose: print('Written log:', logpath)
 
 
 if __name__ == '__main__':

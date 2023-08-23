@@ -164,7 +164,7 @@ def textify_v2(j_dict):
     return text_list
 
 
-def _output_html(logpath):
+def _output_html(logpath, verbose=True):
     import sys
     sys.path.insert(0, './pya0')
     from pya0.visualize import output_html as output
@@ -178,7 +178,7 @@ def _output_html(logpath):
         def html(fh, query, hit, page, idx):
             hit = re.sub("#+ (.+)\n", r"<h4>\1</h4>", hit)
             hit = re.sub("URL: (.+)\n+", r"<h4>\1</h4>", hit)
-            print(hit)
+            if verbose: print(hit)
             hit = hit.replace('\n', '<br/>\n')
             fh.write(f'<p>{hit}</p>\n\n')
 
