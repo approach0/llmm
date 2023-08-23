@@ -24,15 +24,11 @@ def decode_pr(batch_tok_fn, ids):
     print(text, len(ids))
 
 
-def collate_prompts(batch_tok_fn, batch_data):
-    prompts = [d['prompt'] for d in batch_data]
-    return batch_tok_fn(prompts), batch_data
+def collate_pr(config, batch_tok_fn, sources, targets)
+    eos = config.getboolean('collate_add_eos')
+    debug = config.getboolean('collate_debug')
 
-
-def collate_pr(batch_tok_fn, sources, targets,
-    eos=True, debug=False):
     examples = [s + t for s, t in zip(sources, targets)]
-
     sources_tokenized = batch_tok_fn(sources, eos=False)
     examples_tokenized = batch_tok_fn(examples, eos=eos)
     labels = examples_tokenized["input_ids"].clone()
@@ -50,24 +46,25 @@ def collate_pr(batch_tok_fn, sources, targets,
     if debug:
         decode_pr(batch_tok_fn, examples_tokenized['input_ids'][0])
         decode_pr(batch_tok_fn, examples_tokenized['labels'][0])
+
     return examples_tokenized
 
 
-def collate_finetune_phase1(batch_tok_fn, batch_data):
+def collate_finetune_phase1(config, batch_tok_fn, batch_data):
     template = (
-            "Below is an instruction that describes a task, paired with an input that provides further context. "
-            "Write a response that appropriately completes the request.\n\n"
-            "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
-        )
+        "Below is an instruction that describes a task, paired with an input that provides further context. "
+        "Write a response that appropriately completes the request.\n\n"
+        "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
+    )
     sources = [
         template.format_map(dict(instruction=d['instruction'], input=d['input']))
         for d in batch_data
     ]
     targets = [d['output'] for d in batch_data]
-    return collate_pr(batch_tok_fn, sources, targets)
+    return collate_pr(config, batch_tok_fn, sources, targets)
 
 
-def collate_finetune_phase2(batch_tok_fn, batch_data):
+def collate_finetune_phase2(config, batch_tok_fn, batch_data):
     def rate2outputs(rate):
         if rate == 0:
             return 'This search result is not helpful.'
@@ -78,10 +75,10 @@ def collate_finetune_phase2(batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [rate2outputs(d['manual_rating']) for d in batch_data]
-    return collate_pr(batch_tok_fn, sources, targets)
+    return collate_pr(config, batch_tok_fn, sources, targets)
 
 
-def collate_ask_relevance(batch_tok_fn, batch_data):
+def collate_ask_relevance(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import ask_relevance
     for data in batch_data:
         data['prompt'] = ask_relevance(
@@ -109,9 +106,9 @@ def reward_ask_relevance(config, inp, out, model):
     return rewards
 
 
-def step_ask_relevance(cfg, step, trainer, rewards):
-    run_name = cfg.name
-    output_dir = os.path.join(cfg.get('output_dir'), run_name)
+def step_ask_relevance(config, step, trainer, rewards):
+    run_name = config.name
+    output_dir = os.path.join(config.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
     for b, log in enumerate(rewards):
         log_name = log['problem'].strip('.').replace('/', '_')
@@ -122,7 +119,7 @@ def step_ask_relevance(cfg, step, trainer, rewards):
         save_log(**log)
 
 
-def collate_phase2_learn_query(batch_tok_fn, batch_data):
+def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import tool_prompt1
     for data in batch_data:
         query = data['query']
@@ -137,8 +134,7 @@ def collate_phase2_learn_query(batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [d['output'] + '\n' for d in batch_data]
-    return collate_pr(batch_tok_fn, sources, targets,
-        eos=True, debug=False)
+    return collate_pr(config, batch_tok_fn, sources, targets)
 
 
 def save_log(**kwargs):
