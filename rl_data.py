@@ -136,7 +136,7 @@ def collate_phase2_learn_query(batch_tok_fn, batch_data):
         data['output'] = srch_query
 
     sources = [d['prompt'] + '\n' for d in batch_data]
-    targets = [d['output'] + '\n\n' for d in batch_data]
+    targets = [d['output'] + '\n' for d in batch_data]
     return collate_pr(batch_tok_fn, sources, targets,
         eos=False, debug=True)
 
