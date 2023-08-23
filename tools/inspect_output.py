@@ -155,9 +155,9 @@ def textify_v2(j_dict):
                 boxed_answer = j['boxed_answer']
                 correct = j['is_equiv']
                 if correct or i >= len(val):
-                    text_list.append(f'<b>agent answer</b>: {answer}')
-                    text_list.append(f'<b>boxed answer</b>: {boxed_answer}')
-                    text_list.append(f'<b>Correct</b>: {correct}')
+                    text_list.append(f'<h3>answer</h3>{answer}')
+                    text_list.append(f'<h3>boxed_answer</h3>{boxed_answer}')
+                    text_list.append(f'<h3>correct</h3>{correct}')
                     break
         else:
             text_list.append(f'<h3>{key}</h3>{val}')

@@ -239,7 +239,7 @@ def prepare_experiment(config):
     if config.getboolean('use_rl', True):
         bs = config.getint('batch_size')
         dataloader = DataLoader(dataset['train'],
-            collate_fn=partial(col_fn, tok_fn),
+            collate_fn=partial(col_fn, config, tok_fn),
             batch_size=bs
         )
 
@@ -264,6 +264,12 @@ def do_experiment(config):
     os.makedirs(config.get('output_dir', '.'), exist_ok=True)
     set_seed(config.getint('seed', 42))
 
+    metric = config.get('metric', 'pass@1')
+    metric_name, K = metric.split('@')
+    K = int(K)
+    assert K > 0
+    assert metric_name in ['pass', 'maj']
+
     models, trainer, dataloader = prepare_experiment(config)
     tokenizer, model, _ = models
     final_save_path = os.path.join(
@@ -273,13 +279,14 @@ def do_experiment(config):
     if config.getboolean('use_rl', True):
         import rl_data
         rwd_fn = getattr(rl_data, config.get('reward_fn'))
-        stp_fn = getattr(rl_data, config.get('step_fn'))
-
+        stp_fn = getattr(rl_data, config.get('step_fn', '_'), None)
+        log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         for step, batch_in in enumerate(dataloader):
-            batch_out = batch_respond(config, models, batch_in)
-            rewards = rwd_fn(config, batch_in, batch_out, models)
-            stp_fn(config, step, trainer, rewards)
-
+            for i in range(K):
+                batch_out = batch_respond(config, models, batch_in)
+                rewards = rwd_fn(config, batch_in, batch_out, models)
+                if stp_fn: stp_fn(config, step, trainer, rewards)
+            if log_fn: log_fn(config, locals())
         model.save_pretrained(final_save_path)
     else:
         from torch import autocast
@@ -298,7 +305,10 @@ def do_experiment(config):
 def main(*experiments, config_file='rl.ini'):
     cfg = configparser.ConfigParser()
     cfg.read(config_file)
-    #json.loads(cfg['finetune__7b_vicuna_v1_5']['trainer'])
+    
+    for path in get_cfg_json(cfg['DEFAULT'], 'add_sys_paths', []):
+        print('insert sys_path:', path)
+        sys.path.insert(0, path)
 
     for ex in experiments:
         assert ex in cfg.sections()

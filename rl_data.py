@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import copy
 import json
 from datasets import Dataset, concatenate_datasets
@@ -8,6 +9,9 @@ from datasets.dataset_dict import DatasetDict
 IGNORE_INDEX = -100
 
 
+###############
+# utilities
+###############
 def data_generator(json_file):
     with open(json_file, 'r') as fh:
         j = json.load(fh)
@@ -51,6 +55,27 @@ def collate_pr(config, batch_tok_fn, sources, targets):
     return examples_tokenized
 
 
+###############
+# datamap
+###############
+def datamap_good_rating(config, dataset):
+    picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 1)
+    picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 1)
+
+    dataset = DatasetDict({
+        'train': concatenate_datasets([picky_dataset1, picky_dataset2])
+    })
+    return dataset
+
+
+###############
+# collate func
+###############
+def collate_prompt(config, batch_tok_fn, batch_data):
+    prompts = [d['prompt'] for d in batch_data]
+    return batch_tok_fn(prompts), batch_data
+
+
 def collate_finetune_phase1(config, batch_tok_fn, batch_data):
     template = (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
@@ -92,44 +117,6 @@ def collate_ask_relevance(config, batch_tok_fn, batch_data):
     return batch_tok_fn(prompts), batch_data
 
 
-def reward_ask_relevance(config, inp, out, model):
-    rewards = []
-    for raw, inp_str, out_str in zip(
-        inp[1], inp[0]['texts'], out):
-
-        log = raw.copy()
-        log['judge_buffer'] = [{
-            'answer': out_str,
-            'boxed_answer': log['manual_rating'],
-            'is_equiv': None
-        }]
-        rewards.append(log)
-    return rewards
-
-
-def step_ask_relevance(config, step, trainer, rewards):
-    run_name = config.name
-    output_dir = os.path.join(config.get('output_dir'), run_name)
-    os.makedirs(output_dir, exist_ok=True)
-    for b, log in enumerate(rewards):
-        log_name = log['problem'].strip('.').replace('/', '_')
-        log_name = log_name + f'.{step}_{b}.log'
-        log['logpath'] = os.path.join(
-            output_dir, log_name,
-        )
-        save_log(**log)
-
-
-def datamap_good_rating(config, dataset):
-    picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 1)
-    picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 1)
-
-    dataset = DatasetDict({
-        'train': concatenate_datasets([picky_dataset1, picky_dataset2])
-    })
-    return dataset
-
-
 def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import tool_prompt1
     for data in batch_data:
@@ -148,24 +135,58 @@ def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
     return collate_pr(config, batch_tok_fn, sources, targets)
 
 
-def save_log(**kwargs):
+###############
+# reward func
+###############
+def reward_by_answer(config, inp, out, model):
+    from main_clean import extract_math_answer
+    from math_equivalence import is_equiv
+
+    rewards = []
+    for raw, inp_str, out_str in zip(
+        inp[1], inp[0]['texts'], out):
+
+        ground_truth = raw['ground_truth'])
+        equiv = is_equiv(ground_truth, out_str)
+
+        if 'judge_buffer' not in raw or raw['judge_buffer'] is None:
+            raw['judge_buffer'] = []
+        raw['judge_buffer'].append({
+            'answer': out_str,
+            'boxed_answer': extract_math_answer(out_str),
+            'is_equiv': equiv
+        })
+        rewards.append(1. if equiv else 0.)
+
+    return rewards
+
+
+###############
+# log func
+###############
+def default_log(config, values):
+    run_name = config.name
+    output_dir = os.path.join(config.get('output_dir'), run_name)
+    os.makedirs(output_dir, exist_ok=True)
+    step = values['step']
+    for b, (inp, out) in enumerate(
+        zip(values['batch_in'][1], values['batch_out'])
+    ):
+        log = copy.deepcopy(inp)
+        log_name = log['problem'].strip('.').replace('/', '_')
+        log_name = log_name + f'.step{step}_batch{b}.log'
+        logpath = os.path.join(output_dir, log_name)
+        save_log(logpath, **log)
+
+
+def save_log(logpath, **kwargs):
     from tools.inspect_output import _output_html
-    log_json = {
-        'problem': kwargs.get('problem'),
-        'query': kwargs.get('query'),
-        'prompt': kwargs.get('prompt'),
-        'solution': kwargs.get('solution'),
-        'ground_truth': kwargs.get('boxed_solution'),
-        'judge_buffer': kwargs.get('judge_buffer'),
-        'manual_query': kwargs.get('manual_query'),
-        'manual_rating': kwargs.get('manual_rating'),
-        'args': json.dumps(kwargs.get('args'))
-    }
-    logpath = kwargs.get('logpath')
     with open(logpath, 'w') as fh:
-        json.dump(log_json, fh, indent=2)
-        print('Written log:', logpath)
+        json.dump(kwargs, fh, indent=2)
     _output_html(logpath)
+    print(kwargs.keys())
+    print('Written log:', logpath)
+    quit(0)
 
 
 if __name__ == '__main__':
