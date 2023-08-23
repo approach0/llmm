@@ -141,12 +141,13 @@ def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
 def reward_by_answer(config, inp, out, model):
     from main_clean import extract_math_answer
     from math_equivalence import is_equiv
+    from rich import print as rich_print
 
     rewards = []
     for raw, inp_str, out_str in zip(
         inp[1], inp[0]['texts'], out):
 
-        ground_truth = raw['ground_truth'])
+        ground_truth = raw['ground_truth']
         equiv = is_equiv(ground_truth, out_str)
 
         if 'judge_buffer' not in raw or raw['judge_buffer'] is None:
@@ -157,6 +158,12 @@ def reward_by_answer(config, inp, out, model):
             'is_equiv': equiv
         })
         rewards.append(1. if equiv else 0.)
+
+        rich_print('[blue]ground truth:[/blue]', ground_truth)
+        if equiv:
+            rich_print('[green]correct[/green]')
+        else:
+            rich_print('[red]wrong[/red]', out_str)
 
     return rewards
 

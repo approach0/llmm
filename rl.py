@@ -305,7 +305,7 @@ def do_experiment(config):
 def main(*experiments, config_file='rl.ini'):
     cfg = configparser.ConfigParser()
     cfg.read(config_file)
-    
+
     for path in get_cfg_json(cfg['DEFAULT'], 'add_sys_paths', []):
         print('insert sys_path:', path)
         sys.path.insert(0, path)
