@@ -19,12 +19,12 @@ copy_for_publish() {
 }
 #copy_for_publish output/13B-mathy-FFT ../azbert/ckpt/
 
-
 MODEL_PATH=$1
 CUDA_DEVICES=${2-0}
+ADAPTER_PATH=${3-None}
 
 export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
 python utils2.py test \
     --cache_dir None \
     --model_path $MODEL_PATH \
-    'Solve $x^2 = 4$.'
+    --adapter_path $ADAPTER_PATH

@@ -173,14 +173,14 @@ def generate(debug=False, **kargs):
     return cur_text
 
 
-def test(prompt, use_template=True,
+def test(prompt=None, use_template=True,
     model_path='lmsys/vicuna-7b-v1.5',
-    cache_dir='./data'):
+    adapter_path=None, cache_dir='./data'):
     if use_template:
         prompt = prompt_template
         print(prompt)
     tokenizer, model = load_model(model_path, model_path,
-        cache_dir=cache_dir)
+        adapter_path, cache_dir=cache_dir)
     answer = generate(tokenizer=tokenizer, model=model,
         prompt=prompt, debug=False, mode='sample')
     print(answer)
