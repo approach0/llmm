@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, './trl')
 from trl.core import respond_to_batch
 
+import rl_data
 
 ADAPT_CFG = "adapter_config.json"
 
@@ -220,6 +221,11 @@ def prepare_experiment(config):
     from torch.utils.data import DataLoader
     dataset_path = config.get('dataset')
     dataset = load_dataset(dataset_path)
+
+    dataset_map_fn = getattr(rl_data, config.get('dataset_map_fn'), None)
+    if dataset_map_fn:
+        dataset = dataset_map_fn(config, dataset)
+
     if config.get('eval_during_train', 'no') != 'no':
         dataset = dataset['train']
         dataset = dataset.shuffle(seed=config.getint('seed'))
@@ -227,7 +233,6 @@ def prepare_experiment(config):
     else:
         dataset['test'] = None
 
-    import rl_data
     tok_fn = partial(batch_tokenize, config, tokenizer)
     col_fn = getattr(rl_data, config.get('collate_fn'))
 

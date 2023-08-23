@@ -2,7 +2,8 @@ import re
 import os
 import copy
 import json
-from datasets import Dataset
+from datasets import Dataset, concatenate_datasets
+from datasets.dataset_dict import DatasetDict
 
 IGNORE_INDEX = -100
 
@@ -119,6 +120,16 @@ def step_ask_relevance(config, step, trainer, rewards):
         save_log(**log)
 
 
+def datamap_good_rating(config, dataset):
+    picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 1)
+    picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 1)
+
+    dataset = DatasetDict({
+        'train': concatenate_datasets([picky_dataset1, picky_dataset2])
+    })
+    return dataset
+
+
 def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import tool_prompt1
     for data in batch_data:
@@ -164,6 +175,5 @@ if __name__ == '__main__':
     ds_train = ds_all.filter(lambda x: 'train' in x['problem'])
     ds_test = ds_all.filter(lambda x: 'test' in x['problem'])
 
-    from datasets.dataset_dict import DatasetDict
-    dataset = DatasetDict({'train': ds_train, 'ds_test': ds_test})
+    dataset = DatasetDict({'train': ds_train, 'test': ds_test})
     dataset.push_to_hub("approach0/mathy-phase2")
