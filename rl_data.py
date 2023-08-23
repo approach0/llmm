@@ -17,6 +17,13 @@ def data_generator(json_file):
         yield item
 
 
+def decode_and_print(ids):
+    ids = ids.clone()
+    ids[ids == -100] = 0
+    text = self.tokenizer.decode(ids)
+    print(text)
+
+
 def collate_prompts(batch_tok_fn, batch_data):
     prompts = [d['prompt'] for d in batch_data]
     return batch_tok_fn(prompts), batch_data
@@ -25,7 +32,7 @@ def collate_prompts(batch_tok_fn, batch_data):
 def collate_pr(batch_tok_fn, sources, targets):
     examples = [s + t for s, t in zip(sources, targets)]
 
-    sources_tokenized = batch_tok_fn(sources)
+    sources_tokenized = batch_tok_fn(sources, eos=False)
     examples_tokenized = batch_tok_fn(examples)
     labels = examples_tokenized["input_ids"].clone()
 
@@ -39,6 +46,8 @@ def collate_pr(batch_tok_fn, sources, targets):
         'labels': labels
     })
 
+    decode_and_print(examples_tokenized['input_ids'])
+    decode_and_print(examples_tokenized['labels'])
     return examples_tokenized
 
 
@@ -126,6 +135,7 @@ def collate_phase2_learn_query(batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [d['output'] for d in batch_data]
+
     return collate_pr(batch_tok_fn, sources, targets)
 
 

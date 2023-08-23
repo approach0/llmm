@@ -617,7 +617,7 @@ DO NOT mix text and math in one JSON item, for example, this is NOT good:
 
 SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
 
-Instead, separate different types of keywords by comma, and pick only important keyword(s):
+Instead, separate different types of keywords by comma, and pick important keyword(s):
 
 SEARCH["curve", "defined by", "$x^2 - y^2 = 4$"]
 

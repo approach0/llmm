@@ -147,13 +147,14 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     return ppo_trainer
 
 
-def batch_tokenize(config, tokenizer, texts):
+def batch_tokenize(config, tokenizer, texts, eos=True):
     if tokenizer is None:
         return {
             'texts': [text for text in texts]
         }
     else:
-        texts = [t + tokenizer.eos_token for t in texts]
+        if eos:
+            texts = [t + tokenizer.eos_token for t in texts]
         max_length = config.getint("context_length")
         return tokenizer(texts,
             return_tensors="pt",
