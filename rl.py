@@ -287,7 +287,9 @@ def do_experiment(config):
                 rewards = rwd_fn(config, batch_in, batch_out, models)
                 if stp_fn: stp_fn(config, step, trainer, rewards)
             if log_fn: log_fn(config, locals())
-        model.save_pretrained(final_save_path)
+
+        if hasattr(model, 'save_pretrained'):
+            model.save_pretrained(final_save_path)
     else:
         from torch import autocast
         with autocast(device_type="cuda"):
