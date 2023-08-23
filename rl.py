@@ -219,8 +219,9 @@ def prepare_experiment(config):
     from datasets import load_dataset
     from torch.utils.data import DataLoader
     dataset_path = config.get('dataset')
-    dataset = load_dataset(dataset_path, split="train")
+    dataset = load_dataset(dataset_path)
     if config.get('eval_during_train', 'no') != 'no':
+        dataset = dataset['train']
         dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
 

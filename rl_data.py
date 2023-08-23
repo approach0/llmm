@@ -166,4 +166,4 @@ if __name__ == '__main__':
     ds = Dataset.from_generator(data_generator,
         gen_kwargs={'json_file': json_file})
     print(ds[0])
-    ds.push_to_hub("approach0/mathy-phase1")
+    #ds.push_to_hub("approach0/mathy-phase1")
