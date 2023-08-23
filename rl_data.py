@@ -24,9 +24,9 @@ def decode_pr(batch_tok_fn, ids):
     print(text, len(ids))
 
 
-def collate_pr(config, batch_tok_fn, sources, targets)
-    eos = config.getboolean('collate_add_eos')
-    debug = config.getboolean('collate_debug')
+def collate_pr(config, batch_tok_fn, sources, targets):
+    eos = config.getboolean('collate_add_eos', True)
+    debug = config.getboolean('collate_debug', False)
 
     examples = [s + t for s, t in zip(sources, targets)]
     sources_tokenized = batch_tok_fn(sources, eos=False)
@@ -158,8 +158,12 @@ def save_log(**kwargs):
 
 
 if __name__ == '__main__':
-    json_file = './data/finetune-pairs.json'
-    ds = Dataset.from_generator(data_generator,
+    json_file = './output/finetune-pairs.json'
+    ds_all = Dataset.from_generator(data_generator,
         gen_kwargs={'json_file': json_file})
-    print(ds[0])
-    #ds.push_to_hub("approach0/mathy-phase1")
+    ds_train = ds_all.filter(lambda x: 'train' in x['problem'])
+    ds_test = ds_all.filter(lambda x: 'test' in x['problem'])
+
+    from datasets.dataset_dict import DatasetDict
+    dataset = DatasetDict({'train': ds_train, 'ds_test': ds_test})
+    dataset.push_to_hub("approach0/mathy-phase2")

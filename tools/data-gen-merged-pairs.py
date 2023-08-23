@@ -4,7 +4,7 @@ import random
 
 
 def merge_pairs(*json_paths, output_file='output/finetune-pairs.json',
-    shuffle=True, seed=72, append=False):
+    shuffle=True, seed=72, append='auto'):
 
     output = []
     for json_path in json_paths:
@@ -27,7 +27,7 @@ def merge_pairs(*json_paths, output_file='output/finetune-pairs.json',
         random.seed(seed)
         random.shuffle(output)
 
-    print(f'Saving {len(output)} pairs ...')
+    print(f'Saving {len(output)} pairs ...', output_file)
     with open(output_file, 'w', encoding='utf8', errors='replace') as fh:
         json.dump(output, fh, indent=2, ensure_ascii=False)
 
