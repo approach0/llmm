@@ -257,7 +257,7 @@ def prepare_experiment(config):
         )
         trainer.deepspeed = trainer.model_wrapped
 
-    return models, trainer, dataloader
+    return models, trainer, dataloader, dataset
 
 
 def do_experiment(config):
@@ -270,11 +270,13 @@ def do_experiment(config):
     assert K > 0
     assert metric_name in ['pass', 'maj']
 
-    models, trainer, dataloader = prepare_experiment(config)
-    tokenizer, model, _ = models
-    final_save_path = os.path.join(
+    final_save_dir = os.path.join(
         config.get('output_dir'), config.name
     )
+
+    models, trainer, dataloader, dataset = prepare_experiment(config)
+    tokenizer, model, _ = models
+    num_train_rows = dataset['train'].num_rows
 
     if config.getboolean('use_rl', True):
         import rl_data
@@ -287,14 +289,15 @@ def do_experiment(config):
                 rewards = rwd_fn(config, batch_in, batch_out, models)
                 if stp_fn: stp_fn(config, step, trainer, rewards)
             if log_fn: log_fn(config, locals())
+            print(f'Progress: {step+1} / {num_train_rows}')
 
         if hasattr(model, 'save_pretrained'):
-            model.save_pretrained(final_save_path)
+            model.save_pretrained(final_save_dir)
     else:
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
-        trainer.save_model(final_save_path)
+        trainer.save_model(final_save_dir)
 
     #rewards = [torch.tensor(1.0)]
     #stats = trainer.step(

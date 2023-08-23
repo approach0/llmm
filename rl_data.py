@@ -214,4 +214,5 @@ if __name__ == '__main__':
     ds_test = ds_all.filter(lambda x: 'test' in x['problem'])
 
     dataset = DatasetDict({'train': ds_train, 'test': ds_test})
-    dataset.push_to_hub("approach0/mathy-phase2")
+    breakpoint()
+    #dataset.push_to_hub("approach0/mathy-phase2")
