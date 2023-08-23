@@ -45,9 +45,10 @@ def config_rerope(config):
 
 
 def get_peft_config(peft_attach_new=False,
-    peft_lora_rank=16,
+    peft_lora_rank=8,
     peft_lora_dropout=0.05,
-    peft_lora_alpha=32):
+    peft_lora_alpha=16,
+    peft_lora_targets=["q_proj", "v_proj"]):
 
     if peft_attach_new:
         adapter_config = {
@@ -56,10 +57,7 @@ def get_peft_config(peft_attach_new=False,
             'lora_dropout': peft_lora_dropout,
             'lora_alpha': peft_lora_alpha,
             'bias': 'none',
-            'target_modules': [
-                "q_proj",
-                "v_proj",
-            ]
+            'target_modules': target_modules
         }
 
         from peft import LoraConfig
