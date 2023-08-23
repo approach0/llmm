@@ -138,7 +138,7 @@ def collate_phase2_learn_query(batch_tok_fn, batch_data):
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [d['output'] + '\n' for d in batch_data]
     return collate_pr(batch_tok_fn, sources, targets,
-        eos=True, debug=False)
+        eos=False, debug=False)
 
 
 def save_log(**kwargs):

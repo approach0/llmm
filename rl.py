@@ -224,6 +224,8 @@ def prepare_experiment(config):
         dataset = dataset['train']
         dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
+    else:
+        dataset['test'] = None
 
     import rl_data
     tok_fn = partial(batch_tokenize, config, tokenizer)
