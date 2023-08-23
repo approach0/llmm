@@ -57,7 +57,7 @@ def get_peft_config(peft_attach_new=False,
             'lora_dropout': peft_lora_dropout,
             'lora_alpha': peft_lora_alpha,
             'bias': 'none',
-            'target_modules': target_modules
+            'target_modules': peft_lora_targets
         }
 
         from peft import LoraConfig
