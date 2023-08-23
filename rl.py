@@ -147,11 +147,14 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     return ppo_trainer
 
 
-def batch_tokenize(config, tokenizer, texts, eos=True):
+def batch_tokenize(config, tokenizer, texts,
+    eos=True, decode=False):
     if tokenizer is None:
         return {
             'texts': [text for text in texts]
         }
+    elif decode:
+        return tokenizer.decode(texts)
     else:
         if eos:
             texts = [t + tokenizer.eos_token for t in texts]
