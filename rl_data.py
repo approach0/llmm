@@ -76,6 +76,15 @@ def collate_prompt(config, batch_tok_fn, batch_data):
     return batch_tok_fn(prompts), batch_data
 
 
+def collate_query_cot(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import cot_mytrain
+    prompts = [
+        cot_mytrain(d['query'])
+        for d in batch_data
+    ]
+    return batch_tok_fn(prompts), batch_data
+
+
 def collate_finetune_phase1(config, batch_tok_fn, batch_data):
     template = (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
