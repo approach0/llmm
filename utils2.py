@@ -182,7 +182,7 @@ def test(prompt=None, use_template=True,
     tokenizer, model = load_model(model_path, model_path,
         adapter_path, cache_dir=cache_dir)
     answer = generate(tokenizer=tokenizer, model=model,
-        prompt=prompt, debug=False, mode='sample')
+        prompt=prompt, debug=False, mode='greedy')
     print(answer)
 
 
