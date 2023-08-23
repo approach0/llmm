@@ -33,7 +33,10 @@ def get_stats_v2(j, detail, logpath, metric):
         boxed_answer = judge['boxed_answer'].strip()
         vote_dict[boxed_answer] += 1
     votes = vote_dict.items()
-    okays = [is_equiv(j['boxed_answer'], ground_truth) for j in judge_buffer]
+    if ground_truth is None:
+        okays = [jj['is_equiv'] for jj in judge_buffer]
+    else:
+        okays = [is_equiv(jj['boxed_answer'], ground_truth) for jj in judge_buffer]
 
     if '@' in metric:
         metric, k = metric.split('@')
