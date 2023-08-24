@@ -96,7 +96,7 @@ def get_models(config):
         peft_kwargs = get_cfg_json(config, 'peft', {})
         lora_config = get_peft_config(**peft_kwargs)
 
-        if config.getboolean('use_rl', True):
+        if config.get('mode') == 'rl':
             from trl import AutoModelForCausalLMWithValueHead as M
             model = M.from_pretrained(
                 model_path, device_map="auto",
@@ -110,17 +110,33 @@ def get_models(config):
             else:
                 from trl import create_reference_model
                 ref_model = create_reference_model(model)
-        else:
+
+        elif config.get('mode') in ['finetune', 'inference']:
+
             from transformers import LlamaForCausalLM
-            model = LlamaForCausalLM.from_pretrained(
-                model_path, torch_dtype=torch.float16
-            )
+            if config.get('load_in_8bit', False):
+
+                from transformers import BitsAndBytesConfig
+                model = LlamaForCausalLM.from_pretrained(model_path,
+                    load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
+                        load_in_8bit=True,
+                        llm_int8_threshold=6.0,
+                        llm_int8_has_fp16_weight=False,
+                    )
+                )
+            else:
+                model = LlamaForCausalLM.from_pretrained(
+                    model_path, torch_dtype=torch.float16
+                )
 
             if lora_config is not None:
                 from peft import get_peft_model
                 model = get_peft_model(model, lora_config)
                 model.print_trainable_parameters()
             ref_model = None
+
+        else:
+            raise NotImplemented
 
     return tokenizer, model, ref_model
 
@@ -190,7 +206,7 @@ def batch_respond(config, models, batch_in):
 def prepare_experiment(config):
     config_rerope(config)
 
-    if not config.getboolean('use_rl', True):
+    if config.get('mode') == 'finetune':
         deepspeed = get_cfg_json(config, 'deepspeed', None)
         deepspeed_arg = []
         if deepspeed is not None:
@@ -236,16 +252,20 @@ def prepare_experiment(config):
     tok_fn = partial(batch_tokenize, config, tokenizer)
     col_fn = getattr(rl_data, config.get('collate_fn'))
 
-    if config.getboolean('use_rl', True):
+    if config.get('mode') in ['rl', 'inference']:
         bs = config.getint('batch_size')
         dataloader = DataLoader(dataset['train'],
             collate_fn=partial(col_fn, config, tok_fn),
             batch_size=bs
         )
 
-        trainer_kwargs = get_cfg_json(config, 'trainer', {})
-        trainer = get_rl_trainer(*models, **trainer_kwargs)
-    else:
+        if config.get('mode') == 'rl':
+            trainer_kwargs = get_cfg_json(config, 'trainer', {})
+            trainer = get_rl_trainer(*models, **trainer_kwargs)
+        else:
+            trainer = None
+
+    elif config.get('mode') == 'finetune':
         dataloader=None
         trainer = Trainer(
             model=model,
@@ -256,6 +276,9 @@ def prepare_experiment(config):
             data_collator=partial(col_fn, config, tok_fn)
         )
         trainer.deepspeed = trainer.model_wrapped
+
+    else:
+        raise NotImplemented
 
     return models, trainer, dataloader, dataset
 
@@ -278,7 +301,7 @@ def do_experiment(config):
     tokenizer, model, _ = models
     num_train_rows = dataset['train'].num_rows
 
-    if config.getboolean('use_rl', True):
+    if config.get('mode') == 'rl':
         import rl_data
         rwd_fn = getattr(rl_data, config.get('reward_fn'))
         stp_fn = getattr(rl_data, config.get('step_fn', '_'), None)
@@ -293,11 +316,18 @@ def do_experiment(config):
 
         if hasattr(model, 'save_pretrained'):
             model.save_pretrained(final_save_dir)
-    else:
+
+    elif config.get('mode') == 'finetune':
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
         trainer.save_model(final_save_dir)
+
+    elif config.get('mode') == 'inference':
+        breakpoint()
+
+    else:
+        raise NotImplemented
 
     #rewards = [torch.tensor(1.0)]
     #stats = trainer.step(
