@@ -166,11 +166,16 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
 
 @torch.inference_mode()
 def gen_stream(model, input_ids, context_len=4096,
-    stream_interval=2, mode='greedy', stop_token_ids=[]):
+    stream_interval=2, temperature=0, stop_token_ids=[]):
+    from transformers.generation.logits_process import (
+        TemperatureLogitsWarper
+    )
+    logits_process = TemperatureLogitsWarper(temperature)
     output_ids = input_ids[0].tolist()
     prompt_len = len(input_ids[0])
     max_new_tokens = context_len - prompt_len - 1
     past_key_values = out = None
+
     for i in range(max_new_tokens):
         if i == 0:  # prefill
             out = model(input_ids, use_cache=True)
@@ -184,18 +189,16 @@ def gen_stream(model, input_ids, context_len=4096,
             )
         logits = out.logits # [bs, len, vocab]
         past_key_values = out.past_key_values
-
         last_token_logits = logits[0, -1, :]
 
-        if mode == 'greedy':
+        if temperature < 1e-5:
             _, indices = torch.topk(last_token_logits, 2)
             tokens = [int(index) for index in indices.tolist()]
-        elif mode == 'sample':
+        else:
+            last_token_logits = logits_process(None, last_token_logits)
             probs = torch.softmax(last_token_logits, dim=-1)
             indices = torch.multinomial(probs, num_samples=2)
             tokens = [int(token) for token in indices.tolist()]
-        else:
-            raise NotImplementedError
         token = tokens[0]
         output_ids.append(token)
 
