@@ -267,6 +267,16 @@ def batch_tokenize(config, tokenizer, texts,
         )
 
 
+from flask import Flask
+app = Flask('model as server')
+@app.route('/batch_respond', methods=['GET', 'POST'])
+def server_handler():
+    from flask import request
+    config, models = app.config['args']
+    batch_in = request.json['batch_in']
+    return batch_respond(config, models, batch_in)
+
+
 def batch_respond(config, models, batch_in):
     bs = config.getint('batch_size')
     tokenizer, model, ref_model = models
@@ -405,6 +415,10 @@ def do_experiment(config):
     )
 
     models, trainer, dataloader, dataset = prepare_experiment(config)
+    if app_args := get_cfg_json(config, 'model_as_server', False):
+        app.config['args'] = (config, models)
+        app.run(**app_args)
+
     tokenizer, model, _ = models
     num_train_rows = dataset['train'].num_rows
 
