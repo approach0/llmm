@@ -59,8 +59,8 @@ def collate_pr(config, batch_tok_fn, sources, targets):
 # datamap
 ###############
 def datamap_good_rating(config, dataset):
-    picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 1)
-    picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 1)
+    picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 0)
+    picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 0)
 
     dataset = DatasetDict({
         'train': concatenate_datasets([picky_dataset1, picky_dataset2])
@@ -215,4 +215,4 @@ if __name__ == '__main__':
 
     dataset = DatasetDict({'train': ds_train, 'test': ds_test})
     breakpoint()
-    #dataset.push_to_hub("approach0/mathy-phase2")
+    dataset.push_to_hub("approach0/mathy-phase2")
