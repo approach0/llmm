@@ -22,7 +22,7 @@ def data_generator(json_file):
         yield item
 
 
-def decode_pr(batch_tok_fn, ids):
+def decode_show(batch_tok_fn, ids):
     ids = ids.clone()
     ids[ids == -100] = 0
     text = batch_tok_fn(ids, decode=True)
@@ -49,8 +49,8 @@ def collate_pr(config, batch_tok_fn, sources, targets):
     })
 
     if debug:
-        decode_pr(batch_tok_fn, examples_tokenized['input_ids'][0])
-        decode_pr(batch_tok_fn, examples_tokenized['labels'][0])
+        decode_show(batch_tok_fn, examples_tokenized['input_ids'][0])
+        decode_show(batch_tok_fn, examples_tokenized['labels'][0])
 
     return examples_tokenized
 
@@ -73,7 +73,8 @@ def datamap_good_rating(config, dataset):
 ###############
 def collate_prompt(config, batch_tok_fn, batch_data):
     prompts = [d['prompt'] for d in batch_data]
-    return batch_tok_fn(prompts), batch_data
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
 
 
 def collate_query_cot(config, batch_tok_fn, batch_data):
@@ -82,8 +83,8 @@ def collate_query_cot(config, batch_tok_fn, batch_data):
         cot_mytrain(d['query'])
         for d in batch_data
     ]
-    return batch_tok_fn(prompts), batch_data
-
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
 
 def collate_finetune_phase1(config, batch_tok_fn, batch_data):
     template = (

@@ -1,7 +1,9 @@
 import os
+import gc
 import json
-import random
+import time
 import torch
+import random
 import configparser
 import numpy as np
 from functools import partial
@@ -162,6 +164,85 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     return ppo_trainer
 
 
+@torch.inference_mode()
+def gen_stream(model, input_ids, context_len=4096,
+    stream_interval=2, mode='greedy', stop_token_ids=[]):
+    output_ids = input_ids[0].tolist()
+    prompt_len = len(input_ids[0])
+    max_new_tokens = context_len - prompt_len - 1
+    past_key_values = out = None
+    for i in range(max_new_tokens):
+        if i == 0:  # prefill
+            out = model(input_ids, use_cache=True)
+        else:  # decoding
+            last_id = torch.as_tensor([[token]],
+                device=input_ids.device)
+            out = model(
+                input_ids=last_id,
+                use_cache=True,
+                past_key_values=past_key_values,
+            )
+        logits = out.logits # [bs, len, vocab]
+        past_key_values = out.past_key_values
+
+        last_token_logits = logits[0, -1, :]
+
+        if mode == 'greedy':
+            _, indices = torch.topk(last_token_logits, 2)
+            tokens = [int(index) for index in indices.tolist()]
+        elif mode == 'sample':
+            probs = torch.softmax(last_token_logits, dim=-1)
+            indices = torch.multinomial(probs, num_samples=2)
+            tokens = [int(token) for token in indices.tolist()]
+        else:
+            raise NotImplementedError
+        token = tokens[0]
+        output_ids.append(token)
+
+        if token in stop_token_ids:
+            stopped = True
+        else:
+            stopped = False
+
+        # Yield the output tokens
+        if i % stream_interval == 0 or i == max_new_tokens - 1 or stopped:
+            yield {
+                "output_ids": output_ids[prompt_len:],
+                "usage": {
+                    "prompt_tokens": prompt_len,
+                    "completion_tokens": i,
+                    "total_tokens": prompt_len + i,
+                },
+                "finish_reason": None,
+            }
+
+        if stopped:
+            break
+
+    # Finish stream event, which contains finish reason
+    if i == max_new_tokens - 1:
+        finish_reason = "length"
+    elif stopped:
+        finish_reason = "stop"
+    else:
+        finish_reason = None
+
+    yield {
+        "output_ids": output_ids,
+        "usage": {
+            "prompt_tokens": prompt_len,
+            "completion_tokens": i,
+            "total_tokens": prompt_len + i,
+        },
+        "finish_reason": finish_reason,
+    }
+
+    # Clean
+    del past_key_values, out, logits
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
 def batch_tokenize(config, tokenizer, texts,
     eos=True, decode=False):
     if tokenizer is None:
@@ -169,7 +250,8 @@ def batch_tokenize(config, tokenizer, texts,
             'texts': [text for text in texts]
         }
     elif decode:
-        return tokenizer.decode(texts)
+        decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
+        return tokenizer.decode(texts, **decode_kwargs)
     else:
         if eos:
             texts = [t + tokenizer.eos_token for t in texts]
@@ -186,21 +268,43 @@ def batch_respond(config, models, batch_in):
     bs = config.getint('batch_size')
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
+    decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
 
     if hasattr(model, 'pretrained_model'):
         device = model.pretrained_model.device
-
         input_ids = dict_batch['input_ids']
         input_ids = input_ids.to(device) # bs, L
+
         response = respond_to_batch(model, input_ids)
         return [
-            tokenizer.decode(response[b])
+            tokenizer.decode(response[b], **decode_kwargs)
             for b in range(bs)
         ]
-    else:
+
+    elif config.get('model') == 'openai_api':
         gen_kwargs = get_cfg_json(config, 'openai_gen', {})
         in_texts = dict_batch['texts']
         return model.complete(in_texts, gen_kwargs)
+
+    else:
+        device = model.device
+        input_ids = dict_batch['input_ids']
+        input_ids = input_ids.to(device) # bs, L
+
+        from utils2 import generate
+        gen_kwargs = get_cfg_json(config, 'gen_kwargs', {})
+        gen_kwargs['stop_token_ids'].append(tokenizer.eos_token_id)
+        stream = gen_kwargs.pop('stream')
+        for output in gen_stream(model, input_ids, **gen_kwargs):
+            text = tokenizer.decode(output['output_ids'], **decode_kwargs)
+            finr = output['finish_reason']
+            if stream:
+                print("\033c", end='')
+                print(text)
+                time.sleep(0.5)
+        if stream:
+            print('Finish reason:', finr)
+        return text
 
 
 def prepare_experiment(config):
@@ -324,7 +428,13 @@ def do_experiment(config):
         trainer.save_model(final_save_dir)
 
     elif config.get('mode') == 'inference':
-        breakpoint()
+        import rl_data
+        log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
+        for step, batch_in in enumerate(dataloader):
+            for i in range(K):
+                batch_out = batch_respond(config, models, batch_in)
+            if log_fn: log_fn(config, locals())
+            print(f'Progress: {step+1} / {num_train_rows}')
 
     else:
         raise NotImplemented
