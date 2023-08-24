@@ -154,9 +154,7 @@ def reward_by_answer(config, inp, out, model):
     from rich import print as rich_print
 
     rewards = []
-    for raw, inp_str, out_str in zip(
-        inp[1], inp[0]['texts'], out):
-
+    for raw, out_str in zip(inp[1], out):
         ground_truth = extract_math_answer(raw['solution'])
         out_boxed = extract_math_answer(out_str)
         equiv = is_equiv(ground_truth, out_boxed)
@@ -172,9 +170,9 @@ def reward_by_answer(config, inp, out, model):
 
         rich_print('[blue]ground truth:[/blue]', ground_truth)
         if equiv:
-            rich_print('[green]correct[/green]')
+            rich_print('[green]correct![/green]')
         else:
-            rich_print('[red]wrong[/red]', out_boxed)
+            rich_print('[red]wrong:[/red]', out_boxed)
 
     return rewards
 

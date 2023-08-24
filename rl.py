@@ -228,7 +228,7 @@ def gen_stream(model, input_ids, context_len=4096,
         finish_reason = None
 
     yield {
-        "output_ids": output_ids,
+        "output_ids": output_ids[prompt_len:],
         "usage": {
             "prompt_tokens": prompt_len,
             "completion_tokens": i,
@@ -304,7 +304,7 @@ def batch_respond(config, models, batch_in):
                 time.sleep(0.5)
         if stream:
             print('Finish reason:', finr)
-        return text
+        return [text]
 
 
 def prepare_experiment(config):
@@ -429,10 +429,13 @@ def do_experiment(config):
 
     elif config.get('mode') == 'inference':
         import rl_data
+        rwd_fn = getattr(rl_data, config.get('reward_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         for step, batch_in in enumerate(dataloader):
             for i in range(K):
+                assert config.getint('batch_size') == 1
                 batch_out = batch_respond(config, models, batch_in)
+                rwd_fn(config, batch_in, batch_out, models)
             if log_fn: log_fn(config, locals())
             print(f'Progress: {step+1} / {num_train_rows}')
 
