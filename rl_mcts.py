@@ -10,23 +10,15 @@ class State():
         self.children.append(child_state)
 
 
-def mcts_query(config, tokenizer, model, trainer):
-    inputs = tokenizer(
-        multihop_simple('Solve $x^2 = 4$.'),
-        return_tensors="pt"
-    ).to('cuda')
-    output = model.generate(**inputs, max_length=1024, do_sample=True, temperature=0.7)
-    answer = tokenizer.decode(output[0])
-    print(answer)
-    print('\n\n')
+def mcts(config, models, batch_in,
+    res_fn=None, rwd_fn=None, stp_fn=None):
+
+    batch_out = res_fn(config, models, batch_in)
+    breakpoint()
+    for raw, out_str in zip(batch_in[1], batch_out):
+        target_docid = raw['qid']
+    a=1+1
 
 
 if __name__ == '__main__':
-    from transformers import AutoTokenizer, AutoModelForCausalLM
-    import configparser
-    cfg = configparser.ConfigParser()
-    cfg.read('rl.ini')
-    config = cfg['test']
-    tokenizer = AutoTokenizer.from_pretrained('gpt2')
-    model = AutoModelForCausalLM.from_pretrained('gpt2')
-    mcts_query(config, tokenizer, model, None)
+    pass

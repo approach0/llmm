@@ -205,6 +205,14 @@ def reward_by_answer(config, inp, out, model):
     return rewards
 
 
+def reward_by_retriever_score(config, inp, out, model):
+    rewards = []
+    for raw, out_str in zip(inp[1], out):
+        target_docid = raw['qid']
+        #target_score = 
+    return [0]
+
+
 ###############
 # log func
 ###############
