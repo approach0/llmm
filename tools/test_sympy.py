@@ -5,7 +5,8 @@ from sympy import simplify, trigsimp
 from sympy import evalf
 from sympy import pi
 from sympy import latex
-from timeout import timeout
+
+from tools.timeout import timeout
 
 
 @timeout(seconds=20)

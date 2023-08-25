@@ -1,12 +1,14 @@
 import requests
 
 
-def search(uri, question, keywords,
-    full_topk=30, topk=3):
+def search(uri, question, keywords, docid=0,
+    full_topk=30, topk=3, no_mapper=False):
 
     json = {
+        'docid': docid,
         'topk': full_topk
     }
+
     if question is not None:
         json['question'] = question
     if keywords is not None:
@@ -25,7 +27,10 @@ def search(uri, question, keywords,
             else:
                 url = post_id
             return f'URL: {url}\n\n' + content
-        return list(map(mapper, res))
+        if no_mapper:
+            return res
+        else:
+            return list(map(mapper, res))
     else:
         return []
 
