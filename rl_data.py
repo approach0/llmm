@@ -12,7 +12,7 @@ IGNORE_INDEX = -100
 ###############
 # utilities
 ###############
-def data_generator(json_file):
+def data_generator_json(json_file):
     with open(json_file, 'r') as fh:
         j = json.load(fh)
 
@@ -20,6 +20,13 @@ def data_generator(json_file):
         if 'problem' in item and item['problem'] is None:
             continue
         yield item
+
+
+def data_generator_jsonl(jsonl_file):
+    with open(jsonl_file, 'r') as fh:
+        for line in fh:
+            item = json.loads(line)
+            yield item
 
 
 def decode_show(batch_tok_fn, ids):
@@ -215,12 +222,16 @@ def save_log(logpath, verbose=False, **kwargs):
 
 
 if __name__ == '__main__':
-    json_file = './output/finetune-pairs.json'
-    ds_all = Dataset.from_generator(data_generator,
-        gen_kwargs={'json_file': json_file})
-    ds_train = ds_all.filter(lambda x: 'train' in x['problem'])
-    ds_test = ds_all.filter(lambda x: 'test' in x['problem'])
+    #json_file = './output/finetune-pairs.json'
+    #ds_all = Dataset.from_generator(data_generator_json,
+    #    gen_kwargs={'json_file': json_file})
+    #ds_train = ds_all.filter(lambda x: 'train' in x['problem'])
+    #ds_test = ds_all.filter(lambda x: 'test' in x['problem'])
+    #dataset = DatasetDict({'train': ds_train, 'test': ds_test})
 
-    dataset = DatasetDict({'train': ds_train, 'test': ds_test})
+    jsonl_file = 'arqmath-question-dups.jsonl'
+    ds_all = Dataset.from_generator(data_generator_jsonl,
+        gen_kwargs={'jsonl_file': jsonl_file})
+    dataset = DatasetDict({'train': ds_all})
     breakpoint()
-    dataset.push_to_hub("approach0/mathy-phase2")
+    dataset.push_to_hub("approach0/MSE-duplicate-questions")
