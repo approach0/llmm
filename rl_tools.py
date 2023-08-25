@@ -1,17 +1,25 @@
 import json
 import string
 from colorama import Fore, Style
+from functools import partial
 
-from test_sympy import compute as sympy_compute
+
+class ToolError():
+    def __init__(self, errstr):
+        self.errstr = errstr
+    def __repr__(self):
+        return self.errstr
 
 
-def calculator(query, args):
-    print('computing:', args)
+def sympy_solver(args):
+    from tools.test_sympy import compute as sympy_compute
+    print('computing API:', args)
     if not isinstance(args, list):
-        return 'Passed argument format error. Use array!'
+        return ToolError('Passed argument format error. Use array!')
     elif len(args) < 2:
-        return 'Error: at least two arguments needed!'
-    return sympy_compute(*args)
+        return ToolError('Error: at least two arguments needed!')
+    else:
+        return sympy_compute(*args)
 
 
 def has_math(s):
@@ -66,34 +74,33 @@ def smart_correct(kw):
         return kw
 
 
-def search(tool, question, keywords, gt=None, **kargs):
-    if gt is not None and 'manual_query' in gt:
-        if len(gt['manual_query']) > 0:
-            keywords = gt['manual_query']
-            keywords = list(map(lambda x: f'${x}$', keywords))
-
+def search_mux(api_name, question, keywords, docid=None):
     if keywords:
         keywords = list(map(smart_correct, keywords))
 
     print(Fore.CYAN)
-    print('requesting:', tool)
+    print('search API:', api_name)
     print('query question:', question)
     print('query keywords:', keywords)
     print(Style.RESET_ALL)
 
-    if tool == 'mabowdor':
+    if api_name == 'mabowdor':
         from tools.test_mabowdor import search
         return search('mabowdor', question, keywords)
 
-    elif tool == 'a0':
+    elif api_name == 'a0':
         from tools.test_mabowdor import search
         return search('mabowdor', None, keywords)
 
-    elif tool == 'MATH':
+    elif api_name == 'MATH':
         from tools.test_mabowdor import search
         return search('MATH', question, None)
 
-    elif tool == 'online':
+    elif api_name == 'dups':
+        from tools.test_mabowdor import search
+        return search('dups', None, keywords, docid, no_mapper=True)
+
+    elif api_name == 'online':
         from tools.test_a0xyz_search import sleepy_search_api
         return sleepy_search_api(keywords=keywords)
 
@@ -119,10 +126,10 @@ def capture(string, par):
     return begin, end
 
 
-def has_call(answer, api_map):
-    if has_result(answer, api_map):
+def has_call(answer, tool_map):
+    if has_result(answer, tool_map):
         return True
-    for key in api_map.keys():
+    for key in tool_map.keys():
         if key in answer:
             idx = answer.find(key)
             begin, end = capture(answer[idx:], ('[', ']'))
@@ -131,7 +138,7 @@ def has_call(answer, api_map):
     return False
 
 
-def has_result(answer, api_map):
+def has_result(answer, tool_map):
     if r'<|im_end|>' in answer:
         return True
     key = r'\boxed'
@@ -143,31 +150,68 @@ def has_result(answer, api_map):
     return False
 
 
-def has_any_captured(answer, api_map):
-    return has_result(answer, api_map) or has_call(answer, api_map)
+def has_any_captured(answer, tool_map):
+    return has_result(answer, tool_map) or has_call(answer, tool_map)
 
 
-def inject_result(query, answer, api_map):
-    for api_name in api_map:
-        idx = answer.find(api_name)
+def tool_invoke(response, tool_map):
+    for tool_name in tool_map:
+        idx = response.find(tool_name)
         if idx == -1: continue
-
-        idx += len(api_name)
-
-        begin, end = capture(answer[idx:], ('[', ']'))
+        idx += len(tool_name)
+        begin, end = capture(response[idx:], ('[', ']'))
         begin, end = begin + idx, end + idx
         if begin >= end:
-            return answer[:idx] + '\n\n' + multihop_err1()
-        else:
-            injected = answer[:end+1] + '\n\n'
+            pre_invoke = response[:idx].strip()
+            return pre_invoke, ToolError(
+                'Wrong JSON array format!\n' +
+                'Forget to add square brackets?')
 
-        api_args = answer[begin:end+1]
+        pre_invoke = response[:end+1].strip()
+        tool_args = response[begin:end+1]
         try:
-            api_args = json.loads(api_args)
-            results = api_map[api_name](query, api_args)
-            injected += multihop_results1(results)
+            tool_args = json.loads(tool_args)
+            tool_result = tool_map[tool_name](tool_args)
+            return pre_invoke, tool_result
+
         except json.decoder.JSONDecodeError:
-            injected += multihop_err1('JSON decode error!\n' +
-            'Double check your API call and try it again!')
-        return injected
-    return None
+            return pre_invoke, ToolError(
+                    'JSON array decode error!\n' +
+                    'Check your calling format!')
+
+    return response, ToolError('No tool being invoked!')
+
+
+if __name__ == '__main__':
+    tool_map = {
+        'COMPUTE': sympy_solver,
+        'SEARCH': partial(search_mux, 'dups', None, docid=10490)
+    }
+
+    response = r'''I can invoke the search API here...
+
+    SEARCH["1^\\infty"]
+
+    should it return some results here?'''
+
+    if has_any_captured(response, tool_map):
+        pre_invoke, tool_res = tool_invoke(response, tool_map)
+        print(pre_invoke)
+        print(tool_res)
+        print(isinstance(tool_res, ToolError))
+    else:
+        print('nothing to capture!')
+
+    response = r'''I can invoke the search API here...
+
+    COMPUTE["solve x", "x^2 = 4"]
+
+    should it return some results here?'''
+
+    if has_any_captured(response, tool_map):
+        pre_invoke, tool_res = tool_invoke(response, tool_map)
+        print(pre_invoke)
+        print(tool_res)
+        print(isinstance(tool_res, ToolError))
+    else:
+        print('nothing to capture!')
