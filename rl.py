@@ -71,29 +71,20 @@ def get_peft_config(peft_attach_new=False,
 
 
 def get_models(config):
-    tokenizer_path = config.get('tokenizer', None)
-    if tokenizer_path:
-        from transformers import AutoTokenizer
-        tokenizer_init_kwargs = get_cfg_json(config,
-            'tokenizer_init_kwargs', {})
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
-            **tokenizer_init_kwargs)
-        special_tokens = get_cfg_json(config,
-            'tokenizer_special_tokens', None)
-        if special_tokens:
-            tokenizer.add_special_tokens(special_tokens)
-        print('tokenizer pad_token_id:', tokenizer.pad_token_id)
-        print('tokenizer bos_token_id:', tokenizer.bos_token_id)
-        print('tokenizer eos_token_id:', tokenizer.eos_token_id)
-    else:
-        tokenizer = None
-
     model_path = config.get('model')
     if model_path == 'openai_api':
         from rl_openai import OpenAI_API
         kwargs = get_cfg_json(config, 'openai_init', {})
         model = OpenAI_API(**kwargs)
         ref_model = None
+
+    elif model_path.startswith('http'):
+        model = model_path
+        ref_model = None
+        config['model_as_server'] = '{}'
+        if 'tokenizer' in config:
+            del config['tokenizer']
+
     else:
         peft_kwargs = get_cfg_json(config, 'peft', {})
         lora_config = get_peft_config(**peft_kwargs)
@@ -139,6 +130,23 @@ def get_models(config):
 
         else:
             raise NotImplemented
+
+    tokenizer_path = config.get('tokenizer', None)
+    if tokenizer_path:
+        from transformers import AutoTokenizer
+        tokenizer_init_kwargs = get_cfg_json(config,
+            'tokenizer_init_kwargs', {})
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,
+            **tokenizer_init_kwargs)
+        special_tokens = get_cfg_json(config,
+            'tokenizer_special_tokens', None)
+        if special_tokens:
+            tokenizer.add_special_tokens(special_tokens)
+        print('tokenizer pad_token_id:', tokenizer.pad_token_id)
+        print('tokenizer bos_token_id:', tokenizer.bos_token_id)
+        print('tokenizer eos_token_id:', tokenizer.eos_token_id)
+    else:
+        tokenizer = None
 
     return tokenizer, model, ref_model
 
@@ -267,9 +275,15 @@ def batch_tokenize(config, tokenizer, texts,
         )
 
 
+def wrapup_collate(config, tokenizer):
+    tok_fn = partial(batch_tokenize, config, tokenizer)
+    col_fn = getattr(rl_data, config.get('collate_fn'))
+    return partial(col_fn, config, tok_fn)
+
+
 from flask import Flask
 app = Flask('model as server')
-@app.route('/batch_respond', methods=['GET', 'POST'])
+@app.route('/model', methods=['GET', 'POST'])
 def server_handler():
     from flask import request
     config, models = app.config['args']
@@ -299,8 +313,23 @@ def batch_respond(config, models, batch_in):
         in_texts = dict_batch['texts']
         return model.complete(in_texts, gen_kwargs)
 
+    elif isinstance(model, str) and model.startswith('http'):
+        import requests
+        res = requests.post(model, json={'batch_in': batch_in})
+        if res.ok:
+            try:
+                return res.json()
+            except:
+                print(res.text)
+                quit(1)
+        else:
+            print(res.status_code)
+            quit(1)
     else:
         device = model.device
+        if 'input_ids' not in dict_batch:
+            collate_fn = wrapup_collate(config, tokenizer)
+            dict_batch, batch_raw = collate_fn(batch_raw)
         input_ids = dict_batch['input_ids']
         input_ids = input_ids.to(device) # bs, L
 
@@ -309,7 +338,8 @@ def batch_respond(config, models, batch_in):
         gen_kwargs['stop_token_ids'].append(tokenizer.eos_token_id)
         stream = gen_kwargs.pop('stream')
         for output in gen_stream(model, input_ids, **gen_kwargs):
-            text = tokenizer.decode(output['output_ids'], **decode_kwargs)
+            text = tokenizer.decode(output['output_ids'],
+                **decode_kwargs)
             finr = output['finish_reason']
             if stream:
                 print("\033c", end='')
@@ -366,13 +396,12 @@ def prepare_experiment(config):
     else:
         dataset['test'] = None
 
-    tok_fn = partial(batch_tokenize, config, tokenizer)
-    col_fn = getattr(rl_data, config.get('collate_fn'))
+    collate_fn = wrapup_collate(config, tokenizer)
 
     if config.get('mode') in ['rl', 'inference']:
         bs = config.getint('batch_size')
         dataloader = DataLoader(dataset['train'],
-            collate_fn=partial(col_fn, config, tok_fn),
+            collate_fn=collate_fn,
             batch_size=bs
         )
 
@@ -400,24 +429,41 @@ def prepare_experiment(config):
     return models, trainer, dataloader, dataset
 
 
-def do_experiment(config):
-    os.makedirs(config.get('output_dir', '.'), exist_ok=True)
-    set_seed(config.getint('seed', 42))
+def log_config(config, logdir, filename):
+    logfile = os.path.join(logdir, filename)
+    with open(logfile, 'w') as fh:
+        j = dict(config.items())
+        json.dump(j, fh, indent=2)
+        fh.write('\n')
 
+
+def parse_metric_config(config):
     metric = config.get('metric', 'pass@1')
     metric_name, K = metric.split('@')
     K = int(K)
     assert K > 0
     assert metric_name in ['pass', 'maj']
+    return K
 
-    final_save_dir = os.path.join(
+
+def do_experiment(config, inject_args):
+    inject_arguments(config, inject_args)
+    output_dir = config.get('output_dir', '.')
+    os.makedirs(output_dir, exist_ok=True)
+    experiment_output_dir = os.path.join(
         config.get('output_dir'), config.name
     )
+    log_config(config, experiment_output_dir, 'config.ini')
+    log_config(inject_args, experiment_output_dir, 'inject.ini')
 
+    K = parse_metric_config(config)
+    set_seed(config.getint('seed', 42))
     models, trainer, dataloader, dataset = prepare_experiment(config)
-    if app_args := get_cfg_json(config, 'model_as_server', False):
+
+    if app_args := get_cfg_json(config, 'model_as_server', {}):
         app.config['args'] = (config, models)
         app.run(**app_args)
+        quit(0)
 
     tokenizer, model, _ = models
     num_train_rows = dataset['train'].num_rows
@@ -436,13 +482,13 @@ def do_experiment(config):
             print(f'Progress: {step+1} / {num_train_rows}')
 
         if hasattr(model, 'save_pretrained'):
-            model.save_pretrained(final_save_dir)
+            model.save_pretrained(experiment_output_dir)
 
     elif config.get('mode') == 'finetune':
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
-        trainer.save_model(final_save_dir)
+        trainer.save_model(experiment_output_dir)
 
     elif config.get('mode') == 'inference':
         import rl_data
@@ -467,7 +513,13 @@ def do_experiment(config):
     #mcts_query(config, tokenizer, model, trainer)
 
 
-def main(*experiments, config_file='rl.ini'):
+def inject_arguments(config, inject_args):
+    for key, val in inject_args.items():
+        print('[inject config]:', key, '=>', val)
+        config[key] = str(val)
+
+
+def main(*experiments, config_file='rl.ini', **inject_args):
     cfg = configparser.ConfigParser()
     cfg.read(config_file)
 
@@ -479,7 +531,8 @@ def main(*experiments, config_file='rl.ini'):
         assert ex in cfg.sections()
 
     for ex in experiments:
-        do_experiment(cfg[ex])
+        config = cfg[ex]
+        do_experiment(config, inject_args)
 
 
 if __name__ == '__main__':
