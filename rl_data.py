@@ -113,7 +113,7 @@ def collate_finetune_phase1(config, batch_tok_fn, batch_data):
         for d in batch_data
     ]
     targets = [d['output'] for d in batch_data]
-    return collate_pr(config, batch_tok_fn, sources, targets)
+    return collate_pr(config, batch_tok_fn, sources, targets), batch_data
 
 
 def collate_finetune_phase2(config, batch_tok_fn, batch_data):
@@ -127,7 +127,7 @@ def collate_finetune_phase2(config, batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [rate2outputs(d['manual_rating']) for d in batch_data]
-    return collate_pr(config, batch_tok_fn, sources, targets)
+    return collate_pr(config, batch_tok_fn, sources, targets), batch_data
 
 
 def collate_ask_relevance(config, batch_tok_fn, batch_data):
@@ -158,7 +158,19 @@ def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [d['output'] + '\n' for d in batch_data]
-    return collate_pr(config, batch_tok_fn, sources, targets)
+    return collate_pr(config, batch_tok_fn, sources, targets), batch_data
+
+
+def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import tool_prompt1
+    eos = config.getboolean('collate_add_eos', True)
+    response_sect = '### Response:\n'
+    inputs = [
+        tool_prompt1(data['Q_dup']) + '\n\n' + response_sect
+        for data in batch_data
+    ]
+    inputs_tokenized = batch_tok_fn(inputs, eos=eos)
+    return inputs_tokenized, batch_data
 
 
 ###############

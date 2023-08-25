@@ -284,7 +284,7 @@ def wrapup_collate(config, tokenizer):
 from flask import Flask
 app = Flask('model as server')
 @app.route('/model', methods=['GET', 'POST'])
-def server_handler():
+def batch_respond_handler():
     from flask import request
     config, models = app.config['args']
     batch_in = request.json['batch_in']
@@ -341,11 +341,13 @@ def batch_respond(config, models, batch_in):
             text = tokenizer.decode(output['output_ids'],
                 **decode_kwargs)
             finr = output['finish_reason']
+            usage = output['usage']
             if stream:
                 print("\033c", end='')
                 print(text)
                 time.sleep(0.5)
         if stream:
+            print('Usage:', usage)
             print('Finish reason:', finr)
         return [text]
 
@@ -385,7 +387,7 @@ def prepare_experiment(config):
     dataset_path = config.get('dataset')
     dataset = load_dataset(dataset_path)
 
-    dataset_map_fn = getattr(rl_data, config.get('dataset_map_fn'), None)
+    dataset_map_fn = getattr(rl_data, config.get('dataset_map_fn', '_'), None)
     if dataset_map_fn:
         dataset = dataset_map_fn(config, dataset)
 
