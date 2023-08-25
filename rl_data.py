@@ -67,6 +67,15 @@ def datamap_good_rating(config, dataset):
     })
     return dataset
 
+def datamap_perfect_rating(config, dataset):
+    picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 1)
+    picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 1)
+
+    dataset = DatasetDict({
+        'train': concatenate_datasets([picky_dataset1, picky_dataset2])
+    })
+    return dataset
+
 
 ###############
 # collate func
