@@ -449,10 +449,10 @@ def parse_metric_config(config):
 def do_experiment(config, inject_args):
     inject_arguments(config, inject_args)
     output_dir = config.get('output_dir', '.')
-    os.makedirs(output_dir, exist_ok=True)
     experiment_output_dir = os.path.join(
         config.get('output_dir'), config.name
     )
+    os.makedirs(experiment_output_dir, exist_ok=True)
     log_config(config, experiment_output_dir, 'config.ini')
     log_config(inject_args, experiment_output_dir, 'inject.ini')
 
