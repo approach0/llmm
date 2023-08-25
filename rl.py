@@ -92,8 +92,7 @@ def get_models(config):
         if config.get('mode') == 'rl':
             from trl import AutoModelForCausalLMWithValueHead as M
             model = M.from_pretrained(
-                model_path, device_map="auto",
-                peft_config=lora_config
+                model_path, peft_config=lora_config
             )
 
             is_peft_model = getattr(model, "is_peft_model", False)
