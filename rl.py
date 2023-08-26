@@ -320,7 +320,8 @@ def batch_respond(config, models, batch_in):
         input_ids = dict_batch['input_ids']
         input_ids = input_ids.to(device) # bs, L
 
-        response = respond_to_batch(model, input_ids)
+        trl_respond_kwargs = get_cfg_json(config, 'trl_respond_kwargs', {})
+        response = respond_to_batch(model, input_ids, **trl_respond_kwargs)
         return [
             tokenizer.decode(response[b], **decode_kwargs)
             for b in range(bs)
