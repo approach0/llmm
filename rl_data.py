@@ -65,6 +65,15 @@ def collate_pr(config, batch_tok_fn, sources, targets):
 ###############
 # datamap
 ###############
+def datamap_merge_train_and_test(config, dataset):
+    dataset1 = dataset['train']
+    dataset2 = dataset['test']
+    dataset = DatasetDict({
+        'train': concatenate_datasets([dataset1, dataset2])
+    })
+    return dataset
+
+
 def datamap_good_rating(config, dataset):
     picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 0)
     picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 0)
@@ -73,6 +82,7 @@ def datamap_good_rating(config, dataset):
         'train': concatenate_datasets([picky_dataset1, picky_dataset2])
     })
     return dataset
+
 
 def datamap_perfect_rating(config, dataset):
     picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 1)
