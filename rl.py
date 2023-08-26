@@ -92,7 +92,8 @@ def get_models(config):
         if config.get('mode') == 'rl':
             from trl import AutoModelForCausalLMWithValueHead as M
             model = M.from_pretrained(
-                model_path, peft_config=lora_config
+                model_path, peft_config=lora_config,
+                device_map='auto'
             )
 
             is_peft_model = getattr(model, "is_peft_model", False)
@@ -287,6 +288,7 @@ def batch_respond_handler():
     from flask import request
     config, models = app.config['args']
     batch_in = request.json['batch_in']
+    breakpoint()
     return batch_respond(config, models, batch_in)
 
 
@@ -298,6 +300,9 @@ def batch_respond(config, models, batch_in):
 
     if hasattr(model, 'pretrained_model'):
         device = model.pretrained_model.device
+        if 'input_ids' not in dict_batch:
+            collate_fn = wrapup_collate(config, tokenizer)
+            dict_batch, batch_raw = collate_fn(batch_raw)
         input_ids = dict_batch['input_ids']
         input_ids = input_ids.to(device) # bs, L
 
