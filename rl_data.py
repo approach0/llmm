@@ -163,7 +163,12 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
     eos = config.getboolean('collate_add_eos', True)
     response_sect = '### Response:\n'
     inputs = [
-        tool_prompt1(data['Q_dup']) + '\n\n' + response_sect
+        tool_prompt1(
+            data['Q_dup']
+            .replace(r'[imath]', '$')
+            .replace(r'[/imath]', '$')
+        )
+        + '\n\n' + response_sect
         for data in batch_data
     ]
     inputs_tokenized = batch_tok_fn(inputs, eos=eos)
