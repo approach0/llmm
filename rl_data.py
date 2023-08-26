@@ -102,6 +102,7 @@ def collate_query_cot(config, batch_tok_fn, batch_data):
     eos = config.getboolean('collate_add_eos', True)
     return batch_tok_fn(prompts, eos=eos), batch_data
 
+
 def collate_finetune_phase1(config, batch_tok_fn, batch_data):
     template = (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
@@ -113,21 +114,7 @@ def collate_finetune_phase1(config, batch_tok_fn, batch_data):
         for d in batch_data
     ]
     targets = [d['output'] for d in batch_data]
-    return collate_pr(config, batch_tok_fn, sources, targets), batch_data
-
-
-def collate_finetune_phase2(config, batch_tok_fn, batch_data):
-    def rate2outputs(rate):
-        if rate == 0:
-            return 'This search result is not helpful.'
-        elif rate == 1:
-            return 'This search result might be useful.'
-        else:
-            return 'This search result looks very relevant!'
-
-    sources = [d['prompt'] + '\n' for d in batch_data]
-    targets = [rate2outputs(d['manual_rating']) for d in batch_data]
-    return collate_pr(config, batch_tok_fn, sources, targets), batch_data
+    return collate_pr(config, batch_tok_fn, sources, targets)
 
 
 def collate_ask_relevance(config, batch_tok_fn, batch_data):
@@ -158,7 +145,7 @@ def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
 
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = [d['output'] + '\n' for d in batch_data]
-    return collate_pr(config, batch_tok_fn, sources, targets), batch_data
+    return collate_pr(config, batch_tok_fn, sources, targets)
 
 
 def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
