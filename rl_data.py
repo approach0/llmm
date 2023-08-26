@@ -206,6 +206,7 @@ def reward_by_retriever_score(config, inp, out, model):
     rewards = []
     for raw, out_str in zip(inp[1], out):
         target_docid = raw['qid']
+        breakpoint()
         #target_score = 
     return [0]
 

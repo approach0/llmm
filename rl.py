@@ -303,7 +303,6 @@ def batch_respond_handler():
     from flask import request
     config, models = app.config['args']
     batch_in = request.json['batch_in']
-    breakpoint()
     return batch_respond(config, models, batch_in)
 
 
