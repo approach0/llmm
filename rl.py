@@ -198,7 +198,7 @@ def rl_respond(model, queries, decode, stop_fn,
         next_token_logits = top_k_top_p_filtering(next_token_logits,
             top_k=top_k, top_p=top_p)
         # Sample
-        probs = F.softmax(next_token_logits, dim=-1)
+        probs = torch.nn.functional.softmax(next_token_logits, dim=-1)
         next_token = torch.multinomial(probs, num_samples=1).squeeze(1)
         if stream:
             import time
@@ -210,7 +210,7 @@ def rl_respond(model, queries, decode, stop_fn,
         input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
         if stop_fn and stop_fn(decode(input_ids[0, query_len:])):
             break
-    return input_ids[:, query_len + i + 1:]
+    return input_ids[:, query_len:]
 
 
 @torch.inference_mode()
@@ -342,7 +342,13 @@ def batch_respond(config, models, batch_in):
         decode = partial(tokenizer.decode, **decode_kwargs)
         response = rl_respond(model, input_ids, decode, stop_fn,
             **rl_respond_kwargs)
-        return response # logits
+        if get_cfg_json(config, 'model_as_server', {}):
+            return [
+                tokenizer.decode(response[b], **decode_kwargs)
+                for b in range(bs)
+            ] # texts
+        else:
+            return response # logits
 
     elif config.get('model') == 'openai_api':
         gen_kwargs = get_cfg_json(config, 'openai_gen', {})
