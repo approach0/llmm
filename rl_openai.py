@@ -14,7 +14,6 @@ class OpenAI_API():
         self.api_base = kwargs['api_base']
 
         self.engine = kwargs['engine']
-        self.abort = None
 
     @timeout(seconds=30)
     def generate(self, prompt, **kwargs):
@@ -48,10 +47,11 @@ class OpenAI_API():
                         break
         return res_txt
 
-    def complete(self, prompts, kwargs):
+    def complete(self, prompts, abort_fn, kwargs):
         assert isinstance(prompts, list)
         sleep_time = kwargs.pop('sleep_time')
         stream = kwargs.pop('stream')
+        self.abort = abort_fn
         while True:
             time.sleep(sleep_time)
             try:
@@ -80,5 +80,5 @@ if __name__ == '__main__':
     responses = api.complete([
         'find the root: $x^2=4$',
         'count to 10.'
-    ], gen_kwargs)
+    ], None, gen_kwargs)
     print(responses)

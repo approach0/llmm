@@ -171,6 +171,17 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
 
 
 ###############
+# stop func
+###############
+def stop_on_stop_token(config, tokenizer, response):
+    if tokenizer.eos_token in response:
+        return True
+    elif '##' in response:
+        return True
+    return False
+
+
+###############
 # reward func
 ###############
 def reward_by_answer(config, inp, out, model):

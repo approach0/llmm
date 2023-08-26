@@ -10,7 +10,6 @@ from functools import partial
 
 import sys
 sys.path.insert(0, './trl')
-from trl.core import respond_to_batch
 
 import rl_data
 
@@ -187,9 +186,36 @@ def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
     return ppo_trainer
 
 
+def rl_respond(model, queries, decode, stop_fn,
+    txt_len=20, top_k=0, top_p=1.0, stream=False):
+    from transformers import top_k_top_p_filtering
+    input_ids = queries
+    query_len = queries.shape[1]
+    for i in range(txt_len):
+        # Get Logits
+        outputs = model(input_ids)
+        next_token_logits = outputs[0][:, -1, :]
+        next_token_logits = top_k_top_p_filtering(next_token_logits,
+            top_k=top_k, top_p=top_p)
+        # Sample
+        probs = F.softmax(next_token_logits, dim=-1)
+        next_token = torch.multinomial(probs, num_samples=1).squeeze(1)
+        if stream:
+            import time
+            print("\033c", end='')
+            print(decode(input_ids[0, :query_len]))
+            print('~' * 60)
+            print(decode(input_ids[0, query_len:]))
+            time.sleep(0.5)
+        input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
+        if stop_fn and stop_fn(decode(input_ids[0, query_len:])):
+            break
+    return input_ids[:, query_len + i + 1:]
+
+
 @torch.inference_mode()
-def gen_stream(model, input_ids, context_len=4096,
-    stream_interval=2, temperature=0, stop_token_ids=[]):
+def gen_stream(model, input_ids,
+    context_len=4096, stream_interval=2, temperature=0):
     from transformers.generation.logits_process import (
         TemperatureLogitsWarper
     )
@@ -225,13 +251,8 @@ def gen_stream(model, input_ids, context_len=4096,
         token = tokens[0]
         output_ids.append(token)
 
-        if token in stop_token_ids:
-            stopped = True
-        else:
-            stopped = False
-
         # Yield the output tokens
-        if i % stream_interval == 0 or i == max_new_tokens - 1 or stopped:
+        if i % stream_interval == 0 or i == max_new_tokens - 1:
             yield {
                 "output_ids": output_ids[prompt_len:],
                 "usage": {
@@ -242,14 +263,9 @@ def gen_stream(model, input_ids, context_len=4096,
                 "finish_reason": None,
             }
 
-        if stopped:
-            break
-
     # Finish stream event, which contains finish reason
     if i == max_new_tokens - 1:
         finish_reason = "length"
-    elif stopped:
-        finish_reason = "stop"
     else:
         finish_reason = None
 
@@ -311,6 +327,8 @@ def batch_respond(config, models, batch_in):
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
     decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
+    stop_fn = getattr(rl_data, config.get('stop_fn', '_'), None)
+    if stop_fn: stop_fn = partial(stop_fn, config, tokenizer)
 
     if hasattr(model, 'pretrained_model'):
         device = model.pretrained_model.device
@@ -320,17 +338,16 @@ def batch_respond(config, models, batch_in):
         input_ids = dict_batch['input_ids']
         input_ids = input_ids.to(device) # bs, L
 
-        trl_respond_kwargs = get_cfg_json(config, 'trl_respond_kwargs', {})
-        response = respond_to_batch(model, input_ids, **trl_respond_kwargs)
-        return [
-            tokenizer.decode(response[b], **decode_kwargs)
-            for b in range(bs)
-        ]
+        rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
+        decode = partial(tokenizer.decode, **decode_kwargs)
+        response = rl_respond(model, input_ids, decode, stop_fn,
+            **rl_respond_kwargs)
+        return response # logits
 
     elif config.get('model') == 'openai_api':
         gen_kwargs = get_cfg_json(config, 'openai_gen', {})
         in_texts = dict_batch['texts']
-        return model.complete(in_texts, gen_kwargs)
+        return model.complete(in_texts, stop_fn, gen_kwargs)
 
     elif isinstance(model, str) and model.startswith('http'):
         import requests
@@ -354,7 +371,6 @@ def batch_respond(config, models, batch_in):
 
         from utils2 import generate
         gen_kwargs = get_cfg_json(config, 'gen_kwargs', {})
-        gen_kwargs['stop_token_ids'].append(tokenizer.eos_token_id)
         stream = gen_kwargs.pop('stream')
         for output in gen_stream(model, input_ids, **gen_kwargs):
             text = tokenizer.decode(output['output_ids'],
@@ -365,6 +381,9 @@ def batch_respond(config, models, batch_in):
                 print("\033c", end='')
                 print(text)
                 time.sleep(0.5)
+            if stop_fn and stop_fn(text):
+                output['finish_reason'] = 'stop_fn'
+                break
         if stream:
             print('Usage:', usage)
             print('Finish reason:', finr)
