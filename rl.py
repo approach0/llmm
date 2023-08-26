@@ -86,6 +86,7 @@ def get_models(config):
             del config['tokenizer']
 
     else:
+        cache_dir = config.get('cache_dir', None)
         peft_kwargs = get_cfg_json(config, 'peft', {})
         lora_config = get_peft_config(**peft_kwargs)
 
@@ -93,6 +94,7 @@ def get_models(config):
             from trl import AutoModelForCausalLMWithValueHead as M
             model = M.from_pretrained(
                 model_path, peft_config=lora_config,
+                cache_dir=cache_dir,
                 device_map='auto'
             )
 
@@ -111,6 +113,7 @@ def get_models(config):
 
                 from transformers import BitsAndBytesConfig
                 model = LlamaForCausalLM.from_pretrained(model_path,
+                    cache_dir=cache_dir,
                     load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                         load_in_8bit=True,
                         llm_int8_threshold=6.0,
@@ -119,7 +122,8 @@ def get_models(config):
                 )
             else:
                 model = LlamaForCausalLM.from_pretrained(
-                    model_path, torch_dtype=torch.float16
+                    model_path, torch_dtype=torch.float16,
+                    cache_dir=cache_dir
                 )
 
             if lora_config is not None:
