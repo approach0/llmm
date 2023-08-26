@@ -429,7 +429,7 @@ def prepare_experiment(config):
             args=hg_trainer_args,
             train_dataset=dataset['train'],
             eval_dataset=dataset['test'],
-            data_collator=partial(col_fn, config, tok_fn)
+            data_collator=collate_fn
         )
         trainer.deepspeed = trainer.model_wrapped
 
