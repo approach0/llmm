@@ -47,7 +47,8 @@ def config_rerope(config):
         replace_llama_attn_with_rerope(**rerope)
 
 
-def get_peft_config(peft_attach_new=False,
+def get_peft_config(
+    peft_attach_new=False,
     peft_lora_rank=8,
     peft_lora_dropout=0.05,
     peft_lora_alpha=16,
@@ -127,8 +128,18 @@ def get_models(config):
                 )
 
             if lora_config is not None:
-                from peft import get_peft_model
-                model = get_peft_model(model, lora_config)
+                kwargs = get_cfg_json(config, 'peft_existing', {})
+                if kwargs:
+                    # existing LoRA
+                    from peft import PeftModel
+                    adapter_path = kwargs.pop('adapter_path')
+                    model = PeftModel.from_pretrained(
+                        model, lora_path, **kwargs)
+                    model = model.merge_and_unload()
+                else:
+                    # new LoRA
+                    from peft import get_peft_model
+                    model = get_peft_model(model, lora_config)
                 model.print_trainable_parameters()
             ref_model = None
 
