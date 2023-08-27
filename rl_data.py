@@ -266,7 +266,7 @@ def rl_step_default(trainer, batch_in, batch_out, rewards):
 ###############
 # log func
 ###############
-def default_log(config, values):
+def log_problem(config, values):
     verbose = config.getboolean('log_verbose', False)
     run_name = config.name
     output_dir = os.path.join(config.get('output_dir'), run_name)
@@ -277,6 +277,22 @@ def default_log(config, values):
     ):
         log = copy.deepcopy(inp)
         log_name = log['problem'].strip('.').replace('/', '_')
+        log_name = log_name + f'.step{step}_batch{b}.log'
+        logpath = os.path.join(output_dir, log_name)
+        save_log(logpath, verbose=verbose, **log)
+
+
+def log_dup_Q(config, values):
+    verbose = config.getboolean('log_verbose', False)
+    run_name = config.name
+    output_dir = os.path.join(config.get('output_dir'), run_name)
+    os.makedirs(output_dir, exist_ok=True)
+    step = values['step']
+    for b, (inp, out) in enumerate(
+        zip(values['batch_in'][1], values['batch_out'])
+    ):
+        log = copy.deepcopy(inp)
+        log_name = 'qid-' + log['qid']
         log_name = log_name + f'.step{step}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
         save_log(logpath, verbose=verbose, **log)
