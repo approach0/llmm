@@ -23,7 +23,7 @@ def mcts(config, models, batch_in, trainer,
     inps = []
     for input_ids, raw, out in zip(
         batch_in[0]['input_ids'], batch_in[1], batch_out):
-        breakpoint()
+        #breakpoint()
         if not isinstance(out, str):
             out_str = tokenizer.decode(out)
         else:
@@ -47,7 +47,7 @@ def mcts(config, models, batch_in, trainer,
         inps.append(input_ids)
     rewards = list(map(torch.tensor, rewards))
     stats = trainer.step(inps, outs, rewards)
-    return
+    return stats
 
 
 if __name__ == '__main__':

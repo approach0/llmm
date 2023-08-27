@@ -524,7 +524,6 @@ def do_experiment(config, inject_args):
             for i in range(K):
                 mcts(config, models, batch_in, trainer,
                     res_fn=batch_respond, rwd_fn=rwd_fn, stp_fn=stp_fn)
-                quit()
                 #batch_out = batch_respond(config, models, batch_in)
                 #rewards = rwd_fn(config, batch_in, batch_out, models)
                 #if stp_fn: stp_fn(config, step, trainer, rewards)
