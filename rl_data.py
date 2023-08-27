@@ -279,7 +279,16 @@ def log_problem(config, values):
         log_name = log['problem'].strip('.').replace('/', '_')
         log_name = log_name + f'.step{step}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
-        save_log(logpath, verbose=verbose, **log)
+        save_answer_log(logpath, verbose=verbose, **log)
+
+
+def save_answer_log(logpath, verbose=False, **kwargs):
+    from tools.inspect_output import _output_html
+    with open(logpath, 'w') as fh:
+        json.dump(kwargs, fh, indent=2)
+    _output_html(logpath, verbose=False)
+    if verbose: print(kwargs.keys())
+    if verbose: print('Written log:', logpath)
 
 
 def log_dup_Q(config, values):
@@ -288,23 +297,16 @@ def log_dup_Q(config, values):
     output_dir = os.path.join(config.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
     step = values['step']
-    for b, (inp, out) in enumerate(
-        zip(values['batch_in'][1], values['batch_out'])
+    for b, (inp, out, outstr) in enumerate(
+        zip(values['batch_in'][1], values['batch_out'], values['batch_outstr'])
     ):
         log = copy.deepcopy(inp)
         log_name = 'qid-' + log['qid']
         log_name = log_name + f'.step{step}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
-        save_log(logpath, verbose=verbose, **log)
-
-
-def save_log(logpath, verbose=False, **kwargs):
-    from tools.inspect_output import _output_html
-    with open(logpath, 'w') as fh:
-        json.dump(kwargs, fh, indent=2)
-    _output_html(logpath, verbose=False)
-    if verbose: print(kwargs.keys())
-    if verbose: print('Written log:', logpath)
+        log['response'] = outstr
+        with open(logpath, 'w') as fh:
+            json.dump(log, fh)
 
 
 if __name__ == '__main__':

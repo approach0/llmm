@@ -17,6 +17,7 @@ def mcts(step, config, models, batch_in, trainer,
     if stp_fn:
         stats = stp_fn(trainer, batch_in, batch_out, rewards)
     if log_fn:
+        batch_outstr = [tokenizer.decode(out) for out in batch_out]
         log_fn(config, locals())
 
 
