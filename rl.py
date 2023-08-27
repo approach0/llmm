@@ -165,16 +165,16 @@ def get_models(config):
     return tokenizer, model, ref_model
 
 
-def get_rl_trainer(tokenizer, model, ref_model, **ppo_kwargs):
-    if 'lr' not in ppo_kwargs:
+def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
+    if 'lr' not in kwargs:
         return None
 
     import bitsandbytes as bnb
-    lr = ppo_kwargs.pop('lr')
+    lr = kwargs.pop('lr')
     optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
 
     from trl import PPOConfig, PPOTrainer
-    config = PPOConfig(**ppo_kwargs)
+    config = PPOConfig(**kwargs)
     ppo_trainer = PPOTrainer(
         config,
         model,
@@ -522,7 +522,7 @@ def do_experiment(config, inject_args):
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         for step, batch_in in enumerate(dataloader):
             for i in range(K):
-                mcts(config, models, batch_in,
+                mcts(config, models, batch_in, trainer,
                     res_fn=batch_respond, rwd_fn=rwd_fn, stp_fn=stp_fn)
                 quit()
                 #batch_out = batch_respond(config, models, batch_in)
@@ -554,13 +554,6 @@ def do_experiment(config, inject_args):
 
     else:
         raise NotImplemented
-
-    #rewards = [torch.tensor(1.0)]
-    #stats = trainer.step(
-    #    [input_ids[b]], [response[b]], rewards
-    #)
-    #from rl_mcts import mcts_query
-    #mcts_query(config, tokenizer, model, trainer)
 
 
 def inject_arguments(config, inject_args):
