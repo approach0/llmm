@@ -522,12 +522,9 @@ def do_experiment(config, inject_args):
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         for step, batch_in in enumerate(dataloader):
             for i in range(K):
-                mcts(config, models, batch_in, trainer,
-                    res_fn=batch_respond, rwd_fn=rwd_fn, stp_fn=stp_fn)
-                #batch_out = batch_respond(config, models, batch_in)
-                #rewards = rwd_fn(config, batch_in, batch_out, models)
-                #if stp_fn: stp_fn(config, step, trainer, rewards)
-            if log_fn: log_fn(config, locals())
+                mcts(step, config, models, batch_in, trainer,
+                    res_fn=batch_respond, rwd_fn=rwd_fn,
+                    stp_fn=stp_fn, log_fn=log_fn)
             print(f'Progress: {step+1} / {num_train_rows}')
 
         if hasattr(model, 'save_pretrained'):
