@@ -10,7 +10,7 @@ class State():
 
 
 def mcts(step, config, models, batch_in, trainer,
-    res_fn=None, rwd_fn=None, stp_fn=None):
+    res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
     batch_out = res_fn(config, models, batch_in)
     rewards = rwd_fn(config, batch_in, batch_out, models)
