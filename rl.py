@@ -12,6 +12,7 @@ import sys
 sys.path.insert(0, './trl')
 
 import rl_data
+from rl_data import MockModel
 
 ADAPT_CFG = "adapter_config.json"
 
@@ -72,10 +73,15 @@ def get_peft_config(
 
 def get_models(config):
     model_path = config.get('model')
+
     if model_path == 'openai_api':
         from rl_openai import OpenAI_API
         kwargs = get_cfg_json(config, 'openai_init', {})
         model = OpenAI_API(**kwargs)
+        ref_model = None
+
+    elif 'MockModel' in model_path:
+        model = getattr(rl_data, config.get('model'))()
         ref_model = None
 
     elif model_path.startswith('http'):
@@ -167,6 +173,8 @@ def get_models(config):
 
 def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
     if 'lr' not in kwargs:
+        return None
+    elif isinstance(model, MockModel):
         return None
 
     import bitsandbytes as bnb
@@ -354,6 +362,9 @@ def batch_respond(config, models, batch_in):
         gen_kwargs = get_cfg_json(config, 'openai_gen', {})
         in_texts = dict_batch['texts']
         return model.complete(in_texts, stop_fn, gen_kwargs)
+
+    elif isinstance(model, MockModel):
+        return model.generate()
 
     elif isinstance(model, str) and model.startswith('http'):
         import requests

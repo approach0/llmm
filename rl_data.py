@@ -103,6 +103,24 @@ def datamap_perfect_rating(config, dataset):
 
 
 ###############
+# mock model
+###############
+class MockModel():
+    pass
+
+class MockModelForQueryLM(MockModel):
+    def __init__(self):
+        self.cnt = 0
+
+    def generate(self):
+        if self.cnt == 0:
+            q = r'SEARCH["a\\in\\mathbb{R}"]'
+        else:
+            q = r'SEARCH["\\lim_{n\\to\\infty}\\frac{a^n}{n!}=0"]'
+        self.cnt += 1
+        return [q + '\n\n']
+
+###############
 # collate func
 ###############
 def collate_prompt(config, batch_tok_fn, batch_data):
@@ -172,7 +190,7 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
     response_sect = '### Response:\n'
     inputs = [
         limit_length(
-            config['context_length'] // 3,
+            config.getint('context_length'),
             tool_prompt1(
                 data['Q_dup']
                 .replace(r'[imath]', '$')
@@ -183,6 +201,7 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
         for data in batch_data
     ]
     inputs_tokenized = batch_tok_fn(inputs, eos=eos)
+    inputs_tokenized['_inputs'] = inputs
     return inputs_tokenized, batch_data
 
 
@@ -237,6 +256,8 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
         tool_invoke,
         ToolError
     )
+    from rich import print as rich_print
+
     tokenizer, model, ref_model = models
     rewards = []
     for raw, out in zip(batch_in[1], batch_out):
@@ -252,6 +273,7 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
             rewards.append(0.)
         else:
             pre_invoke, tool_res = tool_invoke(out_str, tool_map)
+
             if isinstance(tool_res, ToolError):
                 rewards.append(1.)
             elif len(tool_res) == 0:
@@ -259,6 +281,12 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
             else:
                 score = tool_res[0][2]
                 rewards.append(score)
+
+            rich_print(f'[grey50]{batch_in[0]["_inputs"][0]}[/grey50]')
+            rich_print(f'[blue]{pre_invoke}[/blue]')
+            rich_print(f'[yellow]{tool_res}[/yellow]')
+            rich_print(f'[red]reward: {rewards[-1]}[/red]')
+
     rewards = list(map(torch.tensor, rewards))
     return rewards
 

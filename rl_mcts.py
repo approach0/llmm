@@ -14,10 +14,16 @@ def mcts(step, config, models, batch_in, trainer,
     tokenizer, model, ref_model = models
     batch_out = res_fn(config, models, batch_in)
     rewards = rwd_fn(config, batch_in, batch_out, models)
-    if stp_fn:
+
+    breakpoint()
+
+    if stp_fn and trainer:
         stats = stp_fn(trainer, batch_in, batch_out, rewards)
     if log_fn:
-        batch_outstr = [tokenizer.decode(out) for out in batch_out]
+        batch_outstr = [
+            out if isinstance(out, str) else tokenizer.decode(out)
+            for out in batch_out
+        ]
         log_fn(config, locals())
 
 
