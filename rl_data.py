@@ -63,6 +63,13 @@ def collate_pr(config, batch_tok_fn, sources, targets):
     return examples_tokenized
 
 
+def limit_length(limit, string):
+    if len(string) > limit:
+        return string[:limit] + '...'
+    else:
+        return string
+
+
 ###############
 # datamap
 ###############
@@ -164,10 +171,13 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
     eos = config.getboolean('collate_add_eos', True)
     response_sect = '### Response:\n'
     inputs = [
-        tool_prompt1(
-            data['Q_dup']
-            .replace(r'[imath]', '$')
-            .replace(r'[/imath]', '$')
+        limit_length(
+            config['context_length'] // 3,
+            tool_prompt1(
+                data['Q_dup']
+                .replace(r'[imath]', '$')
+                .replace(r'[/imath]', '$')
+            )
         )
         + '\n\n' + response_sect
         for data in batch_data
