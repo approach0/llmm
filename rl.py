@@ -222,7 +222,7 @@ def rl_respond(model, queries, decode, stop_fn,
 
 
 @torch.inference_mode()
-def gen_stream(model, input_ids,
+def gen_stream(model, input_ids, max_new_tokens=None,
     context_len=4096, stream_interval=2, temperature=0):
     from transformers.generation.logits_process import (
         TemperatureLogitsWarper
@@ -230,7 +230,8 @@ def gen_stream(model, input_ids,
     logits_process = TemperatureLogitsWarper(temperature)
     output_ids = input_ids[0].tolist()
     prompt_len = len(input_ids[0])
-    max_new_tokens = context_len - prompt_len - 1
+    if max_new_tokens is None:
+        max_new_tokens = context_len - prompt_len - 1
     past_key_values = out = None
 
     for i in range(max_new_tokens):
