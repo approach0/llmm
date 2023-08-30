@@ -98,11 +98,24 @@ def get_models(config):
 
         if config.get('mode') == 'rl':
             from trl import AutoModelForCausalLMWithValueHead as M
-            model = M.from_pretrained(
-                model_path, peft_config=lora_config,
-                cache_dir=cache_dir,
-                device_map='auto'
-            )
+            from transformers import BitsAndBytesConfig
+            if config.get('load_in_8bit', False):
+                model = M.from_pretrained(
+                    model_path, peft_config=lora_config,
+                    cache_dir=cache_dir,
+                    device_map='auto',
+                    load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
+                        load_in_8bit=True,
+                        llm_int8_threshold=6.0,
+                        llm_int8_has_fp16_weight=False,
+                    )
+                )
+            else:
+                model = M.from_pretrained(
+                    model_path, peft_config=lora_config,
+                    cache_dir=cache_dir,
+                    device_map='auto'
+                )
 
             is_peft_model = getattr(model, "is_peft_model", False)
             if is_peft_model:
