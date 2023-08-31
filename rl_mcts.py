@@ -18,6 +18,7 @@ def mcts(step, config, models, batch_in, trainer,
     if stp_fn and trainer:
         stats = stp_fn(trainer, batch_in, batch_out, rewards)
     if log_fn:
+        #breakpoint()
         batch_outstr = [
             out if isinstance(out, str) else tokenizer.decode(out)
             for out in batch_out

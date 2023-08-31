@@ -332,6 +332,7 @@ def save_answer_log(logpath, verbose=False, **kwargs):
 
 
 def log_dup_Q(config, values):
+    import numpy
     verbose = config.getboolean('log_verbose', False)
     run_name = config.name
     output_dir = os.path.join(config.get('output_dir'), run_name)
@@ -345,6 +346,11 @@ def log_dup_Q(config, values):
         log_name = log_name + f'.step{step}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
         log['response'] = outstr
+        for key, val in values['stats'].items():
+            if isinstance(val, numpy.ndarray):
+                continue
+            else:
+                log[key] = val
         with open(logpath, 'w') as fh:
             json.dump(log, fh)
 
