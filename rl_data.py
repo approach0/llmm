@@ -275,9 +275,9 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
             pre_invoke, tool_res = tool_invoke(out_str, tool_map)
 
             if isinstance(tool_res, ToolError):
-                rewards.append(1.)
+                rewards.append(0.1)
             elif len(tool_res) == 0:
-                rewards.append(1.)
+                rewards.append(0.2)
             else:
                 score = tool_res[0][2]
                 rewards.append(score)

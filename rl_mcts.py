@@ -14,7 +14,6 @@ def mcts(step, config, models, batch_in, trainer,
     tokenizer, model, ref_model = models
     batch_out = res_fn(config, models, batch_in)
     rewards = rwd_fn(config, batch_in, batch_out, models)
-    quit()
 
     if stp_fn and trainer:
         stats = stp_fn(trainer, batch_in, batch_out, rewards)
