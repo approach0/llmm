@@ -256,7 +256,7 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
         tool_invoke,
         ToolError
     )
-    from rich import print as rich_print
+    from colorama import Fore, Style
 
     tokenizer, model, ref_model = models
     rewards = []
@@ -282,10 +282,12 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
                 score = tool_res[0][2]
                 rewards.append(score)
 
-            rich_print(f'[grey50]{batch_in[0]["_inputs"][0]}[/grey50]')
-            rich_print(f'[blue]{pre_invoke}[/blue]')
-            rich_print(f'[yellow]{tool_res}[/yellow]')
-            rich_print(f'[red]reward: {rewards[-1]}[/red]')
+            print(Fore.BLUE)
+            print(f'input: {batch_in[0]["_inputs"][0]}')
+            print(f'pre invoke: {pre_invoke}')
+            print(f'tool res: {tool_res}')
+            print(f'reward: {rewards[-1]}')
+            print(Style.RESET_ALL)
 
     rewards = list(map(torch.tensor, rewards))
     return rewards
