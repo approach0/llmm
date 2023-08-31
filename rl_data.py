@@ -338,12 +338,13 @@ def log_dup_Q(config, values):
     output_dir = os.path.join(config.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
     step = values['step']
+    k = values['k']
     for b, (inp, out, outstr) in enumerate(
         zip(values['batch_in'][1], values['batch_out'], values['batch_outstr'])
     ):
         log = copy.deepcopy(inp)
         log_name = 'qid-' + log['qid']
-        log_name = log_name + f'.step{step}_batch{b}.log'
+        log_name = log_name + f'.step{step}_k{k}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
         log['response'] = outstr
         for key, val in values['stats'].items():

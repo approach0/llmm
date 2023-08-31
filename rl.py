@@ -547,10 +547,11 @@ def do_experiment(config, inject_args):
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
-            for i in range(K):
-                mcts(step, config, models, batch_in, trainer,
+            for k in range(K):
+                mcts(step, k, config, models, batch_in, trainer,
                     res_fn=batch_respond, rwd_fn=rwd_fn,
                     stp_fn=stp_fn, log_fn=log_fn)
+                print(f'k@K = {k}@{K}')
             save_tick = step % save_steps
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
                     model.save_pretrained(experiment_output_dir)

@@ -9,7 +9,7 @@ class State():
         self.children.append(child_state)
 
 
-def mcts(step, config, models, batch_in, trainer,
+def mcts(step, k, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
     batch_out = res_fn(config, models, batch_in)
@@ -18,7 +18,6 @@ def mcts(step, config, models, batch_in, trainer,
     if stp_fn and trainer:
         stats = stp_fn(trainer, batch_in, batch_out, rewards)
     if log_fn:
-        #breakpoint()
         batch_outstr = [
             out if isinstance(out, str) else tokenizer.decode(out)
             for out in batch_out
