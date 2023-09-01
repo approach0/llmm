@@ -275,19 +275,20 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
             pre_invoke, tool_res = tool_invoke(out_str, tool_map)
 
             if isinstance(tool_res, ToolError):
-                rewards.append(0.1)
+                rewards.append(0.)
             elif len(tool_res) == 0:
-                rewards.append(0.2)
+                rewards.append(0.)
             else:
                 score = tool_res[0][2]
                 rewards.append(score)
 
-            print(Fore.BLUE)
-            print(f'input: {batch_in[0]["_inputs"][0]}')
-            print(f'pre invoke: {pre_invoke}')
+            print(Fore.YELLOW)
             print(f'tool res: {tool_res}')
-            print(f'reward: {rewards[-1]}')
             print(Style.RESET_ALL)
+
+        print(Fore.MAGENTA)
+        print(f'reward: {rewards[-1]}')
+        print(Style.RESET_ALL)
 
     rewards = list(map(torch.tensor, rewards))
     return rewards
