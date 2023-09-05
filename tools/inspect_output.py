@@ -337,6 +337,8 @@ def test_lr_query(logdir):
     ]
     kernel_size = 50
     kernel = np.ones(kernel_size) / kernel_size
+    logdir = os.path.normpath(logdir)
+    run_name = os.path.basename(logdir)
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if not logpath.endswith('.log'):
@@ -346,6 +348,7 @@ def test_lr_query(logdir):
         step = int(m.group(1))
         with open(logpath, 'r') as fh:
             j = json.load(fh)
+            #print(j.keys()); quit()
             stats_item = {}
             for key in j.keys():
                 if key in all_keys:
@@ -359,7 +362,7 @@ def test_lr_query(logdir):
         fig.axes[i].plot(xpoints, avg_ypoints)
         fig.axes[i].set_title(key)
     fig.tight_layout()
-    plt.savefig('output.png')
+    plt.savefig(f'output-{run_name}.png')
 
 
 if __name__ == '__main__':
