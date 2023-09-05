@@ -332,8 +332,9 @@ def test_lr_query(logdir):
     all_keys = [
         'ppo/loss/total',
         'ppo/mean_scores',
-        'ppo/loss/policy',
-        'ppo/loss/value'
+        'ppo/returns/var',
+        #'ppo/loss/policy',
+        #'ppo/loss/value'
     ]
     kernel_size = 50
     kernel = np.ones(kernel_size) / kernel_size
