@@ -325,6 +325,43 @@ def get_json_val(logpath, key='prompt'):
     print(j[key])
 
 
+def test_lr_query(logdir):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    stats = {}
+    all_keys = [
+        'ppo/loss/total',
+        'ppo/mean_scores',
+        'ppo/loss/policy',
+        'ppo/loss/value'
+    ]
+    kernel_size = 50
+    kernel = np.ones(kernel_size) / kernel_size
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if not logpath.endswith('.log'):
+            continue
+        print(logpath)
+        m = re.search(r'step([0-9]+)_', logpath)
+        step = int(m.group(1))
+        with open(logpath, 'r') as fh:
+            j = json.load(fh)
+            stats_item = {}
+            for key in j.keys():
+                if key in all_keys:
+                    stats_item[key] = j[key]
+            stats[step] = stats_item
+    fig, axes = plt.subplots(len(all_keys), 1)
+    xpoints = np.array(sorted(stats.keys()))
+    for i, key in enumerate(all_keys):
+        ypoints = np.array([stats[x][key] for x in xpoints])
+        avg_ypoints = np.convolve(ypoints, kernel, mode='same')
+        fig.axes[i].plot(xpoints, avg_ypoints)
+        fig.axes[i].set_title(key)
+    fig.tight_layout()
+    plt.savefig('output.png')
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
@@ -338,4 +375,5 @@ if __name__ == '__main__':
         'get_class_hist': get_class_hist,
         'auto_judge_stats': get_auto_judge_stats,
         'test_np': test_np,
+        'test_lr_query': test_lr_query,
     })
