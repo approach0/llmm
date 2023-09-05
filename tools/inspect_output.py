@@ -359,7 +359,10 @@ def test_lr_query(logdir):
     for i, key in enumerate(all_keys):
         ypoints = np.array([stats[x][key] for x in xpoints])
         avg_ypoints = np.convolve(ypoints, kernel, mode='same')
-        fig.axes[i].plot(xpoints, avg_ypoints)
+        fig.axes[i].plot(
+            xpoints[kernel_size:-kernel_size],
+            avg_ypoints[kernel_size:-kernel_size]
+        )
         fig.axes[i].set_title(key)
     fig.tight_layout()
     plt.savefig(f'output-{run_name}.png')
