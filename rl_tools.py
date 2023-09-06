@@ -80,6 +80,7 @@ def search_mux(api_name, question, keywords, docid=None):
 
     print(Fore.CYAN)
     print('search API:', api_name)
+    print('docID:', docid)
     print('query question:', question)
     print('query keywords:', keywords)
     print(Style.RESET_ALL)

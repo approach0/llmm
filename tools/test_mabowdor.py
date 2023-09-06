@@ -36,7 +36,9 @@ def search(uri, question, keywords, docid=0,
 
 
 if __name__ == '__main__':
-    res = search('mabowdor', 'How to evaluate $e^i$?', ['e^i'])
-    print(res)
-    res = search('MATH', 'How to evaluate $e^i$?', ['e^i'])
+    # res = search('mabowdor', 'How to evaluate $e^i$?', ['e^i'])
+    # print(res)
+    # res = search('MATH', 'How to evaluate $e^i$?', ['e^i'])
+    # print(res)
+    res = search('dups', None, ['ideals'], docid=101157)
     print(res)

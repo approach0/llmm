@@ -83,6 +83,11 @@ def datamap_merge_train_and_test(config, dataset):
     return dataset
 
 
+def datamap_debug(config, dataset):
+    dataset['train'] = dataset['train'].filter(lambda x: x['qid'] == '101157')
+    return dataset
+
+
 def datamap_good_rating(config, dataset):
     picky_dataset1 = dataset['train'].filter(lambda x: x['manual_rating'] > 0)
     picky_dataset2 = dataset['test'].filter(lambda x: x['manual_rating'] > 0)
