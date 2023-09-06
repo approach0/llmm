@@ -290,7 +290,6 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
         print(f'reward: {rewards[-1]}')
         print(Style.RESET_ALL)
 
-    rewards = list(map(torch.tensor, rewards))
     return rewards
 
 
@@ -300,6 +299,7 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
 def rl_step_default(trainer, batch_in, batch_out, rewards):
     inps = [ids for ids in batch_in[0]['input_ids']]
     outs = [ids for ids in batch_out]
+    rewards = list(map(torch.tensor, rewards))
     stats = trainer.step(inps, outs, rewards)
     return stats
 
@@ -332,7 +332,7 @@ def save_answer_log(logpath, verbose=False, **kwargs):
     if verbose: print('Written log:', logpath)
 
 
-def log_dup_Q(config, values):
+def log_rl_stats(config, values):
     import numpy
     verbose = config.getboolean('log_verbose', False)
     run_name = config.name
@@ -348,6 +348,7 @@ def log_dup_Q(config, values):
         log_name = log_name + f'.step{step}_k{k}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
         log['response'] = outstr
+        log['raw_rewards'] = values['rewards']
         for key, val in values['stats'].items():
             if isinstance(val, numpy.ndarray):
                 continue
