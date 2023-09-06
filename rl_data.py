@@ -3,6 +3,7 @@ import os
 import sys
 import copy
 import json
+import torch
 from functools import partial
 from datasets import Dataset, concatenate_datasets
 from datasets.dataset_dict import DatasetDict
@@ -249,7 +250,6 @@ def reward_by_answer(config, inp, out, models):
 
 
 def reward_by_retriever_score(config, batch_in, batch_out, models):
-    import torch
     from rl_tools import (
         search_mux,
         has_any_captured,
