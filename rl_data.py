@@ -285,8 +285,12 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
             elif len(tool_res) == 0:
                 rewards.append(0.)
             else:
-                score = tool_res[0][2]
-                rewards.append(score)
+                docid = int(tool_res[0][1])
+                if docid == target_docid:
+                    score = tool_res[0][2]
+                    rewards.append(score)
+                else:
+                    rewards.append(0.)
 
             print(Fore.YELLOW)
             print(f'tool res: {tool_res}')
