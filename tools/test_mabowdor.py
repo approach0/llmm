@@ -40,5 +40,5 @@ if __name__ == '__main__':
     # print(res)
     # res = search('MATH', 'How to evaluate $e^i$?', ['e^i'])
     # print(res)
-    res = search('dups', None, ['ideals'], docid=101157)
+    res = search('dups', None, ['why', 'anything'], docid=438)
     print(res)

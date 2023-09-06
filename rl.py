@@ -362,8 +362,9 @@ def batch_respond(config, models, batch_in):
 
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
         decode = partial(tokenizer.decode, **decode_kwargs)
-        response = rl_respond(model, input_ids, decode, stop_fn,
-            **rl_respond_kwargs)
+        response = model.generate(input_ids=input_ids, **rl_respond_kwargs)
+        #response = rl_respond(model, input_ids, decode, stop_fn,
+        #    **rl_respond_kwargs)
         if get_cfg_json(config, 'model_as_server', {}):
             return [
                 tokenizer.decode(response[b], **decode_kwargs)

@@ -265,7 +265,8 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
 
     tokenizer, model, ref_model = models
     rewards = []
-    for raw, out in zip(batch_in[1], batch_out):
+    for inp, raw, out in zip(batch_in[0]['input_ids'], batch_in[1], batch_out):
+        out = out[len(inp):]
         if not isinstance(out, str):
             out_str = tokenizer.decode(out)
         else:
