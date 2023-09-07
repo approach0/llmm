@@ -310,7 +310,7 @@ def rl_step_default(trainer, batch_in, batch_out, rewards):
     outs = [ids for ids in batch_out]
     rewards = list(map(torch.tensor, rewards))
     stats = trainer.step(inps, outs, rewards)
-    trainer.log_stats(stats, batch_raw, rewards)
+    trainer.log_stats(stats, {'response': None}, rewards)
     return stats
 
 
