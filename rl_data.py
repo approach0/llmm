@@ -342,30 +342,28 @@ def save_answer_log(logpath, verbose=False, **kwargs):
     if verbose: print('Written log:', logpath)
 
 
-def log_rl_stats(config, values):
-    import numpy
-    verbose = config.getboolean('log_verbose', False)
+def log_rl_io(config, values):
     run_name = config.name
     output_dir = os.path.join(config.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
+
     step = values['step']
     k = values['k']
-    for b, (inp, out, outstr) in enumerate(
-        zip(values['batch_in'][1], values['batch_out'], values['batch_outstr'])
-    ):
-        log = copy.deepcopy(inp)
-        log_name = 'qid-' + log['qid']
-        log_name = log_name + f'.step{step}_k{k}_batch{b}.log'
-        logpath = os.path.join(output_dir, log_name)
-        log['response'] = outstr
-        log['raw_rewards'] = values['rewards']
-        for key, val in values['stats'].items():
-            if isinstance(val, numpy.ndarray):
-                continue
-            else:
-                log[key] = val
-        with open(logpath, 'w') as fh:
-            json.dump(log, fh)
+    log_name = 'step{step}_k{k}_batch{b}.log'
+    log_path = os.path.join(output_dir, log_name)
+
+    logs = []
+    for inp, rwd, out in zip(
+        values['batch_in'][1],
+        values['rewards'],
+        values['batch_outstr']):
+        log = deepcopy.copy(inp)
+        log.update({'reward': rwd})
+        log.update({'outstr': out})
+        logs.append(log)
+
+    with open(log_path, 'w') as fh:
+        json.dump(logs, fh)
 
 
 if __name__ == '__main__':
