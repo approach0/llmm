@@ -119,7 +119,7 @@ def capture(string, par):
             if not started:
                 begin = i
                 started = True
-        elif c == par[1]:
+        elif c == par[1] and stack:
             stack.pop()
             if len(stack) == 0:
                 end = i
