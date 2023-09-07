@@ -349,7 +349,7 @@ def log_rl_io(config, values):
 
     step = values['step']
     k = values['k']
-    log_name = 'step{step}_k{k}_batch{b}.log'
+    log_name = f'step{step}_k{k}.log'
     log_path = os.path.join(output_dir, log_name)
 
     logs = []
@@ -357,7 +357,7 @@ def log_rl_io(config, values):
         values['batch_in'][1],
         values['rewards'],
         values['batch_outstr']):
-        log = deepcopy.copy(inp)
+        log = copy.deepcopy(inp)
         log.update({'reward': rwd})
         log.update({'outstr': out})
         logs.append(log)
