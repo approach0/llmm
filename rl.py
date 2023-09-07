@@ -192,6 +192,7 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
 
     import bitsandbytes as bnb
     lr = kwargs.pop('lr')
+    kwargs['learning_rate'] = lr
     optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
 
     from trl import PPOConfig, PPOTrainer
