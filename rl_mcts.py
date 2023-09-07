@@ -12,7 +12,9 @@ class State():
 def mcts(step, k, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
-    batch_out = res_fn(config, models, batch_in)
+    list_batch, batch_raw = batch_in
+    print(tokenizer.decode(list_batch[0]['input_ids'][0]))
+    batch_out = res_fn(config, models, batch_in, trainer=trainer)
     print(tokenizer.decode(batch_out[0]))
     rewards = rwd_fn(config, batch_in, batch_out, models)
 

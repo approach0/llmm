@@ -206,8 +206,7 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
         + '\n\n' + response_sect
         for data in batch_data
     ]
-    inputs_tokenized = batch_tok_fn(inputs, eos=eos)
-    inputs_tokenized['_inputs'] = inputs
+    inputs_tokenized = batch_tok_fn(inputs, eos=eos, as_list=True)
     return inputs_tokenized, batch_data
 
 
@@ -265,8 +264,7 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
 
     tokenizer, model, ref_model = models
     rewards = []
-    for inp, raw, out in zip(batch_in[0]['input_ids'], batch_in[1], batch_out):
-        out = out[len(inp):]
+    for raw, out in zip(batch_in[1], batch_out):
         if not isinstance(out, str):
             out_str = tokenizer.decode(out)
         else:
@@ -307,7 +305,8 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
 # step func
 ###############
 def rl_step_default(trainer, batch_in, batch_out, rewards):
-    inps = [ids for ids in batch_in[0]['input_ids']]
+    list_batch, batch_raw = batch_in
+    inps = [d['input_ids'][0] for d in list_batch]
     outs = [ids for ids in batch_out]
     rewards = list(map(torch.tensor, rewards))
     stats = trainer.step(inps, outs, rewards)

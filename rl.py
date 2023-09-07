@@ -208,33 +208,6 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
     return ppo_trainer
 
 
-def rl_respond(model, queries, decode, stop_fn,
-    txt_len=20, top_k=0, top_p=1.0, stream=False):
-    from transformers import top_k_top_p_filtering
-    input_ids = queries
-    query_len = queries.shape[1]
-    for i in range(txt_len):
-        # Get Logits
-        outputs = model(input_ids)
-        next_token_logits = outputs[0][:, -1, :]
-        next_token_logits = top_k_top_p_filtering(next_token_logits,
-            top_k=top_k, top_p=top_p)
-        # Sample
-        probs = torch.nn.functional.softmax(next_token_logits, dim=-1)
-        next_token = torch.multinomial(probs, num_samples=1).squeeze(1)
-        if stream:
-            import time
-            print("\033c", end='')
-            print(decode(input_ids[0, :query_len]))
-            print('~' * 60)
-            print(decode(input_ids[0, query_len:]))
-            time.sleep(0.5)
-        input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
-        if stop_fn and stop_fn(decode(input_ids[0, query_len:])):
-            break
-    return input_ids[:, query_len:]
-
-
 @torch.inference_mode()
 def gen_stream(model, input_ids, max_new_tokens=None,
     context_len=4096, stream_interval=2, temperature=0):
@@ -309,7 +282,10 @@ def gen_stream(model, input_ids, max_new_tokens=None,
 
 
 def batch_tokenize(config, tokenizer, texts,
-    eos=True, decode=False):
+    eos=True, decode=False, as_list=False):
+    if eos:
+        texts = [t + tokenizer.eos_token for t in texts]
+
     if tokenizer is None:
         return {
             'texts': [text for text in texts]
@@ -317,9 +293,17 @@ def batch_tokenize(config, tokenizer, texts,
     elif decode:
         decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
         return tokenizer.decode(texts, **decode_kwargs)
+    elif as_list:
+        max_length = config.getint("context_length")
+        return [
+            tokenizer(t,
+                return_tensors="pt",
+                max_length=max_length,
+                truncation=True
+            )
+            for t in texts
+        ]
     else:
-        if eos:
-            texts = [t + tokenizer.eos_token for t in texts]
         max_length = config.getint("context_length")
         return tokenizer(texts,
             return_tensors="pt",
@@ -345,7 +329,7 @@ def batch_respond_handler():
     return batch_respond(config, models, batch_in)
 
 
-def batch_respond(config, models, batch_in):
+def batch_respond(config, models, batch_in, trainer=None):
     bs = config.getint('batch_size')
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
@@ -354,19 +338,21 @@ def batch_respond(config, models, batch_in):
     if stop_fn: stop_fn = partial(stop_fn, config, tokenizer)
 
     if hasattr(model, 'pretrained_model'):
+        assert trainer is not None
         device = model.pretrained_model.device
         if 'input_ids' not in dict_batch:
             collate_fn = wrapup_collate(config, tokenizer)
             dict_batch, batch_raw = collate_fn(batch_raw)
-        input_ids = dict_batch['input_ids']
-        input_ids = input_ids.to(device) # bs, L
-
+        list_batch = dict_batch
+        input_ids_list = [d['input_ids'][0].to(device) for d in list_batch]
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
-        decode = partial(tokenizer.decode, **decode_kwargs)
-        response = model.generate(input_ids=input_ids, **rl_respond_kwargs)
-        #response = rl_respond(model, input_ids, decode, stop_fn,
-        #    **rl_respond_kwargs)
+        response = trainer.generate(
+            input_ids_list, return_prompt=False, batch_size=1,
+            **rl_respond_kwargs
+        )
+        #response = model.generate(input_ids=input_ids, **rl_respond_kwargs)
         if get_cfg_json(config, 'model_as_server', {}):
+            decode = partial(tokenizer.decode, **decode_kwargs)
             return [
                 tokenizer.decode(response[b], **decode_kwargs)
                 for b in range(bs)
