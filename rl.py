@@ -190,10 +190,20 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
     elif isinstance(model, MockModel):
         return None
 
-    import bitsandbytes as bnb
     lr = kwargs.pop('lr')
     kwargs['learning_rate'] = lr
-    optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
+
+    #import bitsandbytes as bnb
+    #optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
+
+    from transformers import Adafactor
+    optimizer = Adafactor(
+        filter(lambda p: p.requires_grad, model.parameters()),
+        scale_parameter=False,
+        relative_step=False,
+        warmup_init=False,
+        lr=lr,
+    )
 
     from trl import PPOConfig, PPOTrainer
     config = PPOConfig(**kwargs)
