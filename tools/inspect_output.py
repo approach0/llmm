@@ -333,8 +333,9 @@ def test_lr_query(logdir):
         'ppo/std_scores',
         'ppo/mean_scores',
         'ppo/mean_non_score_reward',
+        'ppo/loss/total',
     ]
-    kernel_size = 50
+    kernel_size = 5
     kernel = np.ones(kernel_size) / kernel_size
     logdir = os.path.normpath(logdir)
     run_name = os.path.basename(logdir)
