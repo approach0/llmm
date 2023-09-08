@@ -360,7 +360,6 @@ def batch_respond(config, models, batch_in, trainer=None):
             input_ids_list, return_prompt=False, batch_size=1,
             **rl_respond_kwargs
         )
-        #response = model.generate(input_ids=input_ids, **rl_respond_kwargs)
         if get_cfg_json(config, 'model_as_server', {}):
             decode = partial(tokenizer.decode, **decode_kwargs)
             return [

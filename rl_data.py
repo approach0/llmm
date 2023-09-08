@@ -263,6 +263,7 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
     from colorama import Fore, Style
 
     tokenizer, model, ref_model = models
+
     rewards = []
     for raw, out in zip(batch_in[1], batch_out):
         if not isinstance(out, str):
@@ -304,7 +305,7 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
 ###############
 # step func
 ###############
-def rl_step_default(trainer, batch_in, batch_out, rewards):
+def rl_step_default(config, trainer, batch_in, batch_out, rewards):
     list_batch, batch_raw = batch_in
     inps = [d['input_ids'][0] for d in list_batch]
     outs = [ids for ids in batch_out]
