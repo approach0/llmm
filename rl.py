@@ -552,12 +552,12 @@ def do_experiment(config, inject_args):
                 print(f'k@K = {k}@{K}')
             save_tick = step % save_steps
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
-                    model.save_pretrained(experiment_output_dir)
+                    trainer.save_pretrained(experiment_output_dir)
             print(f'Save tick: {save_tick} % {save_steps}')
             print(f'Progress: {step+1} / {num_train_rows}')
 
         if hasattr(model, 'save_pretrained'):
-            model.save_pretrained(experiment_output_dir)
+            trainer.save_pretrained(experiment_output_dir)
 
     elif config.get('mode') == 'finetune':
         from torch import autocast
