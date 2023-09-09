@@ -193,16 +193,14 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
     lr = kwargs.pop('lr')
     kwargs['learning_rate'] = lr
 
-    #import bitsandbytes as bnb
-    #optimizer = bnb.optim.Adam8bit(model.parameters(), lr=lr)
-
-    from transformers import Adafactor
-    optimizer = Adafactor(
+    from lion_pytorch import Lion
+    from transformers import get_constant_schedule_with_warmup
+    optimizer = Lion(
         filter(lambda p: p.requires_grad, model.parameters()),
-        scale_parameter=False,
-        relative_step=False,
-        warmup_init=False,
-        lr=lr,
+        lr=lr
+    )
+    lr_scheduler = get_constant_schedule_with_warmup(
+        optimizer, num_warmup_steps=kwargs.pop('warmup_steps')
     )
 
     from trl import PPOConfig, PPOTrainer
@@ -212,7 +210,8 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
         model,
         ref_model=ref_model,
         tokenizer=tokenizer,
-        optimizer=optimizer
+        optimizer=optimizer,
+        lr_scheduler=lr_scheduler
     )
 
     return ppo_trainer
