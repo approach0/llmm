@@ -512,13 +512,14 @@ def do_experiment(config, inject_args):
     # prepare logging
     wandb.init(
         project=config.name,
-        name=config.get('wandb_name', None),
+        name=config.get('run', None),
         config=dict(config.items())
     )
+    run_uid = wandb.run.name
     # make experiment_output_dir
     output_dir = config.get('output_dir', '.')
     experiment_output_dir = os.path.join(
-        config.get('output_dir'), config.name
+        config.get('output_dir'), config.name, run_uid
     )
     os.makedirs(experiment_output_dir, exist_ok=True)
 
