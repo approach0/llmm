@@ -2,12 +2,19 @@ import requests
 
 
 def search(uri, question, keywords, docid=0,
-    full_topk=30, topk=3, no_mapper=False):
+    full_topk=30, topk=3,
+    no_mapper=False, math_only=False):
 
     json = {
         'docid': docid,
         'topk': full_topk
     }
+
+    if math_only:
+        keywords = list(filter(
+            lambda x: x.startswith('$'),
+            keywords)
+        )
 
     if question is not None:
         json['question'] = question

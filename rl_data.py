@@ -265,14 +265,18 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
     tokenizer, model, ref_model = models
 
     rewards = []
+    math_only = config.getboolean('math_only', False)
     for raw, out in zip(batch_in[1], batch_out):
         if not isinstance(out, str):
             out_str = tokenizer.decode(out)
         else:
             out_str = out
         target_docid = int(raw['qid'])
+        uri = 'dups_math_only' if math_only else 'dups'
         tool_map = {
-            'SEARCH': partial(search_mux, 'dups', None, docid=target_docid)
+            'SEARCH': partial(
+                search_mux, uri, None, docid=target_docid
+            )
         }
         if not has_any_captured(out_str, tool_map):
             rewards.append(0.)
