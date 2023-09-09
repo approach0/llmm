@@ -2,8 +2,8 @@ import requests
 
 
 def search(uri, question, keywords, docid=0,
-    full_topk=30, topk=3,
-    no_mapper=False, math_only=False):
+    full_topk=30, topk=3, no_mapper=False,
+    penalty=False, math_only=False):
 
     json = {
         'docid': docid,
@@ -26,6 +26,16 @@ def search(uri, question, keywords, docid=0,
     if res.ok:
         res = res.json()
         res = res[:topk]
+
+        def penalty_fn(item):
+            import math
+            content, post_id, score = item
+            score = score / math.sqrt(len(keywords))
+            return content, post_id, score
+
+        if penalty and keywords:
+            res = list(map(penalty_fn, res))
+
         def mapper(item):
             content, post_id, score = item
             if uri == 'mabowdor':

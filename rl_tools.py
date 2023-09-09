@@ -100,12 +100,12 @@ def search_mux(api_name, question, keywords, docid=None):
     elif api_name == 'dups':
         from tools.test_mabowdor import search
         return search('dups', None, keywords, docid,
-            no_mapper=True, math_only=False)
+            no_mapper=True, penalty=True, math_only=False)
 
     elif api_name == 'dups_math_only':
         from tools.test_mabowdor import search
         return search('dups', None, keywords, docid,
-            no_mapper=True, math_only=True)
+            no_mapper=True, penalty=True, math_only=True)
 
     elif api_name == 'online':
         from tools.test_a0xyz_search import sleepy_search_api
