@@ -8,3 +8,4 @@ cache/
 pya0
 *.png
 tags
+wandb/
