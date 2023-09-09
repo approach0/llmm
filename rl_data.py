@@ -311,7 +311,6 @@ def rl_step_default(config, trainer, batch_in, batch_out, rewards):
     outs = [ids for ids in batch_out]
     rewards = list(map(torch.tensor, rewards))
     stats = trainer.step(inps, outs, rewards)
-    trainer.log_stats(stats, {'response': None}, rewards)
     return stats
 
 
@@ -343,28 +342,23 @@ def save_answer_log(logpath, verbose=False, **kwargs):
     if verbose: print('Written log:', logpath)
 
 
-def log_rl_io(config, values):
-    run_name = config.name
-    output_dir = os.path.join(config.get('output_dir'), run_name)
-    os.makedirs(output_dir, exist_ok=True)
-
+def log_rl_default(config, values):
     step = values['step']
     k = values['k']
-    log_name = f'step{step}_k{k}.log'
-    log_path = os.path.join(output_dir, log_name)
-
-    logs = []
-    for inp, rwd, out in zip(
-        values['batch_in'][1],
-        values['rewards'],
-        values['batch_outstr']):
-        log = copy.deepcopy(inp)
-        log.update({'reward': rwd})
-        log.update({'outstr': out})
-        logs.append(log)
-
-    with open(log_path, 'w') as fh:
-        json.dump(logs, fh)
+    stats = values['stats']
+    rewards = values['rewards']
+    logs = {
+        'timestep': [
+            f'step={step}, k={k}, b={b}'
+            for b in range(len(rewards))
+        ],
+        'response': [out for out in values['batch_outstr']]
+    }
+    from rl import get_cfg_json
+    for col in get_cfg_json(config, 'log_columns', []):
+        logs[col] = [inp[col] for inp in values['batch_in'][1]]
+    values['trainer'].log_stats(stats, logs, rewards,
+        columns_to_log=logs.keys())
 
 
 if __name__ == '__main__':

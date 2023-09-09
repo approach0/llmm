@@ -497,14 +497,6 @@ def prepare_experiment(config):
     return models, trainer, dataloader, dataset
 
 
-def log_config(config, logdir, filename):
-    logfile = os.path.join(logdir, filename)
-    with open(logfile, 'w') as fh:
-        j = dict(config.items())
-        json.dump(j, fh, indent=2)
-        fh.write('\n')
-
-
 def parse_metric_config(config):
     metric = config.get('metric', 'pass@1')
     metric_name, K = metric.split('@')
@@ -515,19 +507,20 @@ def parse_metric_config(config):
 
 
 def do_experiment(config, inject_args):
+    # inject arguments
     inject_arguments(config, inject_args)
+    # prepare logging
     wandb.init(
         project=config.name,
         name=config.get('name', None),
         config=dict(config.items())
     )
+    # make experiment_output_dir
     output_dir = config.get('output_dir', '.')
     experiment_output_dir = os.path.join(
         config.get('output_dir'), config.name
     )
     os.makedirs(experiment_output_dir, exist_ok=True)
-    log_config(config, experiment_output_dir, 'config.ini')
-    log_config(inject_args, experiment_output_dir, 'inject.ini')
 
     K = parse_metric_config(config)
     set_seed(config.getint('seed', 42))
