@@ -4,6 +4,7 @@ import json
 import time
 import torch
 import random
+import wandb
 import configparser
 import numpy as np
 from functools import partial
@@ -356,7 +357,7 @@ def batch_respond(config, models, batch_in, trainer=None):
         input_ids_list = [d['input_ids'][0].to(device) for d in list_batch]
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
         response = trainer.generate(
-            input_ids_list, return_prompt=False, batch_size=1,
+            input_ids_list, return_prompt=False,
             **rl_respond_kwargs
         )
         if get_cfg_json(config, 'model_as_server', {}):
@@ -515,6 +516,11 @@ def parse_metric_config(config):
 
 def do_experiment(config, inject_args):
     inject_arguments(config, inject_args)
+    wandb.init(
+        project=config.name,
+        name=config.get('name', None),
+        config=dict(config.items())
+    )
     output_dir = config.get('output_dir', '.')
     experiment_output_dir = os.path.join(
         config.get('output_dir'), config.name
