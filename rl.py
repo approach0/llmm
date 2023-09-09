@@ -512,7 +512,7 @@ def do_experiment(config, inject_args):
     # prepare logging
     wandb.init(
         project=config.name,
-        name=config.get('name', None),
+        name=config.get('wandb_name', None),
         config=dict(config.items())
     )
     # make experiment_output_dir
