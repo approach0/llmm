@@ -196,15 +196,24 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
 
     from lion_pytorch import Lion
     from transformers import get_constant_schedule_with_warmup
+    from transformers import get_cosine_schedule_with_warmup
     optimizer = Lion(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=lr,
         betas=(0.95, 0.95),
         weight_decay=1e-3
     )
-    lr_scheduler = get_constant_schedule_with_warmup(
-        optimizer, num_warmup_steps=kwargs.pop('warmup_steps')
-    )
+    warmup_steps = kwargs.pop('warmup_steps')
+    training_steps = kwargs.pop('training_steps')
+    if num_training_steps == 0:
+        lr_scheduler = get_constant_schedule_with_warmup(
+            optimizer, num_warmup_steps=warmup_steps
+        )
+    else:
+        lr_scheduler = get_cosine_schedule_with_warmup(
+            optimizer, num_warmup_steps=warmup_steps,
+            num_training_steps=training_steps
+        )
 
     from trl import PPOConfig, PPOTrainer
     config = PPOConfig(**kwargs)
