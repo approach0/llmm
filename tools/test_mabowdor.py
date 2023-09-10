@@ -30,7 +30,9 @@ def search(uri, question, keywords, docid=0,
         def penalty_fn(item):
             import math
             content, post_id, score = item
-            score = score / math.sqrt(len(keywords))
+            if len(keywords) > 3:
+                base = len(keywords) - 3
+                score = score / math.sqrt(base)
             return content, post_id, score
 
         if penalty and keywords:
