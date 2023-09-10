@@ -205,7 +205,7 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
     )
     warmup_steps = kwargs.pop('warmup_steps')
     training_steps = kwargs.pop('training_steps')
-    if num_training_steps == 0:
+    if training_steps == 0:
         lr_scheduler = get_constant_schedule_with_warmup(
             optimizer, num_warmup_steps=warmup_steps
         )
