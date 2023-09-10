@@ -191,13 +191,13 @@ def collate_phase2_learn_query(config, batch_tok_fn, batch_data):
 
 
 def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
-    from tools.prompt_factory import tool_prompt1
+    from tools.prompt_factory import find_good_keywords_1
     eos = config.getboolean('collate_add_eos', True)
     response_sect = '### Response:\n'
     inputs = [
         limit_length(
             config.getint('context_length'),
-            tool_prompt1(
+            find_good_keywords_1(
                 data['Q_dup']
                 .replace(r'[imath]', '$')
                 .replace(r'[/imath]', '$')

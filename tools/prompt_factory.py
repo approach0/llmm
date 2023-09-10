@@ -638,6 +638,40 @@ in such case, there is no need to answer from the begining and redo any existing
     return prompt
 
 
+def find_good_keywords_1(Q):
+    prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+Find good search keywords for a math question in the input.
+
+You may use text keyword(s) or key formula(s) occurred in the question, or any relevant ones you think might be good keywords.
+
+A key formula is an expression that is relevant for solving this problem, and can be used in a math-aware search engine to look up similar expressions and the solutions.
+
+Please indicate, using the SEARCH api call, with your search keywords in its arguments which are your list of keywords in JSON format.
+
+An example would be:
+
+SEARCH["$x^2 = -1$", "imaginary numbers"]
+
+DO NOT mix text and math in one JSON item, for example, this is NOT good:
+
+SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
+
+Instead, separate different types of keywords by comma, and pick important keyword(s):
+
+SEARCH["curve", "defined by", "$x^2 - y^2 = 4$"]
+
+HINT: by only selecting and copying identity keywords from the original prolbem will get you a good baseline.
+
+Now, take a deep breath and I now handle my math question to you!
+
+### Input:
+'''
+    prompt += Q
+    return prompt
+
+
 if __name__ == '__main__':
     prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
     print(prompt)
