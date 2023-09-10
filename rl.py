@@ -198,7 +198,9 @@ def get_rl_trainer(tokenizer, model, ref_model, **kwargs):
     from transformers import get_constant_schedule_with_warmup
     optimizer = Lion(
         filter(lambda p: p.requires_grad, model.parameters()),
-        lr=lr
+        lr=lr,
+        betas=(0.95, 0.95),
+        weight_decay=1e-3
     )
     lr_scheduler = get_constant_schedule_with_warmup(
         optimizer, num_warmup_steps=kwargs.pop('warmup_steps')
