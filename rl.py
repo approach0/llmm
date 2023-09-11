@@ -408,10 +408,12 @@ def batch_respond(config, models, batch_in, trainer=None):
         if 'input_ids' not in dict_batch:
             collate_fn = wrapup_collate(config, tokenizer)
             dict_batch, batch_raw = collate_fn(batch_raw)
-        input_ids = dict_batch['input_ids']
-        input_ids = input_ids.to(device) # bs, L
+        if isinstance(dict_batch, list):
+            input_ids = dict_batch[0]['input_ids'].to(device)
+        else:
+            input_ids = dict_batch['input_ids']
+            input_ids = input_ids.to(device) # bs, L
 
-        from utils2 import generate
         gen_kwargs = get_cfg_json(config, 'gen_kwargs', {})
         stream = gen_kwargs.pop('stream')
         for output in gen_stream(model, input_ids, **gen_kwargs):
