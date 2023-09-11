@@ -129,7 +129,7 @@ def get_models(config):
         elif config.get('mode') in ['finetune', 'inference']:
 
             from transformers import LlamaForCausalLM
-            if config.get('load_in_8bit', False):
+            if config.getboolean('load_in_8bit', False):
 
                 from transformers import BitsAndBytesConfig
                 model = LlamaForCausalLM.from_pretrained(model_path,
