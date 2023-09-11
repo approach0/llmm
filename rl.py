@@ -146,15 +146,15 @@ def get_models(config):
                     cache_dir=cache_dir
                 )
 
-            if lora_config is not None:
-                kwargs = get_cfg_json(config, 'peft_existing', {})
-                print('Loading peft:', kwargs or lora_config)
-                if kwargs:
+            peft_existing_kwargs = get_cfg_json(config, 'peft_existing', {})
+            if peft_existing_kwargs or lora_config:
+                print('Loading peft:', peft_existing_kwargs or lora_config)
+                if peft_existing_kwargs:
                     # existing LoRA
                     from peft import PeftModel
-                    adapter_path = kwargs.pop('adapter_path')
+                    adapter_path = peft_existing_kwargs.pop('adapter_path')
                     model = PeftModel.from_pretrained(
-                        model, lora_path, **kwargs)
+                        model, adapter_path, **peft_existing_kwargs)
                     model = model.merge_and_unload()
                 else:
                     # new LoRA
