@@ -522,7 +522,7 @@ def do_experiment(config, inject_args):
     # inject arguments
     inject_arguments(config, inject_args)
     # prepare logging
-    if config.get('wandb', False):
+    if config.getboolean('wandb', False):
         wandb.init(
             project=config.name,
             name=config.get('run', None),
