@@ -148,6 +148,7 @@ def get_models(config):
 
             if lora_config is not None:
                 kwargs = get_cfg_json(config, 'peft_existing', {})
+                print('Loading peft:', kwargs or lora_config)
                 if kwargs:
                     # existing LoRA
                     from peft import PeftModel
@@ -521,12 +522,17 @@ def do_experiment(config, inject_args):
     # inject arguments
     inject_arguments(config, inject_args)
     # prepare logging
-    wandb.init(
-        project=config.name,
-        name=config.get('run', None),
-        config=dict(config.items())
-    )
-    run_uid = wandb.run.name
+    if config.get('wandb', False):
+        wandb.init(
+            project=config.name,
+            name=config.get('run', None),
+            config=dict(config.items())
+        )
+        run_uid = wandb.run.name
+    else:
+        from datetime import datetime
+        run_uid = datetime.today().strftime('%Y-%m-%d__%H_%M_%S')
+
     # make experiment_output_dir
     output_dir = config.get('output_dir', '.')
     experiment_output_dir = os.path.join(
