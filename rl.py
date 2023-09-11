@@ -133,6 +133,7 @@ def get_models(config):
 
                 from transformers import BitsAndBytesConfig
                 model = LlamaForCausalLM.from_pretrained(model_path,
+                    device_map='auto',
                     cache_dir=cache_dir,
                     load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                         load_in_8bit=True,
@@ -143,6 +144,7 @@ def get_models(config):
             else:
                 model = LlamaForCausalLM.from_pretrained(
                     model_path, torch_dtype=torch.float16,
+                    device_map='auto',
                     cache_dir=cache_dir
                 )
 
