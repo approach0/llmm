@@ -197,7 +197,8 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
     inputs = [
         limit_length(
             config.getint('context_length'),
-            find_good_keywords_1(
+            tool_prompt1(
+            #find_good_keywords_1(
                 data['Q_dup']
                 .replace(r'[imath]', '$')
                 .replace(r'[/imath]', '$')
