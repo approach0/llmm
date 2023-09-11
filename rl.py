@@ -414,6 +414,8 @@ def batch_respond(config, models, batch_in, trainer=None):
             input_ids = dict_batch['input_ids']
             input_ids = input_ids.to(device) # bs, L
 
+        print(tokenizer.decode(input_ids[0], **decode_kwargs))
+
         gen_kwargs = get_cfg_json(config, 'gen_kwargs', {})
         stream = gen_kwargs.pop('stream')
         for output in gen_stream(model, input_ids, **gen_kwargs):
