@@ -160,7 +160,7 @@ def get_models(config):
                     # new LoRA
                     from peft import get_peft_model
                     model = get_peft_model(model, lora_config)
-                model.print_trainable_parameters()
+                    model.print_trainable_parameters()
             ref_model = None
 
         else:
