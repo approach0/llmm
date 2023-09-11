@@ -399,7 +399,7 @@ def batch_respond(config, models, batch_in, trainer=None):
                 print(res.text)
                 quit(1)
         else:
-            print(res.status_code)
+            print('Error code:', res.status_code)
             quit(1)
     else:
         device = model.device
