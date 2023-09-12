@@ -594,7 +594,7 @@ def do_experiment(config, inject_args):
             for i in range(K):
                 assert config.getint('batch_size') == 1
                 batch_out = batch_respond(config, models, batch_in)
-                rwd_fn(config, batch_in, batch_out, models)
+                if rwd_fn: rwd_fn(config, batch_in, batch_out, models)
             if log_fn: log_fn(config, locals())
             print(f'Progress: {step+1} / {num_train_rows}')
 

@@ -211,6 +211,20 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
     return inputs_tokenized, batch_data
 
 
+def collate_phase2_infer(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import tool_prompt1
+    for data in batch_data:
+        query = data['query']
+        prompt = tool_prompt1(query)
+        response_sect = '### Response:\n'
+        new_prompt = prompt + '\n\n' + response_sect
+        data['prompt'] = new_prompt
+    inputs = [d['prompt'] + '\n' for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    inputs_tokenized = batch_tok_fn(inputs, eos=eos)
+    return inputs_tokenized, batch_data
+
+
 ###############
 # stop func
 ###############
