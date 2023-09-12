@@ -4,7 +4,7 @@ DEVICES=${3-0}
 FILTER=${4-None} # 235.json, 439.json
 # could be found with larger index: 218.json
 
-METRIC=maj@10
+METRIC=maj@3
 
 if [[ -z $SETUP ]]; then
     echo "please specify SETUP."
@@ -335,5 +335,16 @@ case $SETUP in
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
         --prompt_mode=mh --run_pass=vicuna --args="[1,'lmsys/vicuna-7b-v1.3']" \
         --metric $METRIC
+    ;;
+
+    cot-chatgpt-2023-03-15_wo_real_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC
+    ;;
+
+    ia-chatgpt-2023-03-15-w_real_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC \
+        --ground_truth_dir=../MATH/test/$TOPIC
     ;;
 esac

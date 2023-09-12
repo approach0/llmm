@@ -6,7 +6,7 @@ from sympy import evalf
 from sympy import pi
 from sympy import latex
 
-from tools.timeout import timeout
+from timeout import timeout
 
 
 @timeout(seconds=20)

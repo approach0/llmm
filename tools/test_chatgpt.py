@@ -147,7 +147,7 @@ class ChatGPT_Agent():
         openai.api_type = 'azure'
         #openai.api_version = "2023-08-01-preview"
         openai.api_version = "2023-03-15-preview"
-        openai.api_base = 'https://corby.openai.azure.com'
+        openai.api_base = 'https://text-completion-east.openai.azure.com/'
         api_map = kargs.get('api_map', {})
         stop = kargs.get('stop', None)
         engine = kargs['engine']
