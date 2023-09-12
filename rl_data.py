@@ -229,7 +229,8 @@ def collate_phase2_infer(config, batch_tok_fn, batch_data):
 # stop func
 ###############
 def stop_on_common_stop_tokens(config, tokenizer, response):
-    if tokenizer.eos_token in response:
+    eos_token = '</s>' if tokenizer is None else tokenizer.eos_token
+    if eos_token in response:
         return True
     elif '##' in response:
         return True

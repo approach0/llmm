@@ -578,7 +578,14 @@ Q: {}
 
 def ia_mytrain(Q, Qry, *P):
     prompt = tool_prompt1(Q)
-    prompt += r'''
+    if isinstance(Qry, str):
+        prompt += r'''
+
+### Response:
+{QryJson}
+'''.format(QryJson=Qry)
+    else:
+        prompt += r'''
 
 ### Response:
 SEARCH{QryJson}

@@ -14,6 +14,7 @@ sys.path.insert(0, './trl')
 
 import rl_data
 from rl_data import MockModel
+import rl_mcts
 
 ADAPT_CFG = "adapter_config.json"
 
@@ -559,15 +560,14 @@ def do_experiment(config, inject_args):
     num_train_rows = dataset['train'].num_rows
 
     if config.get('mode') == 'rl':
-        import rl_data
-        from rl_mcts import mcts
+        mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
         rwd_fn = getattr(rl_data, config.get('reward_fn'))
         stp_fn = getattr(rl_data, config.get('step_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
             for k in range(K):
-                mcts(step, k, config, models, batch_in, trainer,
+                mcts_fn(step, k, config, models, batch_in, trainer,
                     res_fn=batch_respond, rwd_fn=rwd_fn,
                     stp_fn=stp_fn, log_fn=log_fn)
                 print(f'k@K = {k}@{K}')
@@ -587,15 +587,16 @@ def do_experiment(config, inject_args):
         trainer.save_model(experiment_output_dir)
 
     elif config.get('mode') == 'inference':
-        import rl_data
+        mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
         rwd_fn = getattr(rl_data, config.get('reward_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         for step, batch_in in enumerate(dataloader):
-            for i in range(K):
+            for k in range(K):
                 assert config.getint('batch_size') == 1
-                batch_out = batch_respond(config, models, batch_in)
-                if rwd_fn: rwd_fn(config, batch_in, batch_out, models)
-            if log_fn: log_fn(config, locals())
+                mcts_fn(step, k, config, models, batch_in, None,
+                    res_fn=batch_respond, rwd_fn=rwd_fn,
+                    stp_fn=None, log_fn=log_fn)
+                print(f'k@K = {k}@{K}')
             print(f'Progress: {step+1} / {num_train_rows}')
 
     else:
