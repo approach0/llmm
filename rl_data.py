@@ -383,6 +383,20 @@ def log_rl_default(config, ex_output_dir, values):
         columns_to_log=logs.keys())
 
 
+def log_query_state(config, ex_output_dir, values,
+    problem_key='problem', query_key='query'):
+    step = values['step']
+    for b, (inp, out) in enumerate(
+        zip(values['batch_in'][1], values['batch_out'])
+    ):
+        log = copy.deepcopy(inp)
+        log_name = log[problem_key].strip('.').replace('/', '_')
+        log_name = f'{step:06}_batch{b}-' + log_name + '.log'
+        logpath = os.path.join(ex_output_dir, log_name)
+        with open(logpath, 'w') as fh:
+            json.dump(log, fh, indent=2)
+
+
 if __name__ == '__main__':
     #json_file = './output/finetune-pairs.json'
     #ds_all = Dataset.from_generator(data_generator_json,

@@ -82,8 +82,7 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
             pre_invoke, tool_res = tool_invoke(out_str, tool_map)
             inp['tool_res'] = tool_res
 
-    breakpoint()
-    #log_fn(locals(), problem_key='problem', query_key='query')
+    log_fn(locals(), problem_key='problem', query_key='query')
 
 
 if __name__ == '__main__':
