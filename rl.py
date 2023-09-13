@@ -577,6 +577,7 @@ def do_experiment(config, inject_args):
         quit(0)
 
     tokenizer, model, _ = models
+    data_offset = config.getint('data_offset', 0)
 
     if config.get('mode') == 'rl':
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
@@ -586,6 +587,7 @@ def do_experiment(config, inject_args):
         if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
+            step  = step + data_offset
             for k in range(K):
                 mcts_fn(step, k, config, models, batch_in, trainer,
                     res_fn=batch_respond, rwd_fn=rwd_fn,
@@ -612,6 +614,7 @@ def do_experiment(config, inject_args):
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
         for step, batch_in in enumerate(dataloader):
+            step  = step + data_offset
             for k in range(K):
                 mcts_fn(step, k, config, models, batch_in, None,
                     res_fn=batch_respond, rwd_fn=rwd_fn,
