@@ -356,11 +356,15 @@ def batch_respond_handler():
 
 def batch_respond(config, models, batch_in, trainer=None):
     bs = config.getint('batch_size')
+    verbose = config.getboolean('verbose', False)
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
     decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
     stop_fn = getattr(rl_data, config.get('stop_fn', '_'), None)
     if stop_fn: stop_fn = partial(stop_fn, config, tokenizer)
+    def print_if_verbose(in_texts, res):
+        if verbose:
+            for a, b in zip(in_texts, res): print(f'{a}{b}')
 
     if hasattr(model, 'pretrained_model'):
         assert trainer is not None
@@ -369,25 +373,30 @@ def batch_respond(config, models, batch_in, trainer=None):
             collate_fn = wrapup_collate(config, tokenizer)
             dict_batch, batch_raw = collate_fn(batch_raw)
         list_batch = dict_batch
-        input_ids_list = [d['input_ids'][0].to(device) for d in list_batch]
+        input_ids = [d['input_ids'][0].to(device) for d in list_batch]
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
         response = trainer.generate(
-            input_ids_list, return_prompt=False,
+            input_ids, return_prompt=False,
             **rl_respond_kwargs
         )
         if get_cfg_json(config, 'model_as_server', {}):
             decode = partial(tokenizer.decode, **decode_kwargs)
-            return [
+            res = [
                 tokenizer.decode(response[b], **decode_kwargs)
                 for b in range(bs)
             ] # texts
+            in_texts = tokenizer.decode(input_ids, **decode_kwargs)
+            print_if_verbose(in_texts, res)
+            return res
         else:
             return response # logits
 
     elif config.get('model') == 'openai_api':
         gen_kwargs = get_cfg_json(config, 'openai_gen', {})
         in_texts = dict_batch['texts']
-        return model.complete(in_texts, stop_fn, gen_kwargs)
+        res = model.complete(in_texts, stop_fn, gen_kwargs)
+        print_if_verbose(in_texts, res)
+        return res
 
     elif isinstance(model, MockModel):
         return model.generate()
@@ -415,8 +424,6 @@ def batch_respond(config, models, batch_in, trainer=None):
             input_ids = dict_batch['input_ids']
             input_ids = input_ids.to(device) # bs, L
 
-        print(tokenizer.decode(input_ids[0], **decode_kwargs))
-
         gen_kwargs = get_cfg_json(config, 'gen_kwargs', {})
         stream = gen_kwargs.pop('stream')
         for output in gen_stream(model, input_ids, **gen_kwargs):
@@ -434,7 +441,11 @@ def batch_respond(config, models, batch_in, trainer=None):
         if stream:
             print('Usage:', usage)
             print('Finish reason:', finr)
-        return [text]
+
+        in_texts = tokenizer.decode(input_ids, **decode_kwargs)
+        res = [text]
+        print_if_verbose(in_texts, res)
+        return res
 
 
 def prepare_experiment(config):
@@ -592,7 +603,6 @@ def do_experiment(config, inject_args):
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
         for step, batch_in in enumerate(dataloader):
             for k in range(K):
-                assert config.getint('batch_size') == 1
                 mcts_fn(step, k, config, models, batch_in, None,
                     res_fn=batch_respond, rwd_fn=rwd_fn,
                     stp_fn=None, log_fn=log_fn)
