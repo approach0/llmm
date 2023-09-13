@@ -344,11 +344,8 @@ def rl_step_default(config, trainer, batch_in, batch_out, rewards):
 ###############
 # log func
 ###############
-def log_problem(config, values,
+def log_problem(config, ex_output_dir, values,
     problem_key='problem', query_key='query'):
-    run_name = config.name
-    output_dir = os.path.join(config.get('output_dir'), run_name)
-    os.makedirs(output_dir, exist_ok=True)
     step = values['step']
     for b, (inp, out) in enumerate(
         zip(values['batch_in'][1], values['batch_out'])
@@ -356,7 +353,7 @@ def log_problem(config, values,
         log = copy.deepcopy(inp)
         log_name = log[problem_key].strip('.').replace('/', '_')
         log_name = log_name + f'.step{step}_batch{b}.log'
-        logpath = os.path.join(output_dir, log_name)
+        logpath = os.path.join(ex_output_dir, log_name)
         save_answer_log(logpath, query_key, **log)
 
 
@@ -367,7 +364,7 @@ def save_answer_log(logpath, query_key, **kwargs):
     _output_html(logpath, query_key=query_key, verbose=False)
 
 
-def log_rl_default(config, values):
+def log_rl_default(config, ex_output_dir, values):
     step = values['step']
     k = values['k']
     stats = values['stats']

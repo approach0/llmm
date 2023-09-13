@@ -27,9 +27,8 @@ def direct_answering(step, k, config, models, batch_in, trainer,
 
     rewards = rwd_fn(config, batch_in, batch_out, models,
         sol_key='output')
-    if log_fn:
-        log_fn(config, locals(),
-            problem_key='src_path', query_key='instruction')
+    if log_fn: log_fn(locals(),
+        problem_key='src_path', query_key='instruction')
 
 
 def rl_query_lm(step, k, config, models, batch_in, trainer,
@@ -58,7 +57,7 @@ def rl_query_lm(step, k, config, models, batch_in, trainer,
             out if isinstance(out, str) else tokenizer.decode(out)
             for out in batch_out
         ]
-        log_fn(config, locals())
+        log_fn(locals())
 
 
 def infer_query_lm(step, k, config, models, batch_in, trainer,

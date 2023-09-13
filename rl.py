@@ -551,12 +551,12 @@ def do_experiment(config, inject_args):
         from datetime import datetime
         run_uid = datetime.today().strftime('%Y-%m-%d__%H_%M_%S')
 
-    # make experiment_output_dir
+    # make ex_output_dir
     output_dir = config.get('output_dir', '.')
-    experiment_output_dir = os.path.join(
+    ex_output_dir = os.path.join(
         config.get('output_dir'), config.name, run_uid
     )
-    os.makedirs(experiment_output_dir, exist_ok=True)
+    os.makedirs(ex_output_dir, exist_ok=True)
 
     K = parse_metric_config(config)
     set_seed(config.getint('seed', 42))
@@ -575,6 +575,7 @@ def do_experiment(config, inject_args):
         rwd_fn = getattr(rl_data, config.get('reward_fn'))
         stp_fn = getattr(rl_data, config.get('step_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
+        if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
             for k in range(K):
@@ -584,23 +585,24 @@ def do_experiment(config, inject_args):
                 print(f'k@K = {k}@{K}')
             save_tick = step % save_steps
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
-                    trainer.save_pretrained(experiment_output_dir)
+                    trainer.save_pretrained(ex_output_dir)
             print(f'Save tick: {save_tick} % {save_steps}')
             print(f'Progress: {step+1} / {num_train_rows}')
 
         if hasattr(model, 'save_pretrained'):
-            trainer.save_pretrained(experiment_output_dir)
+            trainer.save_pretrained(ex_output_dir)
 
     elif config.get('mode') == 'finetune':
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
-        trainer.save_model(experiment_output_dir)
+        trainer.save_model(ex_output_dir)
 
     elif config.get('mode') == 'inference':
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
         rwd_fn = getattr(rl_data, config.get('reward_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
+        if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
         for step, batch_in in enumerate(dataloader):
             for k in range(K):
                 mcts_fn(step, k, config, models, batch_in, None,
