@@ -149,7 +149,6 @@ def collate_query_state_prompt(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import cot2, multihop_results1
     prompts = []
     for d in batch_data:
-        breakpoint()
         if d['tool_res']:
             prompts.append(
                 d['prompt'] + d['out_str'] +
