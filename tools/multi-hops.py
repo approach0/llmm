@@ -399,6 +399,10 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
             elif prompt_mode == 'cot_wizard':
                 prompt = cot_wizard(query)
 
+            elif prompt_mode == 'ia_wizard':
+                results = api_map['SEARCH'](query, None, gt=gt)
+                prompt = ia_wizard(query, *results)
+
             elif prompt_mode == 'cot_mytrain':
                 prompt = cot_mytrain(query)
 

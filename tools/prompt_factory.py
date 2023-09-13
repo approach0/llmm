@@ -538,6 +538,34 @@ def cot_wizard(Q):
 '''
     return prompt
 
+def ia_wizard(Q, *P):
+    prompt = r'''Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+The instruction is also followed by some potentially relevant passages to assist you.
+Utilize them to guide your answer as much as possible.
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
+
+### Instruction:
+{Q}
+
+Here are some relevant passages:
+'''.format(Q=Q)
+
+    for p in P:
+        prompt += f'''
+--- PASSAGE BEGIN ---
+{p}
+--- PASSAGE END   ---
+
+'''
+
+    prompt += r'''
+### Response:
+'''
+    return prompt
+
+
 def cot_mytrain(Q):
     prompt = '''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
