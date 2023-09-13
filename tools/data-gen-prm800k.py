@@ -20,7 +20,8 @@ Indicate your final answer in boxed LaTeX. For example, if the final answer is \
 
 def data_read(filepath, lookup, verbose=False):
     filepath = os.path.expanduser(filepath)
-    problems = []
+    test_problems = []
+    train_problems = []
     with open(filepath, 'r') as fh:
         for line in fh:
             j = json.loads(line)
@@ -32,9 +33,11 @@ def data_read(filepath, lookup, verbose=False):
             label = j['label']
             solution = question['ground_truth_answer']
             finish = label['finish_reason']
-            if problem.startswith('test/'):
+
+            if problem not in lookup:
+                print('Warning: not in lookup:', problem)
                 continue
-            elif finish == 'found_error':
+            if finish == 'found_error':
                 continue
             elif finish == 'give_up':
                 continue
@@ -92,8 +95,16 @@ def data_read(filepath, lookup, verbose=False):
                 "input": problem,
                 "output": '\n\n'.join(steps)
             }
-            problems.append(j_instruct)
-    return problems
+
+            path = lookup[problem]
+            if path.startswith('test/'):
+                test_problems.append(j_instruct)
+            elif path.startswith('train/'):
+                train_problems.append(j_instruct)
+            else:
+                print(path)
+                raise ValueError
+    return train_problems, test_problems
 
 
 def MATH_read(filepath, lookup):
@@ -109,7 +120,7 @@ def MATH_read(filepath, lookup):
             lookup[question] = unique_id
 
 
-def main(prm_dir='../prm800k/prm800k'):
+def main(prm_dir='../prm800k/prm800k', purpose='train'):
     lookup = dict()
     MATH_train_jsonl = os.path.join(prm_dir,
         'math_splits/train.jsonl')
@@ -121,16 +132,22 @@ def main(prm_dir='../prm800k/prm800k'):
     output = []
     PRM_train_jsonl = os.path.join(prm_dir,
         'data/phase1_train.jsonl')
-    problems = data_read(PRM_train_jsonl, lookup)
-    output += problems
+    train_problems, test_problems = data_read(PRM_train_jsonl, lookup)
+    if purpose == 'train':
+        output += train_problems
+    else:
+        output += test_problems
 
     PRM_train_jsonl = os.path.join(prm_dir,
         'data/phase2_train.jsonl')
-    problems = data_read(PRM_train_jsonl, lookup)
-    output += problems
+    train_problems, test_problems = data_read(PRM_train_jsonl, lookup)
+    if purpose == 'train':
+        output += train_problems
+    else:
+        output += test_problems
 
     print(f'Saving {len(output)} data ...')
-    output_file = 'output/PRM-train.json'
+    output_file = f'output/PRM-{purpose}.json'
     with open(output_file, 'w', encoding='utf8', errors='replace') as fh:
         json.dump(output, fh, indent=2, ensure_ascii=False)
 
