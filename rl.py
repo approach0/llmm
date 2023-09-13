@@ -380,7 +380,6 @@ def batch_respond(config, models, batch_in, trainer=None):
             **rl_respond_kwargs
         )
         if get_cfg_json(config, 'model_as_server', {}):
-            decode = partial(tokenizer.decode, **decode_kwargs)
             res = [
                 tokenizer.decode(response[b], **decode_kwargs)
                 for b in range(bs)
@@ -442,10 +441,12 @@ def batch_respond(config, models, batch_in, trainer=None):
             print('Usage:', usage)
             print('Finish reason:', finr)
 
-        in_texts = tokenizer.decode(input_ids, **decode_kwargs)
-        res = [text]
-        print_if_verbose(in_texts, res)
-        return res
+        in_texts = [
+            tokenizer.decode(input_ids[b], **decode_kwargs)
+            for b in range(len(input_ids))
+        ]
+        print_if_verbose(in_texts, [text])
+        return [text]
 
 
 def prepare_experiment(config):

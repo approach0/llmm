@@ -101,7 +101,7 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
         responses = gpt3_5.complete([new_prompt],
             stop_fn, get_cfg_json(config, 'openai_gen', {}))
         print(responses[0])
-        #breakpoint()
+        breakpoint()
 
 
 if __name__ == '__main__':
