@@ -538,6 +538,7 @@ def cot_wizard(Q):
 '''
     return prompt
 
+
 def ia_wizard(Q, *P):
     prompt = r'''Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
@@ -565,6 +566,14 @@ Here are some relevant passages:
 ### Response:
 '''
     return prompt
+
+
+def cot_mammoth(Q):
+    return cot_wizard(Q)
+
+
+def ia_mammoth(Q, *P):
+    return ia_wizard(Q, *P)
 
 
 def cot_mytrain(Q):
