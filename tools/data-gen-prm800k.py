@@ -90,13 +90,14 @@ def data_read(filepath, lookup, verbose=False):
                     print(steps[-2:])
                     print(solution, end='\n\n')
             steps = list(map(lambda x: x.strip(), steps))
+            path = lookup[problem]
             j_instruct = {
+                "src_path": path,
                 "instruction": instruction,
                 "input": problem,
                 "output": '\n\n'.join(steps)
             }
 
-            path = lookup[problem]
             if path.startswith('test/'):
                 test_problems.append(j_instruct)
             elif path.startswith('train/'):

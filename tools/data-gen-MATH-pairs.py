@@ -37,6 +37,7 @@ def generate_pairs(purpose='train', max_items=float('inf')):
                 'Counting & Probability',
                 'Prealgebra']
             j_instruct = {
+                "src_path": json_path.replace(dataset_path + '/', ''),
                 "instruction": instruction,
                 "input": problem,
                 "output": solution
