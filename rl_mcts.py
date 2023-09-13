@@ -66,18 +66,10 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
     dict_batch, batch_raw = batch_in
     batch_out = res_fn(config, models, batch_in)
 
-    from rl_openai import OpenAI_API
-    from rl import get_cfg_json
-    gpt3_5 = OpenAI_API(**get_cfg_json(config, 'openai_init', {}))
-    stop_fn = getattr(rl_data, config.get('stop_fn', '_'), None)
-    stop_fn = partial(stop_fn, config, tokenizer)
-
-    rewards = []
     for inp, out_str in zip(batch_in[1], batch_out):
         out_str = out_str.replace('</s>', '').replace('<s>', '')
         prompt = inp['prompt']
         query = inp['query']
-
         uri = 'mabowdor'
         tool_map = {
             'SEARCH': partial(
@@ -85,23 +77,13 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
             )
         }
         if not has_any_captured(out_str, tool_map):
-            rewards.append(0.)
-            continue
+            inp['tool_res'] = None
+        else:
+            pre_invoke, tool_res = tool_invoke(out_str, tool_map)
+            inp['tool_res'] = tool_res
 
-        pre_invoke, tool_res = tool_invoke(out_str, tool_map)
-
-        if isinstance(tool_res, ToolError):
-            rewards.append(0.)
-            continue
-        elif len(tool_res) == 0:
-            rewards.append(0.)
-            continue
-
-        new_prompt = ia_mytrain(query, out_str, *tool_res)
-        responses = gpt3_5.complete([new_prompt],
-            stop_fn, get_cfg_json(config, 'openai_gen', {}))
-        print(responses[0])
-        breakpoint()
+    breakpoint()
+    #log_fn(locals(), problem_key='problem', query_key='query')
 
 
 if __name__ == '__main__':
