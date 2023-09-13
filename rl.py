@@ -493,14 +493,20 @@ def prepare_experiment(config):
         dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
 
-    data_offset = config.getint('data_offset', 0)
+    def data_range(data):
+        data_offset = config.getint('data_offset', 0)
+        data_cutoff = config.getint('data_cutoff', len(data))
+        data_cutoff = min(data_cutoff, len(data))
+        return data_offset, data_cutoff
+
+    print(dataset)
     collate_fn = wrapup_collate(config, tokenizer)
 
     # prepare dataset loader
     if config.get('mode') in ['rl', 'inference']:
         ds_key = config.get('dataset_key', 'train')
         data = dataset[ds_key]
-        data = data.select(range(data_offset, len(data)))
+        data = data.select(range(*data_range(data)))
         dataloader = DataLoader(data,
             collate_fn=collate_fn,
             batch_size=config.getint('batch_size')
@@ -514,7 +520,7 @@ def prepare_experiment(config):
 
     elif config.get('mode') == 'finetune':
         data = dataset['train']
-        data = data.select(range(data_offset, len(data)))
+        data = data.select(range(*data_range(data)))
         dataloader=None
         if 'test' not in dataset:
             dataset['test'] = None
@@ -531,7 +537,7 @@ def prepare_experiment(config):
     else:
         raise NotImplemented
 
-    return models, trainer, dataloader, data
+    return models, trainer, dataloader, data_range(data)
 
 
 def parse_metric_config(config):
@@ -569,7 +575,7 @@ def do_experiment(config, inject_args):
 
     K = parse_metric_config(config)
     set_seed(config.getint('seed', 42))
-    models, trainer, dataloader, data = prepare_experiment(config)
+    models, trainer, dataloader, data_range = prepare_experiment(config)
 
     if app_args := get_cfg_json(config, 'model_as_server', {}):
         app.config['args'] = (config, models)
@@ -577,7 +583,7 @@ def do_experiment(config, inject_args):
         quit(0)
 
     tokenizer, model, _ = models
-    data_offset = config.getint('data_offset', 0)
+    data_offset, data_cutoff = data_range
 
     if config.get('mode') == 'rl':
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
@@ -597,7 +603,7 @@ def do_experiment(config, inject_args):
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
                     trainer.save_pretrained(ex_output_dir)
             print(f'Save tick: {save_tick} % {save_steps}')
-            print(f'Progress: {step+1} / {len(data)}')
+            print(f'Progress: {step+1} / {data_cutoff}')
 
         if hasattr(model, 'save_pretrained'):
             trainer.save_pretrained(ex_output_dir)
@@ -620,7 +626,7 @@ def do_experiment(config, inject_args):
                     res_fn=batch_respond, rwd_fn=rwd_fn,
                     stp_fn=None, log_fn=log_fn)
                 print(f'k@K = {k}@{K}')
-            print(f'Progress: {step+1} / {len(data)}')
+            print(f'Progress: {step+1} / {data_cutoff}')
 
     else:
         raise NotImplemented
