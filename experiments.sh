@@ -361,4 +361,17 @@ case $SETUP in
         --ground_truth_dir=../MATH/test/$TOPIC
     ;;
 
+    cot-13B-mammoth-coder__wo_real_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['greedy', 4096, 'TIGER-Lab/MAmmoTH-Coder-13B', 'TIGER-Lab/MAmmoTH-Coder-13B', {'cache_dir': './data'}]"
+    ;;
+
+    ia-13B-mammoth-coder__w_real_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=ia --run_pass=utils --skip_existing True \
+        --args="['greedy', 4096, 'TIGER-Lab/MAmmoTH-Coder-13B', 'TIGER-Lab/MAmmoTH-Coder-13B', {'cache_dir': './data'}]" \
+        --ground_truth_dir=../MATH/test/$TOPIC
+    ;;
+
 esac
