@@ -1,6 +1,8 @@
 from tools.prompt_factory import *
 from functools import partial
 
+from rl import get_cfg_json
+
 import rl_data
 from rl_tools import (
     search_mux,
@@ -24,11 +26,11 @@ def direct_answering(step, k, config, models, batch_in, trainer,
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
     batch_out = res_fn(config, models, batch_in)
-
     rewards = rwd_fn(config, batch_in, batch_out, models,
-        sol_key='output')
-    if log_fn: log_fn(locals(),
-        problem_key='src_path', query_key='instruction')
+        **get_cfg_json(config, 'reward_args', {})
+    )
+    if log_fn:
+        log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
 def rl_query_lm(step, k, config, models, batch_in, trainer,
@@ -39,13 +41,17 @@ def rl_query_lm(step, k, config, models, batch_in, trainer,
 
     batch_out = res_fn(config, models, batch_in, trainer=trainer)
     print(tokenizer.decode(batch_out[0]))
-    rewards = rwd_fn(config, batch_in, batch_out, models)
+    rewards = rwd_fn(config, batch_in, batch_out, models,
+        **get_cfg_json(config, 'reward_args', {})
+    )
 
     if config.getboolean('compare_refout', False):
         import numpy as np
         with model.pretrained_model.disable_adapter():
             ref_batch_out = res_fn(config, models, batch_in, trainer=trainer)
-        ref_rewards = rwd_fn(config, batch_in, ref_batch_out, models)
+        ref_rewards = rwd_fn(config, batch_in, ref_batch_out, models,
+            **get_cfg_json(config, 'reward_args', {})
+        )
         cmp_rewards = np.array(rewards) - np.array(ref_rewards)
         rewards = cmp_rewards.tolist()
 
@@ -57,7 +63,7 @@ def rl_query_lm(step, k, config, models, batch_in, trainer,
             out if isinstance(out, str) else tokenizer.decode(out)
             for out in batch_out
         ]
-        log_fn(locals())
+        log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
 def infer_query_lm(step, k, config, models, batch_in, trainer,
@@ -68,9 +74,9 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
 
     for inp, out_str in zip(batch_in[1], batch_out):
         out_str = out_str.replace('</s>', '').replace('<s>', '')
-        prompt = inp['prompt']
-        query = inp['query']
+        inp['out_str'] = out_str
         uri = 'mabowdor'
+        query = inp['query']
         tool_map = {
             'SEARCH': partial(
                 search_mux, uri, query
@@ -80,10 +86,12 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
             inp['tool_res'] = None
         else:
             pre_invoke, tool_res = tool_invoke(out_str, tool_map)
-            inp['tool_res'] = tool_res
+            if isinstance(tool_res, ToolError):
+                inp['tool_res'] = None
+            else:
+                inp['tool_res'] = tool_res
 
-    log_fn(locals(), problem_key='problem', query_key='query')
-
+    log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 if __name__ == '__main__':
     pass

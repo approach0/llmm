@@ -480,10 +480,20 @@ def prepare_experiment(config):
     tokenizer, model, _ = models
 
     # prepare dataset
+    from datasets import Dataset
     from datasets import load_dataset
     from torch.utils.data import DataLoader
-    dataset_path = config.get('dataset')
-    dataset = load_dataset(dataset_path)
+    from datasets.dataset_dict import DatasetDict
+
+    dataset_gen_fn = getattr(rl_data, config.get('dataset_gen_fn', '_'), None)
+    if dataset_gen_fn:
+        dataset_gen_args = get_cfg_json(config, 'dataset', {})
+        dataset = Dataset.from_generator(
+            dataset_gen_fn, gen_kwargs=dataset_gen_args)
+        dataset = DatasetDict({'train': dataset})
+    else:
+        dataset_path = config.get('dataset')
+        dataset = load_dataset(dataset_path)
 
     dataset_map_fn = getattr(rl_data, config.get('dataset_map_fn', '_'), None)
     if dataset_map_fn:

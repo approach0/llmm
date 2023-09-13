@@ -14,23 +14,6 @@ IGNORE_INDEX = -100
 ###############
 # utilities
 ###############
-def data_generator_json(json_file):
-    with open(json_file, 'r') as fh:
-        j = json.load(fh)
-
-    for item in j:
-        if 'problem' in item and item['problem'] is None:
-            continue
-        yield item
-
-
-def data_generator_jsonl(jsonl_file):
-    with open(jsonl_file, 'r') as fh:
-        for line in fh:
-            item = json.loads(line)
-            yield item
-
-
 def decode_show(batch_tok_fn, ids):
     ids = ids.clone()
     ids[ids == -100] = 0
@@ -69,6 +52,16 @@ def limit_length(limit, string):
         return string[:limit] + '...'
     else:
         return string
+
+
+#####################
+# dataset generator
+#####################
+def generate_from_json(path):
+    with open(path, 'r') as fh:
+        j = json.load(fh)
+    for item in j:
+        yield item
 
 
 ###############
@@ -148,6 +141,24 @@ def collate_query_cot(config, batch_tok_fn, batch_data):
         cot_mytrain(d['query'])
         for d in batch_data
     ]
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
+
+
+def collate_query_state_prompt(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import cot2, multihop_results1
+    prompts = []
+    for d in batch_data:
+        breakpoint()
+        if d['tool_res']:
+            prompts.append(
+                d['prompt'] + d['out_str'] +
+                multihop_results1(d['tool_res'])
+            )
+        else:
+            prompts.append(
+                cot2(d['query'])
+            )
     eos = config.getboolean('collate_add_eos', True)
     return batch_tok_fn(prompts, eos=eos), batch_data
 
@@ -398,13 +409,6 @@ def log_query_state(config, ex_output_dir, values,
 
 
 if __name__ == '__main__':
-    #json_file = './output/finetune-pairs.json'
-    #ds_all = Dataset.from_generator(data_generator_json,
-    #    gen_kwargs={'json_file': json_file})
-    #ds_train = ds_all.filter(lambda x: 'train' in x['problem'])
-    #ds_test = ds_all.filter(lambda x: 'test' in x['problem'])
-    #dataset = DatasetDict({'train': ds_train, 'test': ds_test})
-
     jsonl_file = 'arqmath-question-dups.jsonl'
     ds_all = Dataset.from_generator(data_generator_jsonl,
         gen_kwargs={'jsonl_file': jsonl_file})
