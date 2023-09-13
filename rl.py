@@ -493,7 +493,7 @@ def prepare_experiment(config):
         dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
 
-    def data_range(data):
+    def get_data_range(data):
         data_offset = config.getint('data_offset', 0)
         data_cutoff = config.getint('data_cutoff', len(data))
         data_cutoff = min(data_cutoff, len(data))
@@ -506,7 +506,8 @@ def prepare_experiment(config):
     if config.get('mode') in ['rl', 'inference']:
         ds_key = config.get('dataset_key', 'train')
         data = dataset[ds_key]
-        data = data.select(range(*data_range(data)))
+        data_range = get_data_range(data)
+        data = data.select(range(*data_range))
         dataloader = DataLoader(data,
             collate_fn=collate_fn,
             batch_size=config.getint('batch_size')
@@ -520,7 +521,8 @@ def prepare_experiment(config):
 
     elif config.get('mode') == 'finetune':
         data = dataset['train']
-        data = data.select(range(*data_range(data)))
+        data_range = get_data_range(data)
+        data = data.select(range(*data_range))
         dataloader=None
         if 'test' not in dataset:
             dataset['test'] = None
@@ -537,7 +539,7 @@ def prepare_experiment(config):
     else:
         raise NotImplemented
 
-    return models, trainer, dataloader, data_range(data)
+    return models, trainer, dataloader, data_range
 
 
 def parse_metric_config(config):
