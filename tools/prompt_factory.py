@@ -545,7 +545,8 @@ The instruction is also followed by some potentially relevant passages to assist
 Utilize them to guide your answer as much as possible.
 
 Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
-
+'''
+    prompt += r'''
 ### Instruction:
 {Q}
 
