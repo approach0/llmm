@@ -491,14 +491,13 @@ def prepare_experiment(config):
         dataset = dataset['train']
         dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
-    else:
-        dataset['test'] = None
 
     collate_fn = wrapup_collate(config, tokenizer)
 
     if config.get('mode') in ['rl', 'inference']:
         bs = config.getint('batch_size')
-        dataloader = DataLoader(dataset['train'],
+        ds_key = config.get('dataset_key', 'train')
+        dataloader = DataLoader(dataset[ds_key],
             collate_fn=collate_fn,
             batch_size=bs
         )
@@ -511,6 +510,8 @@ def prepare_experiment(config):
 
     elif config.get('mode') == 'finetune':
         dataloader=None
+        if 'test' not in dataset:
+            dataset['test'] = None
         trainer = Trainer(
             model=model,
             tokenizer=tokenizer,
@@ -540,7 +541,9 @@ def do_experiment(config, inject_args):
     # inject arguments
     inject_arguments(config, inject_args)
     # prepare logging
-    if config.getboolean('wandb', False):
+    if run_uid := config.get('run_uid', False):
+        pass
+    elif config.getboolean('wandb', False):
         wandb.init(
             project=config.name,
             name=config.get('run', None),
@@ -568,7 +571,8 @@ def do_experiment(config, inject_args):
         quit(0)
 
     tokenizer, model, _ = models
-    num_train_rows = dataset['train'].num_rows
+    ds_key = config.get('dataset_key', 'train')
+    num_train_rows = dataset[ds_key].num_rows
 
     if config.get('mode') == 'rl':
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
