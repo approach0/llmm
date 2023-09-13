@@ -478,6 +478,7 @@ def prepare_experiment(config):
     models = get_models(config)
     tokenizer, model, _ = models
 
+    # prepare dataset
     from datasets import load_dataset
     from torch.utils.data import DataLoader
     dataset_path = config.get('dataset')
@@ -492,14 +493,17 @@ def prepare_experiment(config):
         dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
 
+    data_offset = config.getint('data_offset', 0)
     collate_fn = wrapup_collate(config, tokenizer)
 
+    # prepare dataset loader
     if config.get('mode') in ['rl', 'inference']:
-        bs = config.getint('batch_size')
         ds_key = config.get('dataset_key', 'train')
-        dataloader = DataLoader(dataset[ds_key],
+        data = dataset[ds_key]
+        data = data.select(range(data_offset, len(data)))
+        dataloader = DataLoader(data,
             collate_fn=collate_fn,
-            batch_size=bs
+            batch_size=config.getint('batch_size')
         )
 
         if config.get('mode') == 'rl':
@@ -509,6 +513,8 @@ def prepare_experiment(config):
             trainer = None
 
     elif config.get('mode') == 'finetune':
+        data = dataset['train']
+        data = data.select(range(data_offset, len(data)))
         dataloader=None
         if 'test' not in dataset:
             dataset['test'] = None
@@ -516,7 +522,7 @@ def prepare_experiment(config):
             model=model,
             tokenizer=tokenizer,
             args=hg_trainer_args,
-            train_dataset=dataset['train'],
+            train_dataset=data,
             eval_dataset=dataset['test'],
             data_collator=collate_fn
         )
@@ -525,7 +531,7 @@ def prepare_experiment(config):
     else:
         raise NotImplemented
 
-    return models, trainer, dataloader, dataset
+    return models, trainer, dataloader, data
 
 
 def parse_metric_config(config):
@@ -563,7 +569,7 @@ def do_experiment(config, inject_args):
 
     K = parse_metric_config(config)
     set_seed(config.getint('seed', 42))
-    models, trainer, dataloader, dataset = prepare_experiment(config)
+    models, trainer, dataloader, data = prepare_experiment(config)
 
     if app_args := get_cfg_json(config, 'model_as_server', {}):
         app.config['args'] = (config, models)
@@ -571,8 +577,6 @@ def do_experiment(config, inject_args):
         quit(0)
 
     tokenizer, model, _ = models
-    ds_key = config.get('dataset_key', 'train')
-    num_train_rows = dataset[ds_key].num_rows
 
     if config.get('mode') == 'rl':
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
@@ -591,7 +595,7 @@ def do_experiment(config, inject_args):
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
                     trainer.save_pretrained(ex_output_dir)
             print(f'Save tick: {save_tick} % {save_steps}')
-            print(f'Progress: {step+1} / {num_train_rows}')
+            print(f'Progress: {step+1} / {len(data)}')
 
         if hasattr(model, 'save_pretrained'):
             trainer.save_pretrained(ex_output_dir)
@@ -613,7 +617,7 @@ def do_experiment(config, inject_args):
                     res_fn=batch_respond, rwd_fn=rwd_fn,
                     stp_fn=None, log_fn=log_fn)
                 print(f'k@K = {k}@{K}')
-            print(f'Progress: {step+1} / {num_train_rows}')
+            print(f'Progress: {step+1} / {len(data)}')
 
     else:
         raise NotImplemented

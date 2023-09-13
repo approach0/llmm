@@ -352,7 +352,7 @@ def log_problem(config, ex_output_dir, values,
     ):
         log = copy.deepcopy(inp)
         log_name = log[problem_key].strip('.').replace('/', '_')
-        log_name = log_name + f'.step{step}_batch{b}.log'
+        log_name = f'{step:06}_batch{b}-' + log_name + '.log'
         logpath = os.path.join(ex_output_dir, log_name)
         save_answer_log(logpath, query_key, **log)
 
