@@ -568,14 +568,6 @@ Here are some relevant passages:
     return prompt
 
 
-def cot_mammoth(Q):
-    return cot_wizard(Q)
-
-
-def ia_mammoth(Q, *P):
-    return ia_wizard(Q, *P)
-
-
 def cot_mytrain(Q):
     prompt = '''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 

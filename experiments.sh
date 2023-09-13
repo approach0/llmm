@@ -363,13 +363,13 @@ case $SETUP in
 
     cot-13B-mammoth-coder__wo_groundtruth_psg)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot_mammoth --run_pass=utils --skip_existing True \
+        --prompt_mode=cot_wizard --run_pass=utils --skip_existing True \
         --args="['greedy', 4096, 'TIGER-Lab/MAmmoTH-Coder-13B', 'TIGER-Lab/MAmmoTH-Coder-13B', {'cache_dir': './data'}]"
     ;;
 
     ia-13B-mammoth-coder__w_groundtruth_psg)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=ia_mammoth --run_pass=utils --skip_existing True \
+        --prompt_mode=ia_wizard --run_pass=utils --skip_existing True \
         --args="['greedy', 4096, 'TIGER-Lab/MAmmoTH-Coder-13B', 'TIGER-Lab/MAmmoTH-Coder-13B', {'cache_dir': './data'}]" \
         --ground_truth_dir=../MATH/test/$TOPIC
     ;;
