@@ -339,7 +339,7 @@ case $SETUP in
 
     cot-chatgpt-2023-03-15_wo_real_groundtruth_query)
     python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
-        --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC
+        --prompt_mode=cot --run_pass=chatgpt --args="[]" --metric $METRIC --skip_existing True
     ;;
 
     ia-chatgpt-2023-03-15-w_real_groundtruth_query)
@@ -347,4 +347,18 @@ case $SETUP in
         --prompt_mode=ia --run_pass=chatgpt --args="[]" --metric $METRIC \
         --ground_truth_dir=../MATH/test/$TOPIC
     ;;
+
+    cot-13B-wizard-math__wo_real_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['greedy', 4096, 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]"
+    ;;
+
+    cot-13B-wizard-math__w_real_groundtruth_query)
+    python tools/multi-hops.py --logname $SETUP --topic $TOPIC --fname_filter $FILTER \
+        --prompt_mode=cot --run_pass=utils --skip_existing True \
+        --args="['greedy', 4096, 'WizardLM/WizardMath-13B-V1.0', 'WizardLM/WizardMath-13B-V1.0', {'cache_dir': './data'}]" \
+        --ground_truth_dir=../MATH/test/$TOPIC
+    ;;
+
 esac
