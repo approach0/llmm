@@ -40,10 +40,35 @@ def sanity_check(json_path):
             print(i)
 
 
+def data_generator_json(json_file):
+    with open(json_file, 'r') as fh:
+        j = json.load(fh)
+    for item in j:
+        yield item
+
+
+def push_data(train_path, test_path, repo):
+    from datasets import Dataset
+    from datasets.dataset_dict import DatasetDict
+
+    train_ds = Dataset.from_generator(data_generator_json,
+        gen_kwargs={'json_file': train_path})
+    test_ds = Dataset.from_generator(data_generator_json,
+        gen_kwargs={'json_file': test_path})
+
+    # sanity check
+    train_ds = train_ds.filter(lambda x: 'train' in x['src_path'])
+    test_ds = test_ds.filter(lambda x: 'test' in x['src_path'])
+
+    dataset = DatasetDict({'train': train_ds, 'test': test_ds})
+    dataset.push_to_hub(repo)
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
     fire.Fire({
         'merge': merge_pairs,
-        'check': sanity_check
+        'check': sanity_check,
+        'push': push_data,
     })
