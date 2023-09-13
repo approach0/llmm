@@ -128,10 +128,13 @@ def smart_correct(kw):
 
 
 def search_wrapper(tool, question, keywords, gt=None, **kargs):
-    if gt is not None and 'manual_query' in gt:
-        if len(gt['manual_query']) > 0:
+    if gt is not None:
+        if 'manual_query' in gt and len(gt['manual_query']) > 0:
             keywords = gt['manual_query']
             keywords = list(map(lambda x: f'${x}$', keywords))
+        else:
+            psg = gt['solution']
+            return [psg]
 
     if keywords:
         keywords = list(map(smart_correct, keywords))
@@ -339,8 +342,11 @@ def main(logname=None, run_pass=None, debug=False, topic=None,
                 continue
 
         if ground_truth_dir:
-            path = os.path.join(ground_truth_dir, filename + '.log')
-            if os.path.exists(path):
+            path = os.path.join(ground_truth_dir, filename)
+            if os.path.exists(path + '.log'):
+                with open(path, 'r') as fh:
+                    gt = json.load(fh)
+            elif os.path.exists(path):
                 with open(path, 'r') as fh:
                     gt = json.load(fh)
             else:
