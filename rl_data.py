@@ -135,6 +135,13 @@ def collate_prompt(config, batch_tok_fn, batch_data):
     return batch_tok_fn(prompts, eos=eos), batch_data
 
 
+def collate_input_cot(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import cot2
+    prompts = [cot2(d['input']) for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
+
+
 def collate_query_cot(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import cot_mytrain
     prompts = [
@@ -240,14 +247,14 @@ def stop_on_common_stop_tokens(config, tokenizer, response):
 ###############
 # reward func
 ###############
-def reward_by_answer(config, inp, out, models):
+def reward_by_answer(config, inp, out, models, sol_key='solution'):
     from main_clean import extract_math_answer
     from math_equivalence import is_equiv
     from rich import print as rich_print
 
     rewards = []
     for raw, out_str in zip(inp[1], out):
-        ground_truth = extract_math_answer(raw['solution'])
+        ground_truth = extract_math_answer(raw[sol_key])
         out_boxed = extract_math_answer(out_str)
         equiv = is_equiv(ground_truth, out_boxed)
 
@@ -337,8 +344,8 @@ def rl_step_default(config, trainer, batch_in, batch_out, rewards):
 ###############
 # log func
 ###############
-def log_problem(config, values):
-    verbose = config.getboolean('log_verbose', False)
+def log_problem(config, values,
+    problem_key='problem', query_key='query'):
     run_name = config.name
     output_dir = os.path.join(config.get('output_dir'), run_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -347,19 +354,17 @@ def log_problem(config, values):
         zip(values['batch_in'][1], values['batch_out'])
     ):
         log = copy.deepcopy(inp)
-        log_name = log['problem'].strip('.').replace('/', '_')
+        log_name = log[problem_key].strip('.').replace('/', '_')
         log_name = log_name + f'.step{step}_batch{b}.log'
         logpath = os.path.join(output_dir, log_name)
-        save_answer_log(logpath, verbose=verbose, **log)
+        save_answer_log(logpath, query_key, **log)
 
 
-def save_answer_log(logpath, verbose=False, **kwargs):
+def save_answer_log(logpath, query_key, **kwargs):
     from tools.inspect_output import _output_html
     with open(logpath, 'w') as fh:
         json.dump(kwargs, fh, indent=2)
-    _output_html(logpath, verbose=False)
-    if verbose: print(kwargs.keys())
-    if verbose: print('Written log:', logpath)
+    _output_html(logpath, query_key=query_key, verbose=False)
 
 
 def log_rl_default(config, values):

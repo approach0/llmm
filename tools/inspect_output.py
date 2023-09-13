@@ -167,7 +167,7 @@ def textify_v2(j_dict):
     return text_list
 
 
-def _output_html(logpath, verbose=True):
+def _output_html(logpath, verbose=True, query_key='query'):
     import sys
     sys.path.insert(0, './pya0')
     from pya0.visualize import output_html as output
@@ -187,7 +187,7 @@ def _output_html(logpath, verbose=True):
 
         logdir = os.path.dirname(logpath)
         logbase = os.path.basename(logpath)
-        head = j['query'] if 'query' in j else j['question']
+        head = j[query_key] if query_key in j else j['question']
         output(logdir, logbase, '_', head, results,
             None, False, 100, html, create_parent_dir=False)
 
