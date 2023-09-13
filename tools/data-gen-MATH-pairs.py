@@ -9,10 +9,9 @@ Indicate your final answer in boxed LaTeX. For example, if the final answer is \
 '''
 
 
-def generate_pairs(
-    dataset_dir=f'{dataset_path}/train',
-    output_file='output/MATH-pairs.json',
-    max_items=float('inf')):
+def generate_pairs(purpose='train', max_items=float('inf')):
+    dataset_dir=f'{dataset_path}/{purpose}'
+    output_file=f'output/MATH-{purpose}.json'
 
     output = []
     for dirname in os.listdir(dataset_dir):
@@ -20,14 +19,17 @@ def generate_pairs(
         assert os.path.isdir(data_dir)
         for fname in os.listdir(data_dir):
             json_path = os.path.join(data_dir, fname)
-            #print(json_path)
+            print(json_path)
             with open(json_path, 'r') as fh:
                 j_original = json.load(fh)
             problem = j_original['problem']
             solution = j_original['solution']
             topic = j_original['type']
+
+            # skip those containing ASY graph!!!
             if '[asy]' in problem or '[asy]' in solution:
                 continue
+
             assert topic in [
                 'Algebra', 'Number Theory',
                 'Precalculus', 'Geometry',
@@ -43,7 +45,7 @@ def generate_pairs(
             if len(output) >= max_items:
                 break
 
-    print(f'Saving {len(output)} pairs ...')
+    print(f'Saving {len(output)} pairs (purpose={purpose})...')
     with open(output_file, 'w', encoding='utf8', errors='replace') as fh:
         json.dump(output, fh, indent=2, ensure_ascii=False)
 
