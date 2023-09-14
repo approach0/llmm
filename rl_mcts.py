@@ -71,12 +71,13 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
     batch_out = res_fn(config, models, batch_in)
+    query_key = config.get('collate__query_key', 'query')
 
     for inp, out_str in zip(batch_in[1], batch_out):
         out_str = out_str.replace('</s>', '').replace('<s>', '')
         inp['out_str'] = out_str
         uri = 'mabowdor'
-        query = inp['query']
+        query = inp[query_key]
         tool_map = {
             'SEARCH': partial(
                 search_mux, uri, query
