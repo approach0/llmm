@@ -26,6 +26,8 @@ def generate_pairs(purpose='train', max_items=float('inf')):
             solution = j_original['solution']
             topic = j_original['type']
 
+            #if topic != 'Precalculus': continue
+
             # skip those containing ASY graph!!!
             if '[asy]' in problem or '[asy]' in solution:
                 continue

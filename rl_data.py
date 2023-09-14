@@ -101,6 +101,12 @@ def datamap_perfect_rating(config, dataset):
     return dataset
 
 
+def datamap_topic_filter(config, dataset, topic='precalculus', topic_key='src_path'):
+    dataset['train'] = dataset['train'].filter(lambda x: topic in x[topic_key])
+    dataset['test'] = dataset['test'].filter(lambda x: topic in x[topic_key])
+    return dataset
+
+
 ###############
 # mock model
 ###############
