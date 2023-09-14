@@ -153,6 +153,7 @@ def collate_query_cot(config, batch_tok_fn, batch_data):
 
 def collate_query_state_prompt(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import cot2, multihop_results1
+    query_key = config.get('collate__query_key', 'query')
     prompts = []
     for d in batch_data:
         if d['tool_res']:
@@ -162,7 +163,7 @@ def collate_query_state_prompt(config, batch_tok_fn, batch_data):
             )
         else:
             prompts.append(
-                cot2(d['query'])
+                cot2(d[query_key])
             )
     eos = config.getboolean('collate_add_eos', True)
     return batch_tok_fn(prompts, eos=eos), batch_data
