@@ -127,7 +127,7 @@ def get_models(config):
                 from trl import create_reference_model
                 ref_model = create_reference_model(model)
 
-        elif config.get('mode') in ['finetune', 'inference']:
+        elif config.get('mode') in ['finetune', 'inference', 'finetune-dpo']:
 
             from transformers import LlamaForCausalLM
             if config.getboolean('load_in_8bit', False):
@@ -452,7 +452,7 @@ def batch_respond(config, models, batch_in, trainer=None):
 def prepare_experiment(config):
     config_rerope(config)
 
-    if config.get('mode') == 'finetune':
+    if config.get('mode') in ['finetune', 'finetune-dpo']:
         deepspeed = get_cfg_json(config, 'deepspeed', None)
         deepspeed_arg = []
         if deepspeed is not None:
@@ -477,7 +477,7 @@ def prepare_experiment(config):
         hg_trainer_args._n_gpu = 1
 
     models = get_models(config)
-    tokenizer, model, _ = models
+    tokenizer, model, ref_model = models
 
     # prepare dataset
     from datasets import Dataset
@@ -544,6 +544,25 @@ def prepare_experiment(config):
             args=hg_trainer_args,
             train_dataset=data,
             eval_dataset=dataset['test'],
+            data_collator=collate_fn
+        )
+        trainer.deepspeed = trainer.model_wrapped
+
+    elif config.get('mode') == 'finetune-dpo':
+        data = dataset['train']
+        data_range = get_data_range(data)
+        data = data.select(range(*data_range))
+        dataloader=None
+        if 'test' not in dataset:
+            dataset['test'] = None
+        from trl import DPOTrainer
+        trainer = DPOTrainer(
+            model, ref_model,
+            args=hg_trainer_args,
+            beta=config.getfloat('dpo_beta'),
+            train_dataset=data,
+            eval_dataset=dataset['test'],
+            tokenizer=tokenizer,
             data_collator=collate_fn
         )
         trainer.deepspeed = trainer.model_wrapped
@@ -622,7 +641,7 @@ def do_experiment(config, inject_args):
         if hasattr(model, 'save_pretrained'):
             trainer.save_pretrained(ex_output_dir)
 
-    elif config.get('mode') == 'finetune':
+    elif config.get('mode') in ['finetune', 'finetune-dpo']:
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
