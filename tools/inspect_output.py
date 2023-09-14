@@ -19,7 +19,7 @@ def get_stats_v2(j, detail, logpath, metric):
     from math_equivalence import is_equiv
 
     judge_buffer = j['judge_buffer']
-    ground_truth = j['ground_truth']
+    ground_truth = j['ground_truth'] if 'ground_truth' in j else None
 
     if ('manual_query' in j and
         isinstance(j['manual_query'], list) and
