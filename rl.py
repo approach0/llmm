@@ -340,8 +340,11 @@ def batch_tokenize(config, tokenizer, texts,
 
 def wrapup_collate(config, tokenizer):
     tok_fn = partial(batch_tokenize, config, tokenizer)
-    col_fn = getattr(rl_data, config.get('collate_fn'))
-    return partial(col_fn, config, tok_fn)
+    col_fn = getattr(rl_data, config.get('collate_fn', '_'), None)
+    if col_fn is None:
+        return None
+    else:
+        return partial(col_fn, config, tok_fn)
 
 
 from flask import Flask

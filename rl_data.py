@@ -133,6 +133,7 @@ def datamap_DPO(config, dataset, dataset_key='train'):
     dataset = Dataset.from_dict(dpo_dataset_dict)
     return DatasetDict({dataset_key: dataset})
 
+
 ###############
 # mock model
 ###############
@@ -154,10 +155,6 @@ class MockModelForQueryLM(MockModel):
 ###############
 # collate func
 ###############
-def collate_none(config, batch_tok_fn, batch_data):
-    assert False
-
-
 def collate_prompt(config, batch_tok_fn, batch_data):
     prompts = [d['prompt'] for d in batch_data]
     eos = config.getboolean('collate_add_eos', True)
