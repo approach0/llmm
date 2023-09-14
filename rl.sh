@@ -54,6 +54,6 @@ case $1 in
     ;;
 
     dpo1)
-        deepspeed_launch finetune_dpo__prm_vs_chatgpt 6,7
+        deepspeed_launch finetune_dpo__prm_vs_chatgpt 6
     ;;
 esac

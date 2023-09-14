@@ -116,7 +116,7 @@ def datamap_DPO(config, dataset, dataset_key='train'):
         "rejected": []
     }
 
-    for data in load_dataset(dataset)[dataset_key]:
+    for data in dataset[dataset_key]:
         judged = data['judge_buffer'][0]
         correct = judged['is_equiv']
         if correct: continue

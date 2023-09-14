@@ -675,6 +675,8 @@ def main(*experiments, config_file='rl.ini', **inject_args):
     cfg = configparser.ConfigParser(allow_no_value=True)
     cfg.read(config_file)
 
+    local_rank = int(os.environ["LOCAL_RANK"])
+
     for path in get_cfg_json(cfg['DEFAULT'], 'add_sys_paths', []):
         print('insert sys_path:', path)
         sys.path.insert(0, path)
@@ -684,6 +686,7 @@ def main(*experiments, config_file='rl.ini', **inject_args):
 
     for ex in experiments:
         config = cfg[ex]
+        config['local_rank'] = str(local_rank)
         do_experiment(config, inject_args)
 
 
