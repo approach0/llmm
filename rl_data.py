@@ -5,6 +5,7 @@ import copy
 import json
 import torch
 from functools import partial
+from datasets import load_dataset
 from datasets import Dataset, concatenate_datasets
 from datasets.dataset_dict import DatasetDict
 
@@ -106,6 +107,31 @@ def datamap_topic_filter(config, dataset, topic='precalculus', topic_key='src_pa
     dataset['test'] = dataset['test'].filter(lambda x: topic in x[topic_key])
     return dataset
 
+
+def datamap_DPO(config, dataset, dataset_key='train'):
+    from tools.prompt_factory import DPO_default_prompt
+    dpo_dataset_dict = {
+        "prompt": [],
+        "chosen": [],
+        "rejected": []
+    }
+
+    for data in load_dataset(dataset)[dataset_key]:
+        judged = data['judge_buffer'][0]
+        correct = judged['is_equiv']
+        if correct: continue
+        instr = data['instruction']
+        input = data['input']
+        truth = data['output']
+        answer = judged['answer']
+        prompt = DPO_default_prompt(instr, input):
+
+        dpo_dataset_dict['prompt'].append(prompt)
+        dpo_dataset_dict['chosen'].append(truth)
+        dpo_dataset_dict['rejected'].append(answer)
+
+    dataset = Dataset.from_dict(dpo_dataset_dict)
+    return DatasetDict({dataset_key: dataset})
 
 ###############
 # mock model

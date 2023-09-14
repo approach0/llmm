@@ -709,6 +709,20 @@ Now, take a deep breath and I now handle my math question to you!
     return prompt
 
 
+def DPO_default_prompt(instr, input):
+    template = r'''Below is an instruction that describes a task, paired with an input that provides further context.
+Write a response that appropriately completes the request.
+
+### Instruction:
+{instr}
+### Input:
+{input}
+
+### Response:
+'''
+    return template.format(instr=instr, input=input)
+
+
 if __name__ == '__main__':
     prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
     print(prompt)
