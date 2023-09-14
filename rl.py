@@ -105,7 +105,7 @@ def get_models(config):
                 model = M.from_pretrained(
                     model_path, peft_config=lora_config,
                     cache_dir=cache_dir,
-                    device_map='auto',
+                    device_map=config.get('device_map', 'auto'),
                     load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                         load_in_8bit=True,
                         llm_int8_threshold=6.0,
@@ -116,7 +116,7 @@ def get_models(config):
                 model = M.from_pretrained(
                     model_path, peft_config=lora_config,
                     cache_dir=cache_dir,
-                    device_map='auto'
+                    device_map=config.get('device_map', 'auto')
                 )
 
             is_peft_model = getattr(model, "is_peft_model", False)
@@ -134,7 +134,7 @@ def get_models(config):
 
                 from transformers import BitsAndBytesConfig
                 model = LlamaForCausalLM.from_pretrained(model_path,
-                    device_map='auto',
+                    device_map=config.get('device_map', 'auto'),
                     cache_dir=cache_dir,
                     load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
                         load_in_8bit=True,
@@ -145,7 +145,7 @@ def get_models(config):
             else:
                 model = LlamaForCausalLM.from_pretrained(
                     model_path, torch_dtype=torch.float16,
-                    device_map='auto',
+                    device_map=config.get('device_map', 'auto'),
                     cache_dir=cache_dir
                 )
 
@@ -473,7 +473,7 @@ def prepare_experiment(config):
         )[0]
 
         # we need to force some values ...
-        hg_trainer_args.remove_unused_columns = False
+        #hg_trainer_args.remove_unused_columns = False
         hg_trainer_args._n_gpu = 1
 
     models = get_models(config)
@@ -672,7 +672,7 @@ def inject_arguments(config, inject_args):
 
 
 def main(*experiments, config_file='rl.ini', **inject_args):
-    cfg = configparser.ConfigParser()
+    cfg = configparser.ConfigParser(allow_no_value=True)
     cfg.read(config_file)
 
     for path in get_cfg_json(cfg['DEFAULT'], 'add_sys_paths', []):

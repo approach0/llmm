@@ -124,7 +124,7 @@ def datamap_DPO(config, dataset, dataset_key='train'):
         input = data['input']
         truth = data['output']
         answer = judged['answer']
-        prompt = DPO_default_prompt(instr, input):
+        prompt = DPO_default_prompt(instr, input)
 
         dpo_dataset_dict['prompt'].append(prompt)
         dpo_dataset_dict['chosen'].append(truth)
@@ -154,6 +154,10 @@ class MockModelForQueryLM(MockModel):
 ###############
 # collate func
 ###############
+def collate_none(config, batch_tok_fn, batch_data):
+    assert False
+
+
 def collate_prompt(config, batch_tok_fn, batch_data):
     prompts = [d['prompt'] for d in batch_data]
     eos = config.getboolean('collate_add_eos', True)

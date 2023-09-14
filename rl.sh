@@ -52,4 +52,8 @@ case $1 in
         detached_rl inference__chatgpt_prm --run_uid=2023-09-13__01_57_17 \
                 --data_offset 6000 --data_cutoff 7448 # 7448 maximum
     ;;
+
+    dpo1)
+        deepspeed_launch finetune_dpo__prm_vs_chatgpt 6,7
+    ;;
 esac
