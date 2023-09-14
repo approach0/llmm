@@ -9,7 +9,7 @@ Indicate your final answer in boxed LaTeX. For example, if the final answer is \
 '''
 
 
-def generate_pairs(purpose='train', max_items=float('inf')):
+def generate_pairs(purpose='train', max_items=float('inf'), skip_asy=False):
     dataset_dir=f'{dataset_path}/{purpose}'
     output_file=f'output/MATH-{purpose}.json'
 
@@ -29,7 +29,7 @@ def generate_pairs(purpose='train', max_items=float('inf')):
             #if topic != 'Precalculus': continue
 
             # skip those containing ASY graph!!!
-            if '[asy]' in problem or '[asy]' in solution:
+            if skip_asy and ('[asy]' in problem or '[asy]' in solution):
                 continue
 
             assert topic in [

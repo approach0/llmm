@@ -47,20 +47,22 @@ def data_generator_json(json_file):
         yield item
 
 
-def push_data(train_path, test_path, repo):
+def push_data(repo, train_path=None, test_path=None):
     from datasets import Dataset
     from datasets.dataset_dict import DatasetDict
+    ds_dict = {}
 
-    train_ds = Dataset.from_generator(data_generator_json,
-        gen_kwargs={'json_file': train_path})
-    test_ds = Dataset.from_generator(data_generator_json,
-        gen_kwargs={'json_file': test_path})
+    if train_path:
+        train_ds = Dataset.from_generator(data_generator_json,
+            gen_kwargs={'json_file': train_path})
+        ds_dict['train'] = train_ds
 
-    # sanity check
-    train_ds = train_ds.filter(lambda x: 'train' in x['src_path'])
-    test_ds = test_ds.filter(lambda x: 'test' in x['src_path'])
+    if test_path:
+        test_ds = Dataset.from_generator(data_generator_json,
+            gen_kwargs={'json_file': test_path})
+        ds_dict['test'] = test_ds
 
-    dataset = DatasetDict({'train': train_ds, 'test': test_ds})
+    dataset = DatasetDict(ds_dict)
     dataset.push_to_hub(repo)
 
 
