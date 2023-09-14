@@ -516,6 +516,7 @@ def prepare_experiment(config):
     # prepare dataset loader
     if config.get('mode') in ['rl', 'inference']:
         ds_key = config.get('dataset_key', 'train')
+        print('Use dataset key:', ds_key)
         data = dataset[ds_key]
         data_range = get_data_range(data)
         data = data.select(range(*data_range))

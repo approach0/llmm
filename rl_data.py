@@ -230,8 +230,9 @@ def collate_retrieve_the_dup(config, batch_tok_fn, batch_data):
 
 def collate_phase2_infer(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import tool_prompt1
+    query_key = config.get('collate__query_key', 'query')
     for data in batch_data:
-        query = data['query']
+        query = data[query_key]
         prompt = tool_prompt1(query)
         response_sect = '### Response:\n'
         new_prompt = prompt + '\n\n' + response_sect
