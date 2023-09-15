@@ -11,13 +11,14 @@ deepspeed_launch() {
     experiment=$1
     devices=${2-0}
     port=${3-8921}
+    opts=${4}
     
     set -x
     deepspeed \
         --include=localhost:$devices \
         --master_port $port \
         --no_local_rank \
-        rl.py $experiment
+        rl.py $experiment $opts
 }
 
 detached_rl() {
@@ -54,6 +55,8 @@ case $1 in
     ;;
 
     dpo1)
-        deepspeed_launch finetune_dpo__prm_vs_chatgpt 1,2,3,4,5,6,7
+        # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+        export WANDB_RUN_GROUP=baremin_dpo_training
+        deepspeed_launch dpo__prm_vs_chatgpt 1,2,3,4,5,6,7 8986 ""
     ;;
 esac
