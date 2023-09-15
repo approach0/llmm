@@ -115,8 +115,9 @@ def get_models(config):
             else:
                 model = M.from_pretrained(
                     model_path, peft_config=lora_config,
-                    cache_dir=cache_dir,
-                    device_map=config.get('device_map', 'auto')
+                    torch_dtype=torch.float16,
+                    device_map=config.get('device_map', 'auto'),
+                    cache_dir=cache_dir
                 )
 
             is_peft_model = getattr(model, "is_peft_model", False)
@@ -566,7 +567,9 @@ def prepare_experiment(config):
             train_dataset=data,
             eval_dataset=dataset['test'],
             tokenizer=tokenizer,
-            data_collator=collate_fn
+            max_length=config.getint("context_length"),
+            max_target_length=config.getint("context_length"),
+            max_prompt_length=config.getint("context_length")
         )
         trainer.deepspeed = trainer.model_wrapped
 
