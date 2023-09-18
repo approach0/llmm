@@ -162,8 +162,8 @@ def collate_prompt(config, batch_tok_fn, batch_data):
 
 
 def collate_input_cot(config, batch_tok_fn, batch_data):
-    from tools.prompt_factory import cot2
-    prompts = [cot2(d['input']) for d in batch_data]
+    from tools.prompt_factory import cot2, cot_mytrain
+    prompts = [cot_mytrain(d['input']) for d in batch_data]
     eos = config.getboolean('collate_add_eos', True)
     return batch_tok_fn(prompts, eos=eos), batch_data
 
