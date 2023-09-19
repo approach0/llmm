@@ -100,8 +100,15 @@ class Node():
         node.parent = self
         return node
 
-    def print(self):
-        pass
+    def __repr__(self):
+        repr_state = self.state.replace('\n', r'\n')
+        repr_state = repr_state[:128]
+        return f'[{self.node_type}] {repr_state}...'
+
+    def print(self, level=0):
+        print(' ' * level, self)
+        for child in self.children:
+            child.print(level + 1)
 
     @staticmethod
     def gn(config, models, tok_fn, res_fn, inp):
@@ -143,6 +150,8 @@ class Node():
         k_node = self.branch('K', out)
         results = k_node.search(config, models,
             tok_fn, res_fn, tm)
+        if results is None:
+            return k_node
         for res in results:
             k_node.branch('R', res)
         return k_node
@@ -164,6 +173,7 @@ def mcts_explore(step, k, config, models, batch_in, trainer,
     curr = root
     while True:
         out = curr.query(*params)
+        root.print()
         breakpoint()
         quit(1)
 
