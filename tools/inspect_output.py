@@ -442,10 +442,10 @@ def get_flips_in_trees(logdir):
                 r_ans, r_prompt = r_x
 
                 j = {}
-                j['agument_prompt'] = q_prompt
-                j['agument_answer'] = q_ans
-                j['direct_prompt'] = r_prompt
-                j['direct_answer'] = r_ans
+                j['direct_prompt'] = q_prompt
+                j['direct_answer'] = q_ans
+                j['agument_prompt'] = r_prompt
+                j['agument_answer'] = r_ans
                 j['solution'] = sol
                 j['path'] = path
                 with open(logpath + f'.{n_sub_flips}.flip', 'w') as fh:
