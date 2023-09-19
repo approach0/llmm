@@ -93,6 +93,7 @@ class Node():
         self.state = state
         self.children = []
         self.parent = None
+        self.prompt = None
 
     def branch(self, node_type, child_state):
         node = Node(node_type, child_state)
@@ -106,9 +107,17 @@ class Node():
         return f'[{self.node_type}] {repr_state}...'
 
     def print(self, level=0):
-        print(' ' * level, self)
+        print('  ' * level, self)
         for child in self.children:
             child.print(level + 1)
+
+    def json(self):
+        return {
+            'node_type': self.node_type,
+            'state': self.state,
+            'prompt': self.prompt,
+            'children': [x.json() for x in self.children],
+        }
 
     def get_path(self, include=[]):
         curr = self
@@ -133,9 +142,9 @@ class Node():
         if has_any_captured(out, tm):
             out, _ = tool_invoke(out, tm,
                 dryrun=True, args=[self.state])
-            return out
+            return inp, out
         else:
-            return None
+            return inp, None
 
     def search(self, config, models, tok_fn, res_fn, tm):
         assert self.node_type == 'K'
@@ -152,11 +161,12 @@ class Node():
             return res
 
     def query(self, config, models, tok_fn, res_fn, tm):
-        out = self.keywords(config, models,
+        inp, out = self.keywords(config, models,
             tok_fn, res_fn, tm)
         if out is None:
             return None, None
         k_node = self.branch('K', out)
+        k_node.prompt = inp
         results = k_node.search(config, models,
             tok_fn, res_fn, tm)
         if results is None:
@@ -169,7 +179,7 @@ class Node():
         states = [n.state for n in nodes]
         inp = adapt_wizard(*states)
         out = Node.gn(config, models, tok_fn, res_fn, inp)
-        return out
+        return inp, out
 
 
 def mcts_explore(step, K, config, models, batch_in, trainer,
@@ -186,20 +196,24 @@ def mcts_explore(step, K, config, models, batch_in, trainer,
 
     root = Node('Q', batch_in['input'][0])
     curr = root
-    while True:
-        answer = curr.answer(*params)
-        curr.branch('A', answer)
+    if True:
+        for _ in range(K):
+            inp, answer = curr.answer(*params)
+            a_node = curr.branch('A', answer)
+            a_node.prompt = inp
 
-        k_node, results = curr.query(*params)
-        if k_node:
+        for _ in range(K):
+            k_node, results = curr.query(*params)
+            if not k_node: continue
             for res in results or []:
                 r_node = k_node.branch('R', res)
-                answer = r_node.answer(*params)
-                r_node.branch('A', answer)
-
-        root.print()
-        breakpoint()
-        quit(1)
+                for _ in range(K):
+                    inp, answer = r_node.answer(*params)
+                    a_node = r_node.branch('A', answer)
+                    a_node.prompt = inp
+    root.print()
+    log_fn(step, batch_in['src_path'][0], root.json(),
+        sol=batch_in['output'][0])
 
 
 if __name__ == '__main__':

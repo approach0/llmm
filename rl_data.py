@@ -441,6 +441,19 @@ def log_query_state(config, ex_output_dir, values,
             json.dump(log, fh, indent=2)
 
 
+def log_json(config, ex_output_dir, step, path, j, sol=None):
+    log = {
+        'path': path,
+        'solution': sol,
+        'json': j
+    }
+    log_name = path.strip('.').replace('/', '_')
+    log_name = f'{step:06}-' + log_name + '.log'
+    logpath = os.path.join(ex_output_dir, log_name)
+    with open(logpath, 'w') as fh:
+        json.dump(log, fh, indent=2)
+
+
 if __name__ == '__main__':
     jsonl_file = 'arqmath-question-dups.jsonl'
     ds_all = Dataset.from_generator(data_generator_jsonl,
