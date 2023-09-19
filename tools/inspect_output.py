@@ -385,7 +385,7 @@ def traverse_tree(tree, path, answers):
             traverse_tree(child, path, answers)
             path.pop()
     elif path_types in ['Q', 'QKR']:
-            answers[path_types].append(state)
+            answers[path_types].append((state, prompt))
 
 
 def get_flips_in_trees(logdir):
@@ -403,7 +403,8 @@ def get_flips_in_trees(logdir):
         answers = defaultdict(list)
         traverse_tree(tree, [], answers)
 
-        def mark(ans):
+        def mark(x):
+            ans, prompt = x
             boxed_ans = extract_math_answer(ans)
             boxed_sol = extract_math_answer(sol)
             equiv = is_equiv(boxed_sol, boxed_ans)
@@ -411,10 +412,20 @@ def get_flips_in_trees(logdir):
 
         Q_mark = list(map(mark, answers['Q']))
         R_mark = list(map(mark, answers['QKR']))
-        if any(R_mark) and sum(R_mark) > sum(Q_mark):
-            print(path)
+        ratio = len(R_mark) // len(Q_mark)
+        Q_mark_expand = []
+        for mark in Q_mark:
+            Q_mark_expand += [mark] * ratio
+
+        n_sub_flips = 0
+        for q_mark, r_mark in zip(Q_mark_expand, R_mark):
+            if not q_mark and r_mark:
+                n_sub_flips += 1
+
+        if n_sub_flips > 1:
             n_flips += 1
-    return n_flips, n_total
+        print(path, n_sub_flips)
+    return n_flips, n_total, n_flips / n_total
 
 
 if __name__ == '__main__':
