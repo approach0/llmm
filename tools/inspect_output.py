@@ -3,6 +3,12 @@ import re
 import json
 from collections import defaultdict
 
+import sys
+sys.path.insert(0, '../Progressive-Hint')
+sys.path.insert(0, '../math/modeling')
+from main_clean import extract_math_answer
+from math_equivalence import is_equiv
+
 
 def get_stats_v1(j, detail, logpath):
     agent_answer = j['agent_answer']
@@ -14,10 +20,6 @@ def get_stats_v1(j, detail, logpath):
 
 
 def get_stats_v2(j, detail, logpath, metric):
-    import sys
-    sys.path.insert(0, '../math/modeling')
-    from math_equivalence import is_equiv
-
     judge_buffer = j['judge_buffer']
     ground_truth = j['ground_truth'] if 'ground_truth' in j else None
 
@@ -368,6 +370,49 @@ def test_lr_query(logdir):
     plt.savefig(f'output-{run_name}.png')
 
 
+def traverse_tree(tree, path, answers):
+    node_type = tree['node_type']
+    state = tree['state']
+    prompt = tree['prompt']
+    children = tree['children']
+
+    path_types = [n['node_type'] for n in path]
+    path_types = ''.join(path_types)
+
+    if len(children) > 0:
+        for child in children:
+            path.append(tree)
+            traverse_tree(child, path, answers)
+            path.pop()
+    elif path_types in ['Q', 'QKR']:
+            answers[path_types].append(state)
+
+
+def get_flips_in_trees(logdir):
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if logpath.split('.')[-1] != 'log':
+            continue
+        with open(logpath, 'r') as fh:
+            j = json.load(fh)
+        path = j['path']
+        print(path)
+        sol = j['solution']
+        tree = j['json']
+        answers = defaultdict(list)
+        traverse_tree(tree, [], answers)
+
+        def mark(x):
+            boxed = extract_math_answer(x)
+            equiv = is_equiv(sol, boxed)
+            return equiv
+
+        Q_mark = list(map(mark, answers['Q']))
+        R_mark = list(map(mark, answers['QKR']))
+        print(Q_mark)
+        print(R_mark)
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
@@ -382,4 +427,5 @@ if __name__ == '__main__':
         'auto_judge_stats': get_auto_judge_stats,
         'test_np': test_np,
         'test_lr_query': test_lr_query,
+        'get_flips': get_flips_in_trees,
     })
