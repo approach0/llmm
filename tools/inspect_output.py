@@ -169,6 +169,18 @@ def textify_v2(j_dict):
     return text_list
 
 
+def textify_flip(j_dict):
+    order = ['direct_prompt', 'direct_answer', 
+        'agument_prompt', 'agument_answer', 'solution']
+    text_list = []
+    for key in order:
+        if key not in j_dict: continue
+        val = j_dict[key]
+        if val is None: continue
+        text_list.append(f'<h3>{key}</h3>{val}<hr>')
+    return text_list
+
+
 def _output_html(logpath, verbose=True, query_key='query'):
     import sys
     sys.path.insert(0, './pya0')
@@ -177,6 +189,8 @@ def _output_html(logpath, verbose=True, query_key='query'):
         j = json.load(fh)
         if 'agent_answer' in j:
             results = textify_v1(j.items())
+        elif 'direct_answer' in j:
+            results = textify_flip(j)
         else:
             results = textify_v2(j)
 
@@ -413,19 +427,45 @@ def get_flips_in_trees(logdir):
         Q_mark = list(map(mark, answers['Q']))
         R_mark = list(map(mark, answers['QKR']))
         ratio = len(R_mark) // len(Q_mark)
+        Q_x = []
         Q_mark_expand = []
-        for mark in Q_mark:
+        for mark, x in zip(Q_mark, answers['Q']):
+            Q_x += [x] * ratio
             Q_mark_expand += [mark] * ratio
 
         n_sub_flips = 0
-        for q_mark, r_mark in zip(Q_mark_expand, R_mark):
+        for q_mark, r_mark, q_x, r_x in zip(
+            Q_mark_expand, R_mark, Q_x, answers['QKR']):
             if not q_mark and r_mark:
                 n_sub_flips += 1
+                q_ans, q_prompt = q_x
+                r_ans, r_prompt = r_x
+
+                j = {}
+                j['agument_prompt'] = q_prompt
+                j['agument_answer'] = q_ans
+                j['direct_prompt'] = r_prompt
+                j['direct_answer'] = r_ans
+                j['solution'] = sol
+                j['path'] = path
+                with open(logpath + f'.{n_sub_flips}.flip', 'w') as fh:
+                    json.dump(j, fh)
 
         if n_sub_flips > 1:
             n_flips += 1
         print(path, n_sub_flips)
+
     return n_flips, n_total, n_flips / n_total
+
+
+def output_flips(logdir):
+    for fname in os.listdir(logdir):
+        logpath = os.path.join(logdir, fname)
+        if logpath.split('.')[-1] != 'flip':
+            continue
+        print(logpath)
+        _output_html(logpath, query_key='path')
+
 
 
 if __name__ == '__main__':
@@ -438,6 +478,7 @@ if __name__ == '__main__':
         'get': get_json_val,
         'output_html': _output_html,
         'output_htmls': output_html,
+        'output_flips': output_flips,
         'get_class_hist': get_class_hist,
         'auto_judge_stats': get_auto_judge_stats,
         'test_np': test_np,
