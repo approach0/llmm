@@ -433,11 +433,12 @@ def get_flips_in_trees(logdir):
             Q_x += [x] * ratio
             Q_mark_expand += [mark] * ratio
 
-        n_sub_flips = 0
+        true_positive = not any(Q_mark) and sum(R_mark) >= ratio
+
         for q_mark, r_mark, q_x, r_x in zip(
             Q_mark_expand, R_mark, Q_x, answers['QKR']):
-            if not q_mark and r_mark:
-                n_sub_flips += 1
+            if not q_mark and r_mark and true_positive:
+                n_flips += 1
                 q_ans, q_prompt = q_x
                 r_ans, r_prompt = r_x
 
@@ -448,19 +449,12 @@ def get_flips_in_trees(logdir):
                 j['agument_answer'] = r_ans
                 j['solution'] = sol
                 j['path'] = path
-                new_logpath = logpath + f'.{n_sub_flips}.flip'
+                new_logpath = logpath + f'.{n_flips}.flip'
                 with open(new_logpath, 'w') as fh:
                     json.dump(j, fh)
                 _output_html(new_logpath, query_key='path')
 
-                #if n_sub_flips == 1 and path == 'train/precalculus/955.json':
-                #    answers = defaultdict(list)
-                #    traverse_tree(tree, [], answers, debug=True)
-                #    quit()
-
-        if n_sub_flips > 1:
-            n_flips += 1
-        print(path, n_sub_flips)
+        print(path, n_flips)
 
     return n_flips, n_total, n_flips / n_total
 
