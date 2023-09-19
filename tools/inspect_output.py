@@ -389,28 +389,32 @@ def traverse_tree(tree, path, answers):
 
 
 def get_flips_in_trees(logdir):
+    n_flips, n_total = 0, 0
     for fname in os.listdir(logdir):
+        n_total += 1
         logpath = os.path.join(logdir, fname)
         if logpath.split('.')[-1] != 'log':
             continue
         with open(logpath, 'r') as fh:
             j = json.load(fh)
         path = j['path']
-        print(path)
         sol = j['solution']
         tree = j['json']
         answers = defaultdict(list)
         traverse_tree(tree, [], answers)
 
-        def mark(x):
-            boxed = extract_math_answer(x)
-            equiv = is_equiv(sol, boxed)
+        def mark(ans):
+            boxed_ans = extract_math_answer(ans)
+            boxed_sol = extract_math_answer(sol)
+            equiv = is_equiv(boxed_sol, boxed_ans)
             return equiv
 
         Q_mark = list(map(mark, answers['Q']))
         R_mark = list(map(mark, answers['QKR']))
-        print(Q_mark)
-        print(R_mark)
+        if any(R_mark) and sum(R_mark) > sum(Q_mark):
+            print(path)
+            n_flips += 1
+    return n_flips, n_total
 
 
 if __name__ == '__main__':
