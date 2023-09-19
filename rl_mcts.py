@@ -12,15 +12,6 @@ from rl_tools import (
 )
 
 
-class State():
-    def __init__(self, prompt):
-        self.prompt = prompt
-        self.children = []
-
-    def branch(self, child_state):
-        self.children.append(child_state)
-
-
 def direct_answering(step, k, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
@@ -93,6 +84,89 @@ def infer_query_lm(step, k, config, models, batch_in, trainer,
                 inp['tool_res'] = tool_res
 
     log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
+
+
+class Node():
+    def __init__(self, node_type, state):
+        assert node_type in ['Q', 'K', 'R', 'A']
+        self.node_type = node_type
+        self.state = state
+        self.children = []
+        self.parent = None
+
+    def branch(self, node_type, child_state):
+        node = Node(node_type, child_state)
+        self.children.append(node)
+        node.parent = self
+        return node
+
+    def print(self):
+        pass
+
+    @staticmethod
+    def gn(config, models, tok_fn, res_fn, inp):
+        prompts = tok_fn([inp], eos=False)
+        out = res_fn(config, models, (prompts, None))
+        return out[0]
+
+    def keywords(self, config, models, tok_fn, res_fn, tm):
+        assert self.node_type == 'Q'
+        inp = tool_prompt1(self.state)
+        inp += '\n\n### Response:\n'
+        out = Node.gn(config, models, tok_fn, res_fn, inp)
+        if has_any_captured(out, tm):
+            out, _ = tool_invoke(out, tm,
+                dryrun=True, args=[self.state])
+            return out
+        else:
+            return None
+
+    def search(self, config, models, tok_fn, res_fn, tm):
+        assert self.node_type == 'K'
+        assert self.parent.node_type == 'Q'
+        _, res = tool_invoke(self.state, tm,
+                args=self.parent.state)
+        if isinstance(res, ToolError):
+            print('ToolError:', res)
+            return None
+        elif len(res) == 0:
+            print('Empty results!')
+            return None
+        else:
+            return res
+
+    def query(self, config, models, tok_fn, res_fn, tm):
+        out = self.keywords(config, models,
+            tok_fn, res_fn, tm)
+        if out is None:
+            return None
+        k_node = self.branch('K', out)
+        results = k_node.search(config, models,
+            tok_fn, res_fn, tm)
+        for res in results:
+            k_node.branch('R', res)
+        return k_node
+
+
+def mcts_explore(step, k, config, models, batch_in, trainer,
+    res_fn, rwd_fn, stp_fn=None, log_fn=None):
+    from rl import batch_tokenize
+    tokenizer, model, ref_model = models
+    tok_fn = partial(batch_tokenize, config, tokenizer)
+    tool_map = {
+        'SEARCH': partial(
+            search_mux, 'mabowdor'
+        )
+    }
+    params = config, models, tok_fn, res_fn, tool_map
+
+    root = Node('Q', batch_in['input'][0])
+    curr = root
+    while True:
+        out = curr.query(*params)
+        breakpoint()
+        quit(1)
+
 
 if __name__ == '__main__':
     pass

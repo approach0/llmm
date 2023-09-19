@@ -309,7 +309,7 @@ def gen_stream(model, input_ids, max_new_tokens=None,
 
 def batch_tokenize(config, tokenizer, texts,
     eos=True, decode=False, as_list=False):
-    if eos:
+    if eos and tokenizer:
         texts = [t + tokenizer.eos_token for t in texts]
 
     if tokenizer is None:

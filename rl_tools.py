@@ -161,7 +161,7 @@ def has_any_captured(answer, tool_map):
     return has_result(answer, tool_map) or has_call(answer, tool_map)
 
 
-def tool_invoke(response, tool_map):
+def tool_invoke(response, tool_map, dryrun=False, args=None):
     for tool_name in tool_map:
         idx = response.find(tool_name)
         if idx == -1: continue
@@ -178,7 +178,14 @@ def tool_invoke(response, tool_map):
         tool_args = response[begin:end+1]
         try:
             tool_args = json.loads(tool_args)
-            tool_result = tool_map[tool_name](tool_args)
+            if dryrun:
+                tool_result = None
+            else:
+                tool = tool_map[tool_name]
+                if args:
+                    tool_result = tool(args, tool_args)
+                else:
+                    tool_result = tool(tool_args)
             return pre_invoke, tool_result
 
         except json.decoder.JSONDecodeError:
