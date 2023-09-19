@@ -110,6 +110,15 @@ class Node():
         for child in self.children:
             child.print(level + 1)
 
+    def get_path(self, include=[]):
+        curr = self
+        path = []
+        while curr:
+            if curr.node_type in include:
+                path.append(curr)
+            curr = curr.parent
+        return path[::-1]
+
     @staticmethod
     def gn(config, models, tok_fn, res_fn, inp):
         prompts = tok_fn([inp], eos=False)
@@ -146,15 +155,21 @@ class Node():
         out = self.keywords(config, models,
             tok_fn, res_fn, tm)
         if out is None:
-            return None
+            return None, None
         k_node = self.branch('K', out)
         results = k_node.search(config, models,
             tok_fn, res_fn, tm)
         if results is None:
-            return k_node
-        for res in results:
-            k_node.branch('R', res)
-        return k_node
+            return k_node, []
+        else:
+            return k_node, results
+
+    def answer(self, config, models, tok_fn, res_fn, tm):
+        nodes = self.get_path(['Q', 'R'])
+        states = [n.state for n in nodes]
+        inp = adapt_wizard(*states)
+        out = Node.gn(config, models, tok_fn, res_fn, inp)
+        return out
 
 
 def mcts_explore(step, k, config, models, batch_in, trainer,
@@ -172,7 +187,16 @@ def mcts_explore(step, k, config, models, batch_in, trainer,
     root = Node('Q', batch_in['input'][0])
     curr = root
     while True:
-        out = curr.query(*params)
+        answer = curr.answer(*params)
+        curr.branch('A', answer)
+
+        k_node, results = curr.query(*params)
+        if k_node:
+            for res in results or []:
+                r_node = k_node.branch('R', res)
+                answer = r_node.answer(*params)
+                r_node.branch('A', answer)
+
         root.print()
         breakpoint()
         quit(1)

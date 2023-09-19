@@ -529,6 +529,23 @@ Got it? Now, it is your turn!
 def cot_wizard(Q):
     prompt = r'''Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
+
+### Instruction:
+{Q}
+'''.format(Q=Q)
+
+    prompt += r'''
+### Response:
+'''
+    return prompt
+
+
+def cot_wizard_asking_for_boxed(Q):
+    prompt = r'''Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
+'''
+    prompt += '''
 ### Instruction:
 {Q}
 '''.format(Q=Q)
@@ -566,6 +583,13 @@ Here are some relevant passages:
 ### Response:
 '''
     return prompt
+
+
+def adapt_wizard(Q, *P):
+    if len(P) == 0:
+        return cot_wizard_asking_for_boxed(Q)
+    else:
+        return ia_wizard(Q, *P)
 
 
 def cot_mytrain(Q):
@@ -724,6 +748,7 @@ Write a response that appropriately completes the request.
 
 
 if __name__ == '__main__':
-    prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
+    #prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
+    prompt = adapt_wizard('Q', 'k1', 'k2')
     print(prompt)
     print('length:', len(prompt))
