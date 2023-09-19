@@ -384,7 +384,7 @@ def test_lr_query(logdir):
     plt.savefig(f'output-{run_name}.png')
 
 
-def traverse_tree(tree, path, answers):
+def traverse_tree(tree, path, answers, debug=False):
     node_type = tree['node_type']
     state = tree['state']
     prompt = tree['prompt']
@@ -396,10 +396,10 @@ def traverse_tree(tree, path, answers):
     if len(children) > 0:
         for child in children:
             path.append(tree)
-            traverse_tree(child, path, answers)
+            traverse_tree(child, path, answers, debug=debug)
             path.pop()
-    elif path_types in ['Q', 'QKR']:
-            answers[path_types].append((state, prompt))
+    elif path_types in ['Q', 'QKR'] and node_type != 'K':
+        answers[path_types].append((state, prompt))
 
 
 def get_flips_in_trees(logdir):
@@ -452,6 +452,11 @@ def get_flips_in_trees(logdir):
                 with open(new_logpath, 'w') as fh:
                     json.dump(j, fh)
                 _output_html(new_logpath, query_key='path')
+
+                #if n_sub_flips == 1 and path == 'train/precalculus/955.json':
+                #    answers = defaultdict(list)
+                #    traverse_tree(tree, [], answers, debug=True)
+                #    quit()
 
         if n_sub_flips > 1:
             n_flips += 1
