@@ -411,12 +411,11 @@ def save_answer_log(logpath, query_key, **kwargs):
 
 def log_rl_default(config, ex_output_dir, values):
     step = values['step']
-    k = values['k']
     stats = values['stats']
     rewards = values['rewards']
     logs = {
         'timestep': [
-            f'step={step}, k={k}, b={b}'
+            f'step={step}, b={b}'
             for b in range(len(rewards))
         ],
         'response': [out for out in values['batch_outstr']]

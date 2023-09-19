@@ -633,11 +633,9 @@ def do_experiment(config, inject_args):
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
             step  = step + data_offset
-            for k in range(K):
-                mcts_fn(step, k, config, models, batch_in, trainer,
-                    res_fn=batch_respond, rwd_fn=rwd_fn,
-                    stp_fn=stp_fn, log_fn=log_fn)
-                print(f'k@K = {k}@{K}')
+            mcts_fn(step, K, config, models, batch_in, trainer,
+                res_fn=batch_respond, rwd_fn=rwd_fn,
+                stp_fn=stp_fn, log_fn=log_fn)
             save_tick = step % save_steps
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
                     trainer.save_pretrained(ex_output_dir)
@@ -660,11 +658,9 @@ def do_experiment(config, inject_args):
         if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
         for step, batch_in in enumerate(dataloader):
             step  = step + data_offset
-            for k in range(K):
-                mcts_fn(step, k, config, models, batch_in, None,
-                    res_fn=batch_respond, rwd_fn=rwd_fn,
-                    stp_fn=None, log_fn=log_fn)
-                print(f'k@K = {k}@{K}')
+            mcts_fn(step, K, config, models, batch_in, None,
+                res_fn=batch_respond, rwd_fn=rwd_fn,
+                stp_fn=None, log_fn=log_fn)
             print(f'Progress: {step+1} / {data_cutoff}')
 
     else:

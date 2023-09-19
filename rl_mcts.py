@@ -12,7 +12,7 @@ from rl_tools import (
 )
 
 
-def direct_answering(step, k, config, models, batch_in, trainer,
+def direct_answering(step, K, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
@@ -24,7 +24,7 @@ def direct_answering(step, k, config, models, batch_in, trainer,
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
-def rl_query_lm(step, k, config, models, batch_in, trainer,
+def rl_query_lm(step, K, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
     list_batch, batch_raw = batch_in
@@ -57,7 +57,7 @@ def rl_query_lm(step, k, config, models, batch_in, trainer,
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
-def infer_query_lm(step, k, config, models, batch_in, trainer,
+def infer_query_lm(step, K, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
@@ -172,7 +172,7 @@ class Node():
         return out
 
 
-def mcts_explore(step, k, config, models, batch_in, trainer,
+def mcts_explore(step, K, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     from rl import batch_tokenize
     tokenizer, model, ref_model = models
