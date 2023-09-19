@@ -448,8 +448,10 @@ def get_flips_in_trees(logdir):
                 j['agument_answer'] = r_ans
                 j['solution'] = sol
                 j['path'] = path
-                with open(logpath + f'.{n_sub_flips}.flip', 'w') as fh:
+                new_logpath = logpath + f'.{n_sub_flips}.flip'
+                with open(new_logpath, 'w') as fh:
                     json.dump(j, fh)
+                _output_html(new_logpath, query_key='path')
 
         if n_sub_flips > 1:
             n_flips += 1
