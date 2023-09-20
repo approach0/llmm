@@ -155,6 +155,10 @@ class MockModelForQueryLM(MockModel):
 ###############
 # collate func
 ###############
+def collate_none(config, batch_tok_fn, batch_data):
+    return batch_data
+
+
 def collate_prompt(config, batch_tok_fn, batch_data):
     prompts = [d['prompt'] for d in batch_data]
     eos = config.getboolean('collate_add_eos', True)

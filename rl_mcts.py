@@ -106,10 +106,10 @@ class Node():
         repr_state = repr_state[:128]
         return f'[{self.node_type}] {repr_state}...'
 
-    def print(self, level=0):
+    def print_tree(self, level=0):
         print('  ' * level, self)
         for child in self.children:
-            child.print(level + 1)
+            child.print_tree(level + 1)
 
     def json(self):
         return {
@@ -118,6 +118,13 @@ class Node():
             'prompt': self.prompt,
             'children': [x.json() for x in self.children],
         }
+
+    @staticmethod
+    def from_json(obj):
+        node = Node(obj['node_type'], obj['state'])
+        node.prompt = obj['prompt']
+        node.children = [Node.from_json(x) for x in obj['children']]
+        return node
 
     def get_path(self, include=[]):
         curr = self
@@ -214,9 +221,35 @@ def mcts_explore(step, K, config, models, batch_in, trainer,
                 inp, answer = r_node.answer(*params)
                 a_node = r_node.branch('A', answer)
                 a_node.prompt = inp
-    root.print()
+    root.print_tree()
     log_fn(step, batch_in['src_path'][0], root.json(),
         sol=batch_in['output'][0])
+
+
+def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,
+    res_fn, rwd_fn, stp_fn=None, log_fn=None):
+    from rl import batch_tokenize
+    tokenizer, model, ref_model = models
+    tok_fn = partial(batch_tokenize, config, tokenizer)
+    params = config, models, tok_fn, res_fn, None
+
+    inp = batch_in[0]
+    path = inp['path']
+    solution = inp['solution']
+    json = inp['json']
+    root = Node.from_json(json)
+
+    def dfs(n):
+        if n.node_type in ['Q', 'R']:
+            for _ in range(K):
+                inp, answer = n.answer(*params)
+                ans_n = n.branch('A', answer)
+                ans_n.prompt = inp
+        for child in n.children:
+            dfs(child)
+
+    dfs(root)
+    log_fn(step, path, root.json(), sol=solution)
 
 
 if __name__ == '__main__':
