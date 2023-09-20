@@ -123,7 +123,10 @@ class Node():
     def from_json(obj):
         node = Node(obj['node_type'], obj['state'])
         node.prompt = obj['prompt']
-        node.children = [Node.from_json(x) for x in obj['children']]
+        for child in obj['children']:
+            new_node = Node.from_json(child)
+            node.children.append(new_node)
+            new_node.parent = node
         return node
 
     def get_path(self, include=[]):
