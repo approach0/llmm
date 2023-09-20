@@ -376,7 +376,7 @@ def batch_respond(config, models, batch_in, trainer=None):
     bs = config.getint('batch_size')
     verbose = config.getboolean('verbose', False)
     tokenizer, model, ref_model = models
-    dict_batch, batch_raw = adapt_inputs(config, tokenizer, batch_in)
+    dict_batch, batch_raw = batch_in
     decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
     stop_fn = getattr(rl_data, config.get('stop_fn', '_'), None)
     if stop_fn: stop_fn = partial(stop_fn, config, tokenizer)
@@ -387,6 +387,7 @@ def batch_respond(config, models, batch_in, trainer=None):
     if hasattr(model, 'pretrained_model'):
         assert trainer is not None
         device = model.pretrained_model.device
+        dict_batch, batch_raw = adapt_inputs(config, tokenizer, batch_in)
         list_batch = dict_batch
         input_ids = [d['input_ids'][0].to(device) for d in list_batch]
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
@@ -429,6 +430,7 @@ def batch_respond(config, models, batch_in, trainer=None):
             quit(1)
     else:
         device = model.device
+        dict_batch, batch_raw = adapt_inputs(config, tokenizer, batch_in)
         if isinstance(dict_batch, list):
             input_ids = dict_batch[0]['input_ids'].to(device)
         else:
