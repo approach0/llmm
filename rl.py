@@ -343,9 +343,23 @@ def wrapup_collate(config, tokenizer):
     tok_fn = partial(batch_tokenize, config, tokenizer)
     col_fn = getattr(rl_data, config.get('collate_fn', '_'), None)
     if col_fn is None:
-        return None
+        return tok_fn, None
     else:
-        return partial(col_fn, config, tok_fn)
+        return tok_fn, partial(col_fn, config, tok_fn)
+
+
+def adapt_inputs(config, tokenizer, batch_in):
+    dict_batch, batch_raw = batch_in
+    if 'input_ids' not in dict_batch:
+        tok_fn, collate_fn = wrapup_collate(config, tokenizer)
+        if collate_fn:
+            dict_batch, batch_raw = collate_fn(batch_raw)
+        elif 'texts' in dict_batch:
+            input_ids = tok_fn(dict_batch['texts'])['input_ids']
+            dict_batch['input_ids'] = input_ids
+        else:
+            raise NotImplemented
+    return dict_batch, batch_raw
 
 
 from flask import Flask
@@ -362,7 +376,7 @@ def batch_respond(config, models, batch_in, trainer=None):
     bs = config.getint('batch_size')
     verbose = config.getboolean('verbose', False)
     tokenizer, model, ref_model = models
-    dict_batch, batch_raw = batch_in
+    dict_batch, batch_raw = adapt_inputs(config, tokenizer, batch_in)
     decode_kwargs = get_cfg_json(config, 'decode_kwargs', {})
     stop_fn = getattr(rl_data, config.get('stop_fn', '_'), None)
     if stop_fn: stop_fn = partial(stop_fn, config, tokenizer)
@@ -373,9 +387,6 @@ def batch_respond(config, models, batch_in, trainer=None):
     if hasattr(model, 'pretrained_model'):
         assert trainer is not None
         device = model.pretrained_model.device
-        if 'input_ids' not in dict_batch:
-            collate_fn = wrapup_collate(config, tokenizer)
-            dict_batch, batch_raw = collate_fn(batch_raw)
         list_batch = dict_batch
         input_ids = [d['input_ids'][0].to(device) for d in list_batch]
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
@@ -418,9 +429,6 @@ def batch_respond(config, models, batch_in, trainer=None):
             quit(1)
     else:
         device = model.device
-        if 'input_ids' not in dict_batch:
-            collate_fn = wrapup_collate(config, tokenizer)
-            dict_batch, batch_raw = collate_fn(batch_raw)
         if isinstance(dict_batch, list):
             input_ids = dict_batch[0]['input_ids'].to(device)
         else:
@@ -515,7 +523,7 @@ def prepare_experiment(config):
         return data_offset, data_cutoff
 
     print(dataset)
-    collate_fn = wrapup_collate(config, tokenizer)
+    _, collate_fn = wrapup_collate(config, tokenizer)
 
     # prepare dataset loader
     if config.get('mode') in ['rl', 'inference']:
