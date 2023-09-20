@@ -355,7 +355,8 @@ def adapt_inputs(config, tokenizer, batch_in):
         if collate_fn:
             dict_batch, batch_raw = collate_fn(batch_raw)
         elif 'texts' in dict_batch:
-            input_ids = tok_fn(dict_batch['texts'])['input_ids']
+            eos = config.getboolean('collate_add_eos', True)
+            input_ids = tok_fn(dict_batch['texts'], eos=eos)['input_ids']
             dict_batch['input_ids'] = input_ids
         else:
             raise NotImplemented

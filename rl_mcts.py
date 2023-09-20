@@ -196,21 +196,24 @@ def mcts_explore(step, K, config, models, batch_in, trainer,
 
     root = Node('Q', batch_in['input'][0])
     curr = root
-    if True:
+    query_only = config.getboolean('query_only', False)
+
+    if not query_only:
         for _ in range(K):
             inp, answer = curr.answer(*params)
             a_node = curr.branch('A', answer)
             a_node.prompt = inp
 
-        for _ in range(K):
-            k_node, results = curr.query(*params)
-            if not k_node: continue
-            for res in results or []:
-                r_node = k_node.branch('R', res)
-                for _ in range(K):
-                    inp, answer = r_node.answer(*params)
-                    a_node = r_node.branch('A', answer)
-                    a_node.prompt = inp
+    for _ in range(K):
+        k_node, results = curr.query(*params)
+        if not k_node: continue
+        for res in results or []:
+            r_node = k_node.branch('R', res)
+            if query_only: continue
+            for _ in range(K):
+                inp, answer = r_node.answer(*params)
+                a_node = r_node.branch('A', answer)
+                a_node.prompt = inp
     root.print()
     log_fn(step, batch_in['src_path'][0], root.json(),
         sol=batch_in['output'][0])
