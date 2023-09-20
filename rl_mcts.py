@@ -141,7 +141,7 @@ class Node():
     @staticmethod
     def gn(config, models, tok_fn, res_fn, inp):
         prompts = tok_fn([inp], eos=False)
-        out = res_fn(config, models, (prompts, None))
+        out = res_fn(config, models, (prompts, {'gn': inp}))
         return out[0]
 
     def keywords(self, config, models, tok_fn, res_fn, tm):
@@ -236,7 +236,7 @@ def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,
     tok_fn = partial(batch_tokenize, config, tokenizer)
     params = config, models, tok_fn, res_fn, None
 
-    inp = batch_in[0]
+    inp = batch_in[1][0]
     path = inp['path']
     solution = inp['solution']
     json = inp['json']

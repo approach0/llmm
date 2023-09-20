@@ -352,14 +352,12 @@ def adapt_inputs(config, tokenizer, batch_in):
     dict_batch, batch_raw = batch_in
     if 'input_ids' not in dict_batch:
         tok_fn, collate_fn = wrapup_collate(config, tokenizer)
-        if collate_fn:
-            dict_batch, batch_raw = collate_fn(batch_raw)
-        elif 'texts' in dict_batch:
+        if 'texts' in dict_batch: # over network?
             eos = config.getboolean('collate_add_eos', True)
             input_ids = tok_fn(dict_batch['texts'], eos=eos)['input_ids']
             dict_batch['input_ids'] = input_ids
-        else:
-            raise NotImplemented
+        else: # try collate then...
+            dict_batch, batch_raw = collate_fn(batch_raw)
     return dict_batch, batch_raw
 
 
