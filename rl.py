@@ -244,8 +244,9 @@ def gen_stream(model, input_ids, max_new_tokens=None,
     output_ids = input_ids[0].tolist()
     prompt_len = len(input_ids[0])
     if max_new_tokens is None:
-        max_new_tokens = context_len - prompt_len - 1
+        max_new_tokens = max(0, context_len - prompt_len - 1)
     past_key_values = out = None
+    i = 0
 
     for i in range(max_new_tokens):
         if i == 0:  # prefill
@@ -286,7 +287,7 @@ def gen_stream(model, input_ids, max_new_tokens=None,
             }
 
     # Finish stream event, which contains finish reason
-    if i == max_new_tokens - 1:
+    if i >= max_new_tokens - 1:
         finish_reason = "length"
     else:
         finish_reason = None
