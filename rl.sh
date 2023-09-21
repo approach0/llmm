@@ -59,4 +59,13 @@ case $1 in
         export WANDB_RUN_GROUP=baremin_dpo_training
         deepspeed_launch dpo__prm_vs_chatgpt 1,2,3,4,5,6,7 8986 ""
     ;;
+
+    batch_chatgpt_gen_trees)
+        detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 0 --data_cutoff 1000"
+        detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 1000 --data_cutoff 2000"
+        detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 2000 --data_cutoff 3000"
+        detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 3000 --data_cutoff 4000"
+        detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 4000 --data_cutoff 5000"
+        detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 5000 --data_cutoff 6300"
+    ;;
 esac
