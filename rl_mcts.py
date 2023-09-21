@@ -138,6 +138,15 @@ class Node():
             curr = curr.parent
         return path[::-1]
 
+    def get_all_paths(self, include=[]):
+        paths = []
+        if len(self.children) > 0:
+            for child in self.children:
+                paths += child.get_all_paths(include)
+        else:
+            paths.append(self.get_path(include))
+        return paths
+
     @staticmethod
     def gn(config, models, tok_fn, res_fn, inp):
         prompts = tok_fn([inp], eos=False)
