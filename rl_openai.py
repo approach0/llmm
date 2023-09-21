@@ -50,6 +50,7 @@ class OpenAI_API():
     def complete(self, prompts, abort_fn, kwargs):
         assert isinstance(prompts, list)
         sleep_time = kwargs.pop('sleep_time')
+        max_sleep_time = 8
         stream = kwargs.pop('stream')
         self.abort = abort_fn
         while True:
@@ -60,8 +61,18 @@ class OpenAI_API():
                 res_txt = self.streamout(response, bs, stream)
                 break
             except Exception as e:
-                sleep_time *= 2
-                print(str(e), f'Sleep {sleep_time} secs.')
+                errstr = str(e)
+                if ("code" in errstr and
+                    "content_filter" in errstr):
+                    print(errstr)
+                    break
+                elif "maximum context length" in errstr:
+                    print(errstr)
+                    break
+                else:
+                    if sleep_time < max_sleep_time:
+                        sleep_time *= 2
+                    print(errstr, f'Sleep {sleep_time} secs.')
                 continue
         return res_txt
 
