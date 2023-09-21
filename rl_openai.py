@@ -54,10 +54,10 @@ class OpenAI_API():
         stream = kwargs.pop('stream')
         self.abort = abort_fn
         while True:
-            res_txt = ''
+            bs = len(prompts)
+            res_txt = [''] * bs
             time.sleep(sleep_time)
             try:
-                bs = len(prompts)
                 response = self.generate(prompts, **kwargs)
                 res_txt = self.streamout(response, bs, stream)
                 break
