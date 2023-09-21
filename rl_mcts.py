@@ -146,7 +146,7 @@ class Node():
 
     def keywords(self, config, models, tok_fn, res_fn, tm):
         assert self.node_type == 'Q'
-        inp = tool_prompt1(self.state)
+        inp = find_good_keywords_1(self.state)
         inp += '\n\n### Response:\n'
         out = Node.gn(config, models, tok_fn, res_fn, inp)
         if has_any_captured(out, tm):
