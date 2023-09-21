@@ -77,6 +77,8 @@ if __name__ == '__main__':
                 for correct, p in zip(R_mark, paths_QKRA):
                     if not correct: continue
                     srch_query = p[1].state
+                    if not srch_query.startswith('SEARCH'): continue
+                    print(srch_query)
                     srch_result = p[2].state
                     srch_result = srch_result.strip('\n')
                     #print(rel_indicator)
@@ -96,6 +98,8 @@ if __name__ == '__main__':
                 for correct, p in zip(R_mark, paths_QKRA):
                     if correct: continue
                     srch_query = p[1].state
+                    if not srch_query.startswith('SEARCH'): continue
+                    print(srch_query)
                     srch_result = p[2].state
                     srch_result = srch_result.strip('\n')
                     d = {
@@ -112,5 +116,6 @@ if __name__ == '__main__':
             else:
                 pass
 
+    print(f'Writing {len(final_data)} rows...')
     with open('output/final-dataset.json', 'w') as fh:
         json.dump(final_data, fh)
