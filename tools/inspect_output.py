@@ -477,7 +477,6 @@ def output_flips(logdir):
         _output_html(logpath, query_key='path')
 
 
-
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
