@@ -171,7 +171,9 @@ def textify_v2(j_dict):
 
 def textify_flip(j_dict):
     order = ['direct_prompt', 'direct_answer', 
-        'agument_prompt', 'agument_answer', 'solution']
+        'agument_prompt', 'agument_query', 'agument_answer',
+        'solution'
+    ]
     text_list = []
     for key in order:
         if key not in j_dict: continue
@@ -384,7 +386,7 @@ def test_lr_query(logdir):
     plt.savefig(f'output-{run_name}.png')
 
 
-def traverse_tree(tree, path, answers, debug=False):
+def traverse_tree(problem, tree, path, answers, debug=False):
     node_type = tree['node_type']
     state = tree['state']
     prompt = tree['prompt']
@@ -396,10 +398,13 @@ def traverse_tree(tree, path, answers, debug=False):
     if len(children) > 0:
         for child in children:
             path.append(tree)
-            traverse_tree(child, path, answers, debug=debug)
+            traverse_tree(problem, child, path, answers, debug=debug)
             path.pop()
     elif path_types in ['Q', 'QKR'] and node_type != 'K':
-        answers[path_types].append((state, prompt))
+        path_states = [x['state'] for x in path]
+        #if path_types == 'QKR':
+        #    print(problem, '-->', path_states[1])
+        answers[path_types].append((state, prompt, path_states))
 
 
 def get_flips_in_trees(logdir, judge_true_positive=True):
@@ -415,10 +420,10 @@ def get_flips_in_trees(logdir, judge_true_positive=True):
         sol = j['solution']
         tree = j['json']
         answers = defaultdict(list)
-        traverse_tree(tree, [], answers)
+        traverse_tree(logpath, tree, [], answers)
 
         def mark(x):
-            ans, prompt = x
+            ans = x[0]
             boxed_ans = extract_math_answer(ans)
             boxed_sol = extract_math_answer(sol)
             equiv = is_equiv(boxed_sol, boxed_ans)
@@ -442,13 +447,14 @@ def get_flips_in_trees(logdir, judge_true_positive=True):
             Q_mark_expand, R_mark, Q_x, answers['QKR']):
             if not q_mark and r_mark and true_positive:
                 n_flips += 1
-                q_ans, q_prompt = q_x
-                r_ans, r_prompt = r_x
+                q_ans, q_prompt, _ = q_x
+                r_ans, r_prompt, r_path_states = r_x
 
                 j = {}
                 j['direct_prompt'] = q_prompt
                 j['direct_answer'] = q_ans
                 j['agument_prompt'] = r_prompt
+                j['agument_query'] = r_path_states[1]
                 j['agument_answer'] = r_ans
                 j['solution'] = sol
                 j['path'] = path
