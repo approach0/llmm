@@ -245,9 +245,9 @@ def gen_stream(model, input_ids, max_new_tokens=None,
     prompt_len = len(input_ids[0])
     if max_new_tokens is None:
         max_new_tokens = max(0, context_len - prompt_len - 1)
+
     past_key_values = out = None
     i = 0
-
     for i in range(max_new_tokens):
         if i == 0:  # prefill
             out = model(input_ids, use_cache=True)
@@ -259,9 +259,9 @@ def gen_stream(model, input_ids, max_new_tokens=None,
                 use_cache=True,
                 past_key_values=past_key_values,
             )
-        logits = out.logits # [bs, len, vocab]
+        # out.logits: [bs, len, vocab]
         past_key_values = out.past_key_values
-        last_token_logits = logits[0, -1, :]
+        last_token_logits = out.logits[0, -1, :]
 
         if temperature < 1e-5:
             _, indices = torch.topk(last_token_logits, 2)
@@ -303,7 +303,7 @@ def gen_stream(model, input_ids, max_new_tokens=None,
     }
 
     # Clean
-    del past_key_values, out, logits
+    del past_key_values, out
     gc.collect()
     torch.cuda.empty_cache()
 
