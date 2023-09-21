@@ -54,6 +54,7 @@ class OpenAI_API():
         stream = kwargs.pop('stream')
         self.abort = abort_fn
         while True:
+            res_txt = ''
             time.sleep(sleep_time)
             try:
                 bs = len(prompts)
@@ -73,7 +74,7 @@ class OpenAI_API():
                     if sleep_time < max_sleep_time:
                         sleep_time *= 2
                     print(errstr, f'Sleep {sleep_time} secs.')
-                continue
+                    continue
         return res_txt
 
 
