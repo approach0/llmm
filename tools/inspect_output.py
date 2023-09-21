@@ -402,7 +402,7 @@ def traverse_tree(tree, path, answers, debug=False):
         answers[path_types].append((state, prompt))
 
 
-def get_flips_in_trees(logdir):
+def get_flips_in_trees(logdir, judge_true_positive=True):
     n_flips, n_total = 0, 0
     for fname in os.listdir(logdir):
         n_total += 1
@@ -433,7 +433,10 @@ def get_flips_in_trees(logdir):
             Q_x += [x] * ratio
             Q_mark_expand += [mark] * ratio
 
-        true_positive = not any(Q_mark) and sum(R_mark) >= ratio
+        if judge_true_positive:
+            true_positive = not any(Q_mark) and sum(R_mark) >= ratio
+        else:
+            true_positive = True
 
         for q_mark, r_mark, q_x, r_x in zip(
             Q_mark_expand, R_mark, Q_x, answers['QKR']):
