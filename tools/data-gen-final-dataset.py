@@ -12,27 +12,7 @@ from math_equivalence import is_equiv
 
 
 if __name__ == '__main__':
-    dataset = load_dataset('approach0/mathy-phase2', download_mode='force_redownload')
     final_data = []
-    for data in dataset['train']:
-        response_sect = '### Response:\n'
-        response = data['prompt'].split(response_sect)[1]
-        srch_query = response.split('\n\n')[0]
-        i = response.index('--- BEGIN of API results ---')
-        srch_result = response[i:]
-        srch_result = srch_result.replace('--- BEGIN of API results ---\n', '')
-        srch_result = srch_result.replace('\n--- END of API results ---\n', '')
-        srch_result = srch_result.strip('\n')
-        d = {
-            'note': 'approach0/mathy-phase2',
-            'problem_id': data['problem'].replace(r'../MATH/', ''),
-            'problem': data['query'],
-            'solution': data['solution'],
-            'search_query': srch_query,
-            'search_result': srch_result,
-            'relevance': data['manual_rating']
-        }
-        final_data.append(d)
 
     main_corpus = '/home/w32zhong/llmm/output/tree_collection'
     n_pos_samples = 0
@@ -42,8 +22,12 @@ if __name__ == '__main__':
             if fname.split('.')[-1] != 'log':
                 continue
             fpath = os.path.join(dirname, fname)
-            with open(fpath, 'r') as fh:
-                j = json.load(fh)
+            try:
+                with open(fpath, 'r') as fh:
+                    j = json.load(fh)
+            except Exception as e:
+                print(e)
+                continue
             note = '/'.join(dirname.split('/')[-2:] + [fname])
             problem_id = j['path']
             root = Node.from_json(j['json'])
@@ -74,6 +58,8 @@ if __name__ == '__main__':
 
             if true_positive:
                 rel_indicator = (1 + sum(R_mark)) / (ratio * (sum(Q_mark) + 1))
+                if rel_indicator  > 2: rel_indicator = 2
+                elif rel_indicator == 0: continue
                 for correct, p in zip(R_mark, paths_QKRA):
                     if not correct: continue
                     srch_query = p[1].state
@@ -81,6 +67,7 @@ if __name__ == '__main__':
                     print(srch_query)
                     srch_result = p[2].state
                     srch_result = srch_result.strip('\n')
+                    answer = p[3].state.strip('\n')
                     #print(rel_indicator)
                     d = {
                         'note': note,
@@ -89,12 +76,14 @@ if __name__ == '__main__':
                         'solution': sol,
                         'search_query': srch_query,
                         'search_result': srch_result,
+                        'answer': answer,
+                        'correct': correct,
                         'relevance': int(rel_indicator)
                     }
                     final_data.append(d)
                     n_pos_samples += 1
 
-            elif n_neg_samples < n_pos_samples:
+            elif n_neg_samples < 4 * n_pos_samples:
                 for correct, p in zip(R_mark, paths_QKRA):
                     if correct: continue
                     srch_query = p[1].state
@@ -102,6 +91,7 @@ if __name__ == '__main__':
                     print(srch_query)
                     srch_result = p[2].state
                     srch_result = srch_result.strip('\n')
+                    answer = p[3].state.strip('\n')
                     d = {
                         'note': note,
                         'problem_id': problem_id,
@@ -109,6 +99,8 @@ if __name__ == '__main__':
                         'solution': sol,
                         'search_query': srch_query,
                         'search_result': srch_result,
+                        'answer': answer,
+                        'correct': correct,
                         'relevance': 0
                     }
                     final_data.append(d)
