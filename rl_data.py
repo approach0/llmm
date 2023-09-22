@@ -41,7 +41,7 @@ def collate_pr(config, batch_tok_fn, sources, targets):
         'labels': labels
     })
 
-    if debug:
+    if debug and config.getint('local_rank') == 0:
         decode_show(batch_tok_fn, examples_tokenized['input_ids'][0])
         decode_show(batch_tok_fn, examples_tokenized['labels'][0])
 
