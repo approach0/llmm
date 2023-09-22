@@ -513,9 +513,11 @@ def prepare_experiment(config):
     if dataset_map_fn:
         dataset = dataset_map_fn(config, dataset)
 
+    if config.getboolean('dataset_shuffle', False):
+        dataset = dataset.shuffle(seed=config.getint('seed'))
+
     if config.get('eval_during_train', 'no') != 'no':
         dataset = dataset['train']
-        dataset = dataset.shuffle(seed=config.getint('seed'))
         dataset = dataset.train_test_split(test_size=1)
 
     def get_data_range(data):
