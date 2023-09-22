@@ -57,9 +57,11 @@ if __name__ == '__main__':
             true_positive = sum(R_mark) > ratio * sum(Q_mark)
 
             if true_positive:
-                rel_indicator = (1 + sum(R_mark)) / (ratio * (sum(Q_mark) + 1))
+                rel_indicator = sum(R_mark) / (ratio * sum(Q_mark) + 0.1)
+                rel_indicator = int(rel_indicator)
                 if rel_indicator  > 2: rel_indicator = 2
                 elif rel_indicator == 0: continue
+
                 for correct, p in zip(R_mark, paths_QKRA):
                     if not correct: continue
                     srch_query = p[1].state
@@ -68,7 +70,6 @@ if __name__ == '__main__':
                     srch_result = p[2].state
                     srch_result = srch_result.strip('\n')
                     answer = p[3].state.strip('\n')
-                    #print(rel_indicator)
                     d = {
                         'note': note,
                         'problem_id': problem_id,
@@ -78,7 +79,7 @@ if __name__ == '__main__':
                         'search_result': srch_result,
                         'answer': answer,
                         'correct': correct,
-                        'relevance': int(rel_indicator)
+                        'relevance': rel_indicator
                     }
                     final_data.append(d)
                     n_pos_samples += 1
