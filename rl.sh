@@ -68,4 +68,10 @@ case $1 in
         detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 4000 --data_cutoff 5000"
         detached_rl mcts_explore__chatgpt_fulltopic "--run_uid fulltopic --data_offset 5000 --data_cutoff 6300"
     ;;
+
+    finetune1)
+        # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+        export WANDB_RUN_GROUP=finetune_mathy_fft_as_querylm
+        deepspeed_launch finetune_mathy_fft_as_querylm 4,5,6,7 8989 ""
+    ;;
 esac

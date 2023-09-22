@@ -281,6 +281,17 @@ def collate_phase2_infer(config, batch_tok_fn, batch_data):
     return inputs_tokenized, batch_data
 
 
+def collate_final_dataset_for_querylm(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import find_good_keywords_1
+    for data in batch_data:
+        prompt = find_good_keywords_1(data['problem'])
+        response_sect = '### Response:'
+        data['prompt'] = prompt + '\n\n' + response_sect
+    sources = [d['prompt'] + '\n' for d in batch_data]
+    targets = [d['search_query'] + '\n' for d in batch_data]
+    return collate_pr(config, batch_tok_fn, sources, targets)
+
+
 ###############
 # stop func
 ###############
