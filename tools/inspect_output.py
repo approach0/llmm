@@ -170,7 +170,7 @@ def textify_v2(j_dict):
 
 
 def textify_flip(j_dict):
-    order = ['direct_prompt', 'direct_answer', 
+    order = ['direct_prompt', 'direct_answer',
         'agument_prompt', 'agument_query', 'agument_answer',
         'solution'
     ]
@@ -181,6 +181,27 @@ def textify_flip(j_dict):
         if val is None: continue
         text_list.append(f'<h3>{key}</h3>{val}<hr>')
     return text_list
+
+
+def textify_final(j_dict):
+    order = ['problem_id', 'problem',
+        'search_query', 'search_result', 'relevance',
+        'answer', 'correct', 'solution'
+    ]
+    text_list = []
+    for key in order:
+        if key not in j_dict: continue
+        val = j_dict[key]
+        if val is None: continue
+        text_list.append(f'<h3>{key}</h3>{val}<hr>')
+    return text_list
+
+
+def html(fh, query, hit, page, idx):
+    hit = re.sub("#+ (.+)\n", r"<h4>\1</h4>", hit)
+    hit = re.sub("URL: (.+)\n+", r"<h4>\1</h4>", hit)
+    hit = hit.replace('\n', '<br/>\n')
+    fh.write(f'<p>{hit}</p>\n\n')
 
 
 def _output_html(logpath, verbose=True, query_key='query'):
@@ -195,13 +216,6 @@ def _output_html(logpath, verbose=True, query_key='query'):
             results = textify_flip(j)
         else:
             results = textify_v2(j)
-
-        def html(fh, query, hit, page, idx):
-            hit = re.sub("#+ (.+)\n", r"<h4>\1</h4>", hit)
-            hit = re.sub("URL: (.+)\n+", r"<h4>\1</h4>", hit)
-            if verbose: print(hit)
-            hit = hit.replace('\n', '<br/>\n')
-            fh.write(f'<p>{hit}</p>\n\n')
 
         logdir = os.path.dirname(logpath)
         logbase = os.path.basename(logpath)
@@ -219,6 +233,22 @@ def output_html(logdir):
             continue
         print(logpath)
         _output_html(logpath)
+
+
+def inspect_dataset(dataset_name, outdir='./output'):
+    from datasets import load_dataset
+    dataset = load_dataset(dataset_name)
+    outdir = os.path.join(outdir, os.path.basename(dataset_name))
+    os.makedirs(outdir, exist_ok=True)
+
+    import sys
+    sys.path.insert(0, './pya0')
+    from pya0.visualize import output_html as output
+    for i, data in enumerate(dataset['train']):
+        results = textify_final(data)
+        head = data['problem_id']
+        output(outdir, f'{i}.html', '_', head, results,
+            None, False, 100, html, create_parent_dir=False)
 
 
 # https://github.com/lz1oceani/verify_cot/raw/main/results/chatgpt3.5/natural_program/MATH_np.json
@@ -497,4 +527,5 @@ if __name__ == '__main__':
         'test_np': test_np,
         'test_lr_query': test_lr_query,
         'get_flips': get_flips_in_trees,
+        'dataset': inspect_dataset,
     })
