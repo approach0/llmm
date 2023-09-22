@@ -12,7 +12,7 @@ from math_equivalence import is_equiv
 
 
 if __name__ == '__main__':
-    dataset = load_dataset('approach0/mathy-phase2')
+    dataset = load_dataset('approach0/mathy-phase2', download_mode='force_redownload')
     final_data = []
     for data in dataset['train']:
         response_sect = '### Response:\n'
