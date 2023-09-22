@@ -235,7 +235,7 @@ def output_html(logdir):
         _output_html(logpath)
 
 
-def inspect_dataset(dataset_name, outdir='./output'):
+def inspect_dataset(dataset_name, outdir='./output', filter_rele=2):
     from datasets import load_dataset
     dataset = load_dataset(dataset_name)
     outdir = os.path.join(outdir, os.path.basename(dataset_name))
@@ -245,6 +245,8 @@ def inspect_dataset(dataset_name, outdir='./output'):
     sys.path.insert(0, './pya0')
     from pya0.visualize import output_html as output
     for i, data in enumerate(dataset['train']):
+        if data['relevance'] < filter_rele:
+            continue
         results = textify_final(data)
         head = data['problem_id']
         output(outdir, f'{i}.html', '_', head, results,
