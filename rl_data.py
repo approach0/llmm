@@ -299,7 +299,7 @@ def collate_final_dataset_for_judger(config, batch_tok_fn, batch_data):
         response_sect = '### Response:'
         data['prompt'] = prompt + '\n\n' + response_sect
     sources = [d['prompt'] + '\n' for d in batch_data]
-    targets = ['rate[' + d['relevance'] + ']\n' for d in batch_data]
+    targets = ['rate[' + str(d['relevance']) + ']\n' for d in batch_data]
     return collate_pr(config, batch_tok_fn, sources, targets)
 
 
