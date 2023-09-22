@@ -414,8 +414,12 @@ def get_flips_in_trees(logdir, judge_true_positive=True):
         logpath = os.path.join(logdir, fname)
         if logpath.split('.')[-1] != 'log':
             continue
-        with open(logpath, 'r') as fh:
-            j = json.load(fh)
+        try:
+            with open(logpath, 'r') as fh:
+                j = json.load(fh)
+        except Exception as e:
+            print(e)
+            continue
         path = j['path']
         sol = j['solution']
         tree = j['json']
