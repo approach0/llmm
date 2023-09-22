@@ -292,6 +292,17 @@ def collate_final_dataset_for_querylm(config, batch_tok_fn, batch_data):
     return collate_pr(config, batch_tok_fn, sources, targets)
 
 
+def collate_final_dataset_for_judger(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import ask_relevance_1
+    for data in batch_data:
+        prompt = ask_relevance_1(data['problem'], data['search_result'])
+        response_sect = '### Response:'
+        data['prompt'] = prompt + '\n\n' + response_sect
+    sources = [d['prompt'] + '\n' for d in batch_data]
+    targets = ['rate[' + d['relevance'] + ']\n' for d in batch_data]
+    return collate_pr(config, batch_tok_fn, sources, targets)
+
+
 ###############
 # stop func
 ###############

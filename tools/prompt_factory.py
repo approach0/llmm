@@ -733,6 +733,35 @@ Now, take a deep breath and I now handle my math question to you!
     return prompt
 
 
+def ask_relevance_1(Q, P):
+    prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction
+Given a math problem, and a provided search result potentially relevant to this problem.
+
+Please indicate, on a scale of 0 to 2 and in the format of "rate[x]", the relevance of this search result.
+
+The criteria of judging the relevance of a provided search result (in a passage) is:
+
+rate[0]: The provided passage is not helpful in solving the given math problem;
+
+rate[1]: The provided passage is relevant, one can potentially improve the likelihood to solve the given math problem by utilizing the provided passage.
+
+rate[2]: The provided passage is fully relevant, one can follow the thought and easily derive the answer, or even extract the answer from the provided passage directly.
+
+Now, take a deep breath and I now handle my input to you!
+
+### Input:
+'''
+    prompt += Q
+    prompt += '''
+
+### Passage:
+'''
+    prompt += P
+    return prompt
+
+
 def DPO_default_prompt(instr, input):
     template = r'''Below is an instruction that describes a task, paired with an input that provides further context.
 Write a response that appropriately completes the request.
