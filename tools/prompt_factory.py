@@ -707,11 +707,11 @@ Find good search keywords for a math question in the input.
 
 You may use text keyword(s) or key formula(s) occurred in the question, or any relevant ones you think might be good keywords.
 
-A key formula is an expression that is relevant for solving this problem, and can be used in a math-aware search engine to look up similar expressions and the solutions.
+A key formula is an expression that is relevant for solving this problem, and can be used in a math-aware search engine to look up similar expressions and the solutions. As a result, a rare/identity formula (e.g., $x^2+y^2=z^2$) is better than a common/average formula (e.g., $a>0$).
 
-Please indicate, using the SEARCH api call, with your search keywords in its arguments which are your list of keywords in JSON format.
+Please indicate, using the SEARCH API call, with your search keywords in its arguments which a list of keywords in JSON format.
 
-An example would be:
+Here is an example:
 
 SEARCH["$x^2 = -1$", "imaginary numbers"]
 
