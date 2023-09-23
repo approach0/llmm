@@ -5,6 +5,7 @@ from rl import get_cfg_json
 
 import rl_data
 from rl_tools import (
+    sympy_solver,
     search_mux,
     has_any_captured,
     tool_invoke,
@@ -88,7 +89,6 @@ def infer_query_lm(step, K, config, models, batch_in, trainer,
 
 class Node():
     def __init__(self, node_type, state):
-        assert node_type in ['Q', 'K', 'R', 'A']
         self.node_type = node_type
         self.state = state
         self.children = []
@@ -153,6 +153,38 @@ class Node():
         out = res_fn(config, models, (prompts, {'gn': inp}))
         return out[0]
 
+    def calc_enter(self, config, models, tok_fn, res_fn, tm):
+        assert self.node_type == 'Q'
+        inp = find_good_compute_call_1(self.state)
+        inp += '\n\n### Response:\n'
+        out = Node.gn(config, models, tok_fn, res_fn, inp)
+        if has_any_captured(out, tm):
+            out, _ = tool_invoke(out, tm, dryrun=True)
+            return inp, out
+        else:
+            return inp, None
+
+    def calc_compute(self, config, models, tok_fn, res_fn, tm):
+        assert self.node_type == 'E'
+        assert self.parent.node_type == 'Q'
+        _, res = tool_invoke(self.state, tm)
+        if isinstance(res, ToolError):
+            print('ToolError:', res)
+            return None
+        else:
+            return res
+
+    def query_calculator(self, config, models, tok_fn, res_fn, tm):
+        inp, out = self.calc_enter(config, models,
+            tok_fn, res_fn, tm)
+        if out is None:
+            return None, None
+        e_node = self.branch('E', out)
+        e_node.prompt = inp
+        result = e_node.calc_compute(config, models,
+            tok_fn, res_fn, tm)
+        return e_node, result
+
     def keywords(self, config, models, tok_fn, res_fn, tm):
         assert self.node_type == 'Q'
         inp = find_good_keywords_1(self.state)
@@ -179,7 +211,7 @@ class Node():
         else:
             return res
 
-    def query(self, config, models, tok_fn, res_fn, tm):
+    def query_retriever(self, config, models, tok_fn, res_fn, tm):
         inp, out = self.keywords(config, models,
             tok_fn, res_fn, tm)
         if out is None:
@@ -194,9 +226,12 @@ class Node():
             return k_node, results
 
     def answer(self, config, models, tok_fn, res_fn, tm):
-        nodes = self.get_path(['Q', 'R'])
+        nodes = self.get_path(['Q', 'R', 'C'])
         states = [n.state for n in nodes]
-        inp = adapt_wizard(*states)
+        if nodes[-1].node_type = 'C':
+            inp = comp_aug_ans_prompt(states[-1])
+        else:
+            inp = adapt_wizard(*states)
         out = Node.gn(config, models, tok_fn, res_fn, inp)
         return inp, out
 
@@ -209,7 +244,8 @@ def mcts_explore(step, K, config, models, batch_in, trainer,
     tool_map = {
         'SEARCH': partial(
             search_mux, 'mabowdor'
-        )
+        ),
+        'COMPUTE': sympy_solver
     }
     params = config, models, tok_fn, res_fn, tool_map
 
@@ -217,25 +253,36 @@ def mcts_explore(step, K, config, models, batch_in, trainer,
     curr = root
     query_only = config.getboolean('query_only', False)
 
+    #if not query_only:
+    #    for _ in range(K):
+    #        inp, answer = curr.answer(*params)
+    #        a_node = curr.branch('A', answer)
+    #        a_node.prompt = inp
+
     if not query_only:
         for _ in range(K):
-            inp, answer = curr.answer(*params)
-            a_node = curr.branch('A', answer)
-            a_node.prompt = inp
-
-    for _ in range(K):
-        k_node, results = curr.query(*params)
-        if not k_node: continue
-        for res in results or []:
-            r_node = k_node.branch('R', res)
-            if query_only: continue
+            e_node, result = curr.query_calculator(*params)
+            if result is None: continue
+            c_node = e_node.branch('C', result)
             for _ in range(K):
-                inp, answer = r_node.answer(*params)
-                a_node = r_node.branch('A', answer)
+                inp, answer = c_node.answer(*params)
+                a_node = c_node.branch('A', answer)
                 a_node.prompt = inp
+
+    #for _ in range(K):
+    #    k_node, results = curr.query_retriever(*params)
+    #    if not k_node: continue
+    #    for res in results or []:
+    #        r_node = k_node.branch('R', res)
+    #        if query_only: continue
+    #        for _ in range(K):
+    #            inp, answer = r_node.answer(*params)
+    #            a_node = r_node.branch('A', answer)
+    #            a_node.prompt = inp
+
     root.print_tree()
-    log_fn(step, batch_in['src_path'][0], root.json(),
-        sol=batch_in['output'][0])
+    #log_fn(step, batch_in['src_path'][0], root.json(),
+    #    sol=batch_in['output'][0])
 
 
 def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,

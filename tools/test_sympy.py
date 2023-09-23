@@ -6,7 +6,10 @@ from sympy import evalf
 from sympy import pi
 from sympy import latex
 
-from timeout import timeout
+try:
+    from tools.timeout import timeout
+except Exception as e:
+    from timeout import timeout
 
 
 @timeout(seconds=20)
@@ -18,9 +21,11 @@ def compute(mode, latex_expr, *args):
     latex_expr = latex_expr.strip().strip('$')
     try:
         if mode == 'calculate':
-            res = parse_latex(latex_expr).evalf(3, subs={
+            expr = parse_latex(latex_expr)
+            print(expr)
+            res = expr.evalf(3, subs={
                 'pi': pi
-            })
+            }).round(3)
             return wrap_math(latex(res))
 
         elif mode == 'simplify':

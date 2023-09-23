@@ -1,3 +1,4 @@
+import sys
 import json
 import string
 from colorama import Fore, Style
@@ -19,7 +20,11 @@ def sympy_solver(args):
     elif len(args) < 2:
         return ToolError('Error: at least two arguments needed!')
     else:
-        return sympy_compute(*args)
+        res = sympy_compute(*args)
+        if 'Error:' in res:
+            return ToolError(res)
+        else:
+            return res
 
 
 def has_math(s):
@@ -202,30 +207,44 @@ if __name__ == '__main__':
         'SEARCH': partial(search_mux, 'dups', None, docid=10490)
     }
 
+    #response = r'''I can invoke the search API here...
+
+    #SEARCH["1^\\infty"]
+
+    #should it return some results here?'''
+
+    #if has_any_captured(response, tool_map):
+    #    pre_invoke, tool_res = tool_invoke(response, tool_map)
+    #    print(pre_invoke)
+    #    print(tool_res)
+    #    print(isinstance(tool_res, ToolError))
+    #else:
+    #    print('nothing to capture!')
+
+    #response = r'''I can invoke the search API here...
+
+    #COMPUTE["solve x", "x^2 = 4"]
+
+    #should it return some results here?'''
+
+    #if has_any_captured(response, tool_map):
+    #    pre_invoke, tool_res = tool_invoke(response, tool_map)
+    #    print(pre_invoke)
+    #    print(tool_res)
+    #    print(isinstance(tool_res, ToolError))
+    #else:
+    #    print('nothing to capture!')
+
     response = r'''I can invoke the search API here...
 
-    SEARCH["1^\\infty"]
+    COMPUTE["solve y", "y = 1 - 2 y^2"]
 
     should it return some results here?'''
 
     if has_any_captured(response, tool_map):
         pre_invoke, tool_res = tool_invoke(response, tool_map)
-        print(pre_invoke)
-        print(tool_res)
-        print(isinstance(tool_res, ToolError))
-    else:
-        print('nothing to capture!')
-
-    response = r'''I can invoke the search API here...
-
-    COMPUTE["solve x", "x^2 = 4"]
-
-    should it return some results here?'''
-
-    if has_any_captured(response, tool_map):
-        pre_invoke, tool_res = tool_invoke(response, tool_map)
-        print(pre_invoke)
-        print(tool_res)
+        print('pre_invoke:', pre_invoke)
+        print('tool_res:', tool_res)
         print(isinstance(tool_res, ToolError))
     else:
         print('nothing to capture!')

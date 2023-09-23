@@ -733,6 +733,72 @@ Now, take a deep breath and I now handle my math question to you!
     return prompt
 
 
+def find_good_compute_call_1(Q):
+    prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+Try to use a compute API to solve a math question in the input.
+
+The compute API call, starts with the COMPUTE keyword, and then is followed with its arguments in JSON format.
+The first parameter `mode' can only be chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
+
+For example, to calculate sine of 270 degree, you can do:
+
+COMPUTE["calculate", "\\sin(270 \\times \\frac{\\pi}{180})"]
+
+To simplify $\sin^2 x + \cos^2 x$, you can do:
+
+COMPUTE["simplify", "\\sin^2(x) + \\cos^2(x)"]
+
+And to solve $y = 1 - 2 y^2$ for y, you can do:
+
+COMPUTE["solve y", "y = 1 - 2 y^2"]
+
+Now, take a deep breath and I now handle my input to you!
+
+### Input:
+'''
+    prompt += Q
+    return prompt
+
+
+def comp_aug_ans_prompt(Q, E, C):
+    prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+Try to use a compute API to solve a math question in the input.
+
+The compute API call, starts with the COMPUTE keyword, and then is followed with its arguments in JSON format.
+The first parameter `mode' can only be chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
+
+For example, to calculate sine of 270 degree, you can do:
+
+COMPUTE["calculate", "\\sin(270 \\times \\frac{\\pi}{180})"]
+
+To simplify $\sin^2 x + \cos^2 x$, you can do:
+
+COMPUTE["simplify", "\\sin^2(x) + \\cos^2(x)"]
+
+And to solve $y = 1 - 2 y^2$ for y, you can do:
+
+COMPUTE["solve y", "y = 1 - 2 y^2"]
+
+Now, take a deep breath and I now handle my input to you!
+
+### Input:
+'''
+    prompt += Q
+
+    prompt += r'''
+### Response:
+'''
+    prompt += E
+    prompt += '\n\n'
+    prompt += C
+
+    return prompt
+
+
 def ask_relevance_1(Q, P):
     prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
