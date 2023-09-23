@@ -187,7 +187,14 @@ class Node():
 
     def keywords(self, config, models, tok_fn, res_fn, tm):
         assert self.node_type == 'Q'
-        inp = find_good_keywords_1(self.state)
+        args = get_cfg_json(config, 'mcts_args', {})
+        prompt_func_name = args.get(
+            'keywords_prompt',
+            'find_good_keywords_1'
+        )
+        prompt_func = globals()[prompt_func_name]
+        inp = prompt_func(self.state)
+        inp = inp.strip()
         inp += '\n\n### Response:\n'
         out = Node.gn(config, models, tok_fn, res_fn, inp)
         if has_any_captured(out, tm):
