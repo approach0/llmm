@@ -715,6 +715,14 @@ Here is an example:
 
 SEARCH["$x^2 = -1$", "imaginary numbers"]
 
+Note that the arugments MUST be a valid json, so this is NOT good:
+
+SEARCH["$V = \pi R^2 H$"]
+
+Instead, write:
+
+SEARCH["$V = \\pi R^2 H$"]
+
 DO NOT mix text and math in one JSON item, for example, this is NOT good:
 
 SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
