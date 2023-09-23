@@ -469,6 +469,7 @@ def log_query_state(config, ex_output_dir, values,
 
 def log_json(config, ex_output_dir, step, path, j, sol=None):
     log = {
+        'index': step,
         'path': path,
         'solution': sol,
         'json': j
