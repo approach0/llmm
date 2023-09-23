@@ -739,7 +739,7 @@ def find_good_compute_call_1(Q):
 ### Instruction:
 Try to use a compute API to solve a math question in the input.
 
-The compute API call, starts with the COMPUTE keyword, and then is followed with its arguments in JSON format.
+The compute API call, starts with the COMPUTE keyword, is then followed by its arguments in JSON format.
 The first parameter `mode' can only be chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
 
 For example, to calculate sine of 270 degree, you can do:
@@ -753,6 +753,8 @@ COMPUTE["simplify", "\\sin^2(x) + \\cos^2(x)"]
 And to solve $y = 1 - 2 y^2$ for y, you can do:
 
 COMPUTE["solve y", "y = 1 - 2 y^2"]
+
+Lastly, please stop generating at your first API call, and you do not need to solve the problem.
 
 Now, take a deep breath and I now handle my input to you!
 
@@ -766,9 +768,9 @@ def comp_aug_ans_prompt(Q, E, C):
     prompt = r'''Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
 ### Instruction:
-Try to use a compute API to solve a math question in the input.
+Solve a given math question in the input with the help of a compute API call.
 
-The compute API call, starts with the COMPUTE keyword, and then is followed with its arguments in JSON format.
+The compute API call, starts with the COMPUTE keyword, is then followed by its arguments in JSON format.
 The first parameter `mode' can only be chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
 
 For example, to calculate sine of 270 degree, you can do:
@@ -783,19 +785,24 @@ And to solve $y = 1 - 2 y^2$ for y, you can do:
 
 COMPUTE["solve y", "y = 1 - 2 y^2"]
 
+The API response will be inserted for you right after every API call.
+
+If API response are helpful, utilize it to solve the given math problem.
+Remember to indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} at the very end of your output.
+
 Now, take a deep breath and I now handle my input to you!
 
 ### Input:
 '''
-    prompt += Q
+    prompt += Q.strip('\n')
+    prompt += '\n\n'
 
     prompt += r'''
 ### Response:
 '''
-    prompt += E
-    prompt += '\n\n'
-    prompt += C
-
+    prompt += E.strip('\n')
+    prompt += '\n'
+    prompt += multihop_results1([C])
     return prompt
 
 

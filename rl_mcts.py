@@ -226,10 +226,11 @@ class Node():
             return k_node, results
 
     def answer(self, config, models, tok_fn, res_fn, tm):
-        nodes = self.get_path(['Q', 'R', 'C'])
+        nodes = self.get_path(['Q', 'R', 'E', 'C'])
         states = [n.state for n in nodes]
-        if nodes[-1].node_type = 'C':
-            inp = comp_aug_ans_prompt(states[-1])
+        types = [n.node_type for n in nodes]
+        if nodes[-1].node_type == 'C':
+            inp = comp_aug_ans_prompt(*states[-3:])
         else:
             inp = adapt_wizard(*states)
         out = Node.gn(config, models, tok_fn, res_fn, inp)
