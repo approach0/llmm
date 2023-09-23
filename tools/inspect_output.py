@@ -432,14 +432,13 @@ def traverse_tree(problem, tree, path, answers, debug=False):
             path.append(tree)
             traverse_tree(problem, child, path, answers, debug=debug)
             path.pop()
-    elif path_types in ['Q', 'QKR'] and node_type != 'K':
+    elif path_types in ['Q', 'QKR', 'QEC']:
         path_states = [x['state'] for x in path]
-        #if path_types == 'QKR':
-        #    print(problem, '-->', path_states[1])
         answers[path_types].append((state, prompt, path_states))
 
 
-def get_flips_in_trees(logdir, judge_true_positive=True):
+def get_flips_in_trees(logdir, judge_true_positive=True,
+    no_output=True, key='QKR'):
     n_flips, n_total = 0, 0
     for fname in os.listdir(logdir):
         n_total += 1
@@ -466,7 +465,7 @@ def get_flips_in_trees(logdir, judge_true_positive=True):
             return equiv
 
         Q_mark = list(map(mark, answers['Q']))
-        R_mark = list(map(mark, answers['QKR']))
+        R_mark = list(map(mark, answers[key]))
         ratio = len(R_mark) // len(Q_mark)
         Q_x = []
         Q_mark_expand = []
@@ -479,13 +478,15 @@ def get_flips_in_trees(logdir, judge_true_positive=True):
         else:
             true_positive = True
 
+        any_flip = 0
         for q_mark, r_mark, q_x, r_x in zip(
-            Q_mark_expand, R_mark, Q_x, answers['QKR']):
+            Q_mark_expand, R_mark, Q_x, answers[key]):
             if not q_mark and r_mark and true_positive:
-                n_flips += 1
+                any_flip = 1
+
+                if no_output: continue
                 q_ans, q_prompt, _ = q_x
                 r_ans, r_prompt, r_path_states = r_x
-
                 j = {}
                 j['direct_prompt'] = q_prompt
                 j['direct_answer'] = q_ans
@@ -499,6 +500,7 @@ def get_flips_in_trees(logdir, judge_true_positive=True):
                     json.dump(j, fh)
                 _output_html(new_logpath, query_key='path')
 
+        n_flips += any_flip
         print(path, n_flips)
 
     return n_flips, n_total, n_flips / n_total
