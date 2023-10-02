@@ -80,4 +80,8 @@ case $1 in
         export WANDB_RUN_GROUP=finetune_mathy_fft_as_judger
         deepspeed_launch finetune_mathy_fft_as_judger 4,5,6,7 8991 ""
     ;;
+
+    finetune3)
+        export WANDB_RUN_GROUP=finetune_generalist_on_final_dataset
+        deepspeed_launch finetune_generalist_on_final_dataset 0,1,2,3 8992 ""
 esac
