@@ -50,10 +50,10 @@ def config_rerope(config):
 
 
 def config_flash2(config):
-    from flash_attn_monkey_patch import (
-        replace_llama_attn_with_flash_attn,
-    )
     if config.getboolean('flash_atten', False):
+        from flash_attn_monkey_patch import (
+            replace_llama_attn_with_flash_attn,
+        )
         replace_llama_attn_with_flash_attn()
 
 
