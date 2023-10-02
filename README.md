@@ -20,9 +20,9 @@ am so excited to be a part of the Communication Interns this summer and look for
 about the industry and developing skills that will help me in the future.
 ```
 
-## Tensorboard
+## Wandb
 ```sh
-tensorboard dev upload --logdir ./output/runs/Jul12_11-00-08_watgpu-100/
+wandb login
 ```
 
 ## Setup
