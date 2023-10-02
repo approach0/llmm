@@ -49,6 +49,14 @@ def config_rerope(config):
         replace_llama_attn_with_rerope(**rerope)
 
 
+def config_flash2(config):
+    from flash_attn_monkey_patch import (
+        replace_llama_attn_with_flash_attn,
+    )
+    if config.getboolean('flash_atten', False):
+        replace_llama_attn_with_flash_attn()
+
+
 def get_peft_config(
     peft_attach_new=False,
     peft_lora_rank=8,
@@ -465,6 +473,7 @@ def batch_respond(config, models, batch_in, trainer=None):
 
 def prepare_experiment(config):
     config_rerope(config)
+    config_flash2(config)
 
     if config.get('mode') in ['finetune', 'finetune-dpo']:
         deepspeed = get_cfg_json(config, 'deepspeed', None)
