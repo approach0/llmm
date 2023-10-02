@@ -87,9 +87,8 @@ def smart_correct(kw):
 
 
 def search_mux(api_name, question, keywords, docid=None):
-    keywords = list(filter(smart_filter, keywords))
-
     if keywords:
+        keywords = list(filter(smart_filter, keywords))
         keywords = list(map(smart_correct, keywords))
 
     print(Fore.CYAN)
