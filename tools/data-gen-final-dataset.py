@@ -50,6 +50,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 marks_by_key[key] = map(mark, [p[-1].state for p in path])
                 marks_by_key[key] = list(marks_by_key[key])
 
+            existing_aug_result = set()
             for key in paths_by_key.keys():
                 if key == 'QA': continue
                 base_mark = marks_by_key['QA']
@@ -60,15 +61,17 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 relevance = round(true_ratio / base_ratio, 2)
 
                 if true_positive:
-                    last_aug_res = None
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
                         if not correct: continue
                         aug_query = p[1].state.strip('\n')
                         aug_result = p[2].state.strip('\n')
-                        if aug_result == last_aug_res: continue
-                        print(aug_query, relevance)
-                        last_aug_res = aug_result
                         answer = p[3].state.strip('\n')
+                        if aug_result in existing_aug_result:
+                            continue
+                        else:
+                            existing_aug_result.add(aug_result)
+
+                        print(aug_query, relevance)
                         d = {
                             'note': note,
                             'problem_id': problem_id,
@@ -87,12 +90,17 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
                         if correct: continue
                         aug_query = p[1].state.strip('\n')
+                        aug_result = p[2].state.strip('\n')
+                        answer = p[3].state.strip('\n')
                         if ('COMPUTE' not in aug_query and
                             'SEARCH' not in aug_query):
                             continue
+                        if aug_result in existing_aug_result:
+                            continue
+                        else:
+                            existing_aug_result.add(aug_result)
+
                         print(aug_query, relevance)
-                        aug_result = p[2].state.strip('\n')
-                        answer = p[3].state.strip('\n')
                         d = {
                             'note': note,
                             'problem_id': problem_id,
