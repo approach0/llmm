@@ -36,4 +36,6 @@ python -c 'import torch; print(torch.cuda.is_available())'
 conda install cuda -c nvidia/label/cuda-11.8.0 # must match torch version!
 pip3 install packaging
 pip3 install flash-attn
+
+pip3 install transformers==4.28.1
 ```
