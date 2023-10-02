@@ -54,15 +54,19 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 if key == 'QA': continue
                 base_mark = marks_by_key['QA']
                 aug_mark = marks_by_key[key]
-                ratio = len(aug_mark) // len(base_mark)
-                true_positive = sum(aug_mark) > ratio and sum(base_mark) == 0
+                base_ratio = len(aug_mark) // len(base_mark)
+                true_ratio = sum(aug_mark) / (sum(base_mark) + 0.01)
+                true_positive = true_ratio > base_ratio
 
                 if true_positive:
+                    last_aug_res = None
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
                         if not correct: continue
                         aug_query = p[1].state.strip('\n')
-                        print(aug_query)
                         aug_result = p[2].state.strip('\n')
+                        if aug_result == last_aug_res: continue
+                        print(aug_query)
+                        last_aug_res = aug_result
                         answer = p[3].state.strip('\n')
                         d = {
                             'note': note,
@@ -73,11 +77,10 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                             'aug_result': aug_result,
                             'answer': answer,
                             'correct': correct,
-                            'relevance': sum(aug_mark) - ratio
+                            'relevance': true_ratio
                         }
                         final_data.append(d)
                         n_pos_samples += 1
-                        break
 
                 elif n_neg_samples < n_pos_samples:
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
