@@ -84,4 +84,10 @@ case $1 in
     finetune3)
         export WANDB_RUN_GROUP=finetune_generalist_on_final_dataset
         deepspeed_launch finetune_generalist_on_final_dataset 0,1,2,3 8992 ""
+    ;;
+
+    finetune4)
+        export WANDB_RUN_GROUP=finetune_generalist_on_final_dataset
+        deepspeed_launch finetune_generalist_on_final_dataset 0 8992 "--run GCR"
+    ;;
 esac
