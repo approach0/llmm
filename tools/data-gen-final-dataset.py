@@ -57,6 +57,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 base_ratio = len(aug_mark) // len(base_mark)
                 true_ratio = sum(aug_mark) / (sum(base_mark) + 0.01)
                 true_positive = true_ratio > base_ratio
+                relevance = round(true_ratio / base_ratio, 2)
 
                 if true_positive:
                     last_aug_res = None
@@ -65,7 +66,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         aug_query = p[1].state.strip('\n')
                         aug_result = p[2].state.strip('\n')
                         if aug_result == last_aug_res: continue
-                        print(aug_query)
+                        print(aug_query, relevance)
                         last_aug_res = aug_result
                         answer = p[3].state.strip('\n')
                         d = {
@@ -77,7 +78,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                             'aug_result': aug_result,
                             'answer': answer,
                             'correct': correct,
-                            'relevance': true_ratio
+                            'relevance': relevance
                         }
                         final_data.append(d)
                         n_pos_samples += 1
@@ -89,7 +90,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         if ('COMPUTE' not in aug_query and
                             'SEARCH' not in aug_query):
                             continue
-                        print(aug_query)
+                        print(aug_query, relevance)
                         aug_result = p[2].state.strip('\n')
                         answer = p[3].state.strip('\n')
                         d = {
@@ -101,7 +102,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                             'aug_result': aug_result,
                             'answer': answer,
                             'correct': correct,
-                            'relevance': 0
+                            'relevance': relevance
                         }
                         final_data.append(d)
                         n_neg_samples += 1
