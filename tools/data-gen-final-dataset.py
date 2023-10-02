@@ -11,13 +11,11 @@ from main_clean import extract_math_answer
 from math_equivalence import is_equiv
 
 
-if __name__ == '__main__':
+def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
     final_data = []
-
-    main_corpus = '/home/w32zhong/llmm/output/tree_collection'
     n_pos_samples = 0
     n_neg_samples = 0
-    for dirname, dirs, files in os.walk(main_corpus):
+    for dirname, dirs, files in os.walk(corpus_dir):
         for fname in files:
             if fname.split('.')[-1] != 'log':
                 continue
@@ -110,5 +108,11 @@ if __name__ == '__main__':
                 pass
 
     print(f'Writing {len(final_data)} rows...')
-    with open('output/final-dataset.json', 'w') as fh:
+    with open(output_json, 'w') as fh:
         json.dump(final_data, fh)
+
+
+if __name__ == '__main__':
+    import fire
+    os.environ["PAGER"] = 'cat'
+    fire.Fire(gen_final_dataset)
