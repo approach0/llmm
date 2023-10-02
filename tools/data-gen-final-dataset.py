@@ -1,6 +1,7 @@
 import os
 import json
 from datasets import load_dataset
+from collections import defaultdict
 
 import sys
 sys.path.insert(0, '.')
@@ -31,17 +32,12 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
             root = Node.from_json(j['json'])
             problem = root.state
             sol = j['solution']
-            paths = root.get_all_paths(['Q', 'K', 'R', 'A'])
-            paths_QA, paths_QKRA = [], []
+            paths = root.get_all_paths(['Q', 'K', 'R', 'A', 'E', 'C'])
+            paths_by_key = defaultdict(list)
             for path in paths:
                 path_type = ''.join([n.node_type for n in path])
-                if path_type == 'QA':
-                    paths_QA.append(path)
-                elif path_type == 'QKRA':
-                    paths_QKRA.append(path)
-
-            if len(paths_QKRA) == 0:
-                continue
+                if path_type in ['QA', 'QKRA', 'QECA']:
+                    paths_by_key[path_type].append(path)
 
             def mark(ans):
                 boxed_ans = extract_math_answer(ans)
@@ -49,63 +45,66 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 equiv = is_equiv(boxed_sol, boxed_ans)
                 return equiv
 
-            Q_mark = list(map(mark, [p[-1].state for p in paths_QA]))
-            R_mark = list(map(mark, [p[-1].state for p in paths_QKRA]))
-            ratio = len(R_mark) // len(Q_mark)
-            true_positive = sum(R_mark) > ratio and sum(Q_mark) == 0
+            marks_by_key = {}
+            for key, path in paths_by_key.items():
+                marks_by_key[key] = map(mark, [p[-1].state for p in path])
+                marks_by_key[key] = list(marks_by_key[key])
 
-            if true_positive:
-                for correct, p in zip(R_mark, paths_QKRA):
-                    if not correct: continue
-                    srch_query = p[1].state
-                    if not 'SEARCH' in srch_query: continue
-                    assert srch_query.startswith('SEARCH')
-                    srch_query = srch_query.strip('\n')
-                    srch_result = p[2].state
-                    srch_result = srch_result.strip('\n')
-                    answer = p[3].state.strip('\n')
-                    d = {
-                        'note': note,
-                        'problem_id': problem_id,
-                        'problem': problem,
-                        'solution': sol,
-                        'search_query': srch_query,
-                        'search_result': srch_result,
-                        'answer': answer,
-                        'correct': correct,
-                        'relevance': sum(R_mark) - ratio
-                    }
-                    final_data.append(d)
-                    n_pos_samples += 1
-                    break
+            for key in paths_by_key.keys():
+                if key == 'QA': continue
+                base_mark = marks_by_key['QA']
+                aug_mark = marks_by_key[key]
+                ratio = len(aug_mark) // len(base_mark)
+                true_positive = sum(aug_mark) > ratio and sum(base_mark) == 0
 
-            elif n_neg_samples < n_pos_samples:
-                for correct, p in zip(R_mark, paths_QKRA):
-                    if correct: continue
-                    srch_query = p[1].state
-                    if not srch_query.startswith('SEARCH'): continue
-                    print(srch_query)
-                    srch_result = p[2].state
-                    srch_result = srch_result.strip('\n')
-                    answer = p[3].state.strip('\n')
-                    d = {
-                        'note': note,
-                        'problem_id': problem_id,
-                        'problem': problem,
-                        'solution': sol,
-                        'search_query': srch_query,
-                        'search_result': srch_result,
-                        'answer': answer,
-                        'correct': correct,
-                        'relevance': 0
-                    }
-                    final_data.append(d)
-                    n_neg_samples += 1
-                    break
-            else:
-                pass
+                if true_positive:
+                    for correct, p in zip(marks_by_key[key], paths_by_key[key]):
+                        if not correct: continue
+                        aug_query = p[1].state.strip('\n')
+                        print(aug_query)
+                        aug_result = p[2].state.strip('\n')
+                        answer = p[3].state.strip('\n')
+                        d = {
+                            'note': note,
+                            'problem_id': problem_id,
+                            'problem': problem,
+                            'solution': sol,
+                            'aug_query': aug_query,
+                            'aug_result': aug_result,
+                            'answer': answer,
+                            'correct': correct,
+                            'relevance': sum(aug_mark) - ratio
+                        }
+                        final_data.append(d)
+                        n_pos_samples += 1
+                        break
 
-    print(f'Writing {len(final_data)} rows...')
+                elif n_neg_samples < n_pos_samples:
+                    for correct, p in zip(marks_by_key[key], paths_by_key[key]):
+                        if correct: continue
+                        aug_query = p[1].state.strip('\n')
+                        if ('COMPUTE' not in aug_query and
+                            'SEARCH' not in aug_query):
+                            continue
+                        print(aug_query)
+                        aug_result = p[2].state.strip('\n')
+                        answer = p[3].state.strip('\n')
+                        d = {
+                            'note': note,
+                            'problem_id': problem_id,
+                            'problem': problem,
+                            'solution': sol,
+                            'aug_query': aug_query,
+                            'aug_result': aug_result,
+                            'answer': answer,
+                            'correct': correct,
+                            'relevance': 0
+                        }
+                        final_data.append(d)
+                        n_neg_samples += 1
+                        break
+
+    print(f'Writing {len(final_data)} rows to {output_json}...')
     with open(output_json, 'w') as fh:
         json.dump(final_data, fh)
 

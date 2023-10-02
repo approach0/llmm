@@ -48,21 +48,24 @@ def data_generator_json(json_file):
 
 
 def push_data(repo, train_path=None, test_path=None):
-    from datasets import Dataset
+    from datasets import Dataset, disable_caching
     from datasets.dataset_dict import DatasetDict
+    disable_caching()
+
     ds_dict = {}
 
     if train_path:
         train_ds = Dataset.from_generator(data_generator_json,
-            gen_kwargs={'json_file': train_path})
+            gen_kwargs={'json_file': train_path}, cache_dir=None)
         ds_dict['train'] = train_ds
 
     if test_path:
         test_ds = Dataset.from_generator(data_generator_json,
-            gen_kwargs={'json_file': test_path})
+            gen_kwargs={'json_file': test_path}, cache_dir=None)
         ds_dict['test'] = test_ds
 
     dataset = DatasetDict(ds_dict)
+    print(dataset)
     dataset.push_to_hub(repo)
 
 
