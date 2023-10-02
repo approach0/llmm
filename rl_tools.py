@@ -64,6 +64,13 @@ def has_math(s):
         return False
 
 
+def smart_filter(kw):
+    if isinstance(kw, str):
+        return True
+    else:
+        return False
+
+
 def smart_correct(kw):
     onlytext = set(
         string.ascii_letters +
@@ -80,6 +87,8 @@ def smart_correct(kw):
 
 
 def search_mux(api_name, question, keywords, docid=None):
+    keywords = list(filter(smart_filter, keywords))
+
     if keywords:
         keywords = list(map(smart_correct, keywords))
 
