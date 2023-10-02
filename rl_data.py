@@ -139,6 +139,7 @@ def datamap_double_train_for_query_and_answer(config, dataset):
     qry_column = ["query"] * len(ds)
     ans_column = ["answer"] * len(ds)
     qry_ds = ds.add_column("train_for", qry_column)
+    qry_ds = qry_ds.filter(lambda x: x['correct']) # ensure good query.
     ans_ds = ds.add_column("train_for", ans_column)
     dataset = DatasetDict({
         'train': concatenate_datasets([qry_ds, ans_ds])
