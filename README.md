@@ -29,4 +29,10 @@ tensorboard dev upload --logdir ./output/runs/Jul12_11-00-08_watgpu-100/
 ```sh
 conda create --name llmm -c conda-forge python=3.8
 conda activate llmm
+
+pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu118
+python -c 'import torch; print(torch.cuda.is_available())'
+
+conda install cuda -c nvidia/label/cuda-11.8.0 # must match torch version!
+pip install packaging flash-attn
 ```
