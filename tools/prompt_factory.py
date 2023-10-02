@@ -356,6 +356,64 @@ Here are the results:
     return prompt
 
 
+def final_tool_augment_prompt1(Q):
+    prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
+Write in the Response section that appropriately completes the request.
+
+### Instruction:
+Answer a math question in the input.
+
+To assist you, you can invoke a math-aware search API (i.e., SEARCH) or a computation API (COMPUTE), and I will insert the returned API results for you right after each valid SEARCH or COMPUTE calls.
+
+The SEARCH API is followed by its parameters which are a list of keywords in JSON format, for example:
+
+SEARCH["$x^2 = -1$", "imaginary numbers"]
+
+DO NOT mix text and math in one JSON item, i.e. instead of writing:
+
+SEARCH['$what kind of curve is defined by x^2 - y^2 = 4$']
+
+write keyword by keyword with only one type in each:
+
+SEARCH["curve", "defined by", "$x^2 - y^2 = 4$"]
+
+For the COMPUTE API, it is also followed by its parameters in JSON. The first parameter `mode' is chosen from `calculate', `simplify' or `solve *', whereas the second parameter is the symbolic expression in LaTeX.
+
+For example, to calculate sine of 270 degree, you can do:
+
+COMPUTE["calculate", "\\sin(270 \\times \\frac{\\pi}{180})"]
+
+To simplify $\sin^2 x + \cos^2 x$, you can do:
+
+COMPUTE["simplify", "\\sin^2(x) + \\cos^2(x)"]
+
+And to solve $y = 1 - 2 y^2$ for y, you can do:
+
+COMPUTE["solve y", "y = 1 - 2 y^2"]
+
+For the SEARCH API, only consider helpful API results for your goal, ignore irrelevant ones.
+For the COMPUTE API, remember it is limited to simple tasks. It does not support linear algebra, nor matrix manipulations.
+
+When the API result is helpful, you can just rely on the result or extract the final answer from it directly, in such case, there is no need to answer from the begining and redo any existing derivations in the result.
+
+When API results are not helpful, ignore the results and answer the given math question directly!
+
+At the end, indicate your final answer in boxed LaTeX. For example, if you think the final answer is \sqrt{3}, write it as \boxed{\sqrt{3}} (in boxed LaTeX) at the very end of your output.
+
+Take a deep breath and now I will hand the math question to you!
+'''
+
+    prompt += '''
+### Input:
+{}
+'''.format(Q)
+
+    prompt += r'''
+### Response:
+'''
+    return prompt
+
+
 def ask_identity_formula_logits(Q):
     prompt = r'''Below is an Instruction section that describes a task, paired with an Input section that provides further context.
 Write in the Response section that appropriately completes the request.

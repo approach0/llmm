@@ -134,6 +134,18 @@ def datamap_DPO(config, dataset, dataset_key='train'):
     return DatasetDict({dataset_key: dataset})
 
 
+def datamap_double_train_for_query_and_answer(config, dataset):
+    ds = dataset['train']
+    qry_column = ["query"] * len(ds)
+    ans_column = ["answer"] * len(ds)
+    qry_ds = ds.add_column("train_for", qry_column)
+    ans_ds = ds.add_column("train_for", ans_column)
+    dataset = DatasetDict({
+        'train': concatenate_datasets([qry_ds, ans_ds])
+    })
+    return dataset
+
+
 ###############
 # mock model
 ###############
@@ -300,6 +312,33 @@ def collate_final_dataset_for_judger(config, batch_tok_fn, batch_data):
         data['prompt'] = prompt + '\n\n' + response_sect
     sources = [d['prompt'] + '\n' for d in batch_data]
     targets = ['rate[' + str(d['relevance']) + ']\n' for d in batch_data]
+    return collate_pr(config, batch_tok_fn, sources, targets)
+
+
+def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import final_tool_augment_prompt1, multihop_results1
+    for data in batch_data:
+        if data['train_for'] == 'query':
+            data['prompt'] = final_tool_augment_prompt1(data['problem'])
+            data['target'] = data['aug_query']
+
+        elif data['train_for'] == 'answer':
+            data['prompt'] = final_tool_augment_prompt1(data['problem'])
+            data['prompt'] += data['aug_query'] + '\n' 
+            data['prompt'] += multihop_results1(data['aug_result'])
+
+            if data['correct']:
+                data['target'] = 'The result looks relevant, I will use it to answer the question.\n\n'
+                data['target'] += data['answer']
+            else:
+                data['target'] = 'The result looks irrelevant, I will ignore it and answer the question directly.\n\n'
+                data['target'] += data['solution']
+
+        else:
+            assert False, 'invalid train_for'
+
+    sources = [d['prompt'] for d in batch_data]
+    targets = [d['target'] for d in batch_data]
     return collate_pr(config, batch_tok_fn, sources, targets)
 
 
