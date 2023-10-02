@@ -24,3 +24,9 @@ about the industry and developing skills that will help me in the future.
 ```sh
 tensorboard dev upload --logdir ./output/runs/Jul12_11-00-08_watgpu-100/
 ```
+
+## Setup
+```sh
+conda create --name llmm -c conda-forge python=3.8
+conda activate llmm
+```
