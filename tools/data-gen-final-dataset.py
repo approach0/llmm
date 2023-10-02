@@ -52,19 +52,15 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
             Q_mark = list(map(mark, [p[-1].state for p in paths_QA]))
             R_mark = list(map(mark, [p[-1].state for p in paths_QKRA]))
             ratio = len(R_mark) // len(Q_mark)
-            true_positive = sum(R_mark) > ratio * sum(Q_mark)
+            true_positive = sum(R_mark) > ratio and sum(Q_mark) == 0
 
             if true_positive:
-                rel_indicator = sum(R_mark) / (ratio * sum(Q_mark) + 0.1)
-                rel_indicator = int(rel_indicator)
-                if rel_indicator  > 2: rel_indicator = 2
-                elif rel_indicator == 0: continue
-
                 for correct, p in zip(R_mark, paths_QKRA):
                     if not correct: continue
                     srch_query = p[1].state
-                    if not srch_query.startswith('SEARCH'): continue
-                    print(srch_query)
+                    if not 'SEARCH' in srch_query: continue
+                    assert srch_query.startswith('SEARCH')
+                    srch_query = srch_query.strip('\n')
                     srch_result = p[2].state
                     srch_result = srch_result.strip('\n')
                     answer = p[3].state.strip('\n')
@@ -77,12 +73,13 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         'search_result': srch_result,
                         'answer': answer,
                         'correct': correct,
-                        'relevance': rel_indicator
+                        'relevance': sum(R_mark) - ratio
                     }
                     final_data.append(d)
                     n_pos_samples += 1
+                    break
 
-            elif n_neg_samples < 4 * n_pos_samples:
+            elif n_neg_samples < n_pos_samples:
                 for correct, p in zip(R_mark, paths_QKRA):
                     if correct: continue
                     srch_query = p[1].state
@@ -104,6 +101,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                     }
                     final_data.append(d)
                     n_neg_samples += 1
+                    break
             else:
                 pass
 
