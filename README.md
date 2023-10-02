@@ -40,4 +40,6 @@ pip3 install flash-attn
 pip3 install transformers==4.31.0
 pip3 install deepspeed==0.10.3
 pip3 install peft==0.4.0
+
+pip3 install -r requirements.txt
 ```
