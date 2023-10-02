@@ -43,3 +43,6 @@ pip3 install peft==0.4.0
 
 pip3 install -r requirements.txt
 ```
+
+## Slurm
+See instructions: https://watgpu.cs.uwaterloo.ca/slurm.html
