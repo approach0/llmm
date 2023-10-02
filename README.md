@@ -38,4 +38,6 @@ pip3 install packaging
 pip3 install flash-attn
 
 pip3 install transformers==4.28.1
+pip install deepspeed
+pip install git+https://github.com/huggingface/peft
 ```
