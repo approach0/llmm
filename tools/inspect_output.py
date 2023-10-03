@@ -185,7 +185,7 @@ def textify_flip(j_dict):
 
 def textify_final(j_dict):
     order = ['problem_id', 'problem',
-        'search_query', 'search_result', 'relevance',
+        'aug_query', 'aug_result', 'relevance',
         'answer', 'correct', 'solution'
     ]
     text_list = []
@@ -235,7 +235,7 @@ def output_html(logdir):
         _output_html(logpath)
 
 
-def inspect_dataset(dataset_name, outdir='./output', filter_rele=2):
+def inspect_final_dataset(dataset_name, outdir='./output', filter_rel=0):
     from datasets import load_dataset
     dataset = load_dataset(dataset_name)
     outdir = os.path.join(outdir, os.path.basename(dataset_name))
@@ -245,8 +245,7 @@ def inspect_dataset(dataset_name, outdir='./output', filter_rele=2):
     sys.path.insert(0, './pya0')
     from pya0.visualize import output_html as output
     for i, data in enumerate(dataset['train']):
-        if data['relevance'] < filter_rele:
-            continue
+        if data['relevance'] <= filter_rel: continue
         results = textify_final(data)
         head = data['problem_id']
         output(outdir, f'{i}.html', '_', head, results,
@@ -531,5 +530,5 @@ if __name__ == '__main__':
         'test_np': test_np,
         'test_lr_query': test_lr_query,
         'get_flips': get_flips_in_trees,
-        'dataset': inspect_dataset,
+        'final_dataset': inspect_final_dataset,
     })
