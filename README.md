@@ -51,4 +51,5 @@ To see the time limit for a job:
 ```sh
 squeue
 scontrol show job -dd 483 | grep TimeLimit
+scontrol show job -dd 479 | grep TRES=
 ```
