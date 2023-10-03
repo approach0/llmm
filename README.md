@@ -46,3 +46,9 @@ pip3 install -r requirements.txt
 
 ## Slurm
 See instructions: https://watgpu.cs.uwaterloo.ca/slurm.html
+
+To see the time limit for a job:
+```sh
+squeue
+scontrol show job -dd 483 | grep TimeLimit
+```
