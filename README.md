@@ -45,11 +45,12 @@ pip3 install -r requirements.txt
 ```
 
 ## Slurm
-See instructions: https://watgpu.cs.uwaterloo.ca/slurm.html
+See instructions: https://watgpu.cs.uwaterloo.ca/slurm.html, or https://docs.alliancecan.ca/wiki/Using_GPUs_with_Slurm
 
 To see the time limit for a job:
 ```sh
 squeue
 scontrol show job -dd 483 | grep TimeLimit
 scontrol show job -dd 479 | grep TRES=
+salloc --account=rrg-jimmylin --gpus-per-node=v100l:1 --cpus-per-task=2 --time=0-01:10 --mem=80G
 ```
