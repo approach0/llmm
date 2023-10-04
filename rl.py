@@ -612,6 +612,7 @@ def parse_metric_config(config):
 def do_experiment(config, inject_args):
     # inject arguments
     inject_arguments(config, inject_args)
+
     # prepare logging
     if run_uid := config.get('run_uid', False):
         pass
@@ -626,12 +627,15 @@ def do_experiment(config, inject_args):
         from datetime import datetime
         run_uid = datetime.today().strftime('%Y-%m-%d__%H_%M_%S')
 
-    # make ex_output_dir
+    # make exp_outdir
     output_dir = config.get('output_dir', '.')
-    ex_output_dir = os.path.join(
+    exp_outdir = os.path.join(
         config.get('output_dir'), config.name, run_uid
     )
-    os.makedirs(ex_output_dir, exist_ok=True)
+    os.makedirs(exp_outdir, exist_ok=True)
+
+    # inject specials
+    inject_specials(config, exp_outdir=exp_outdir)
 
     K = parse_metric_config(config)
     set_seed(config.getint('seed', 42))
@@ -650,7 +654,7 @@ def do_experiment(config, inject_args):
         rwd_fn = getattr(rl_data, config.get('reward_fn'))
         stp_fn = getattr(rl_data, config.get('step_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
-        if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
+        if log_fn: log_fn = partial(log_fn, config, exp_outdir)
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
             step  = step + data_offset
@@ -659,24 +663,24 @@ def do_experiment(config, inject_args):
                 stp_fn=stp_fn, log_fn=log_fn)
             save_tick = step % save_steps
             if save_tick == 0 and hasattr(model, 'save_pretrained'):
-                    trainer.save_pretrained(ex_output_dir)
+                    trainer.save_pretrained(exp_outdir)
             print(f'Save tick: {save_tick} % {save_steps}')
             print(f'Progress: {step+1} / {data_cutoff}')
 
         if hasattr(model, 'save_pretrained'):
-            trainer.save_pretrained(ex_output_dir)
+            trainer.save_pretrained(exp_outdir)
 
     elif config.get('mode') in ['finetune', 'finetune-dpo']:
         from torch import autocast
         with autocast(device_type="cuda"):
             trainer.train()
-        trainer.save_model(ex_output_dir)
+        trainer.save_model(exp_outdir)
 
     elif config.get('mode') == 'inference':
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
         rwd_fn = getattr(rl_data, config.get('reward_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
-        if log_fn: log_fn = partial(log_fn, config, ex_output_dir)
+        if log_fn: log_fn = partial(log_fn, config, exp_outdir)
         for step, batch_in in enumerate(dataloader):
             step  = step + data_offset
             mcts_fn(step, K, config, models, batch_in, None,
@@ -686,6 +690,15 @@ def do_experiment(config, inject_args):
 
     else:
         raise NotImplemented
+
+
+def inject_specials(config, **special_args):
+    for var_key, var_val in special_args.items():
+        sp = f'<{var_key}>'
+        print('[inject special]:', sp, '=>', var_val)
+        for cfg_key, cfg_val in config.items():
+            if not isinstance(cfg_val, str): continue
+            config[cfg_key] = cfg_val.replace(sp, var_val)
 
 
 def inject_arguments(config, inject_args):
