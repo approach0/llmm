@@ -98,4 +98,12 @@ case $1 in
         detached_rl inference__generalist "--run_uid collection --data_offset 400 --data_cutoff 500"
         detached_rl inference__generalist "--run_uid collection --data_offset 500 --data_cutoff 550"
     ;;
+
+    batch_infer_mammoth)
+        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 0   --data_cutoff 100"
+        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 200 --data_cutoff 300"
+        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 300 --data_cutoff 400"
+        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 400 --data_cutoff 500"
+        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 500 --data_cutoff 550"
+    ;;
 esac
