@@ -394,20 +394,14 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
 
     root.print_tree()
     leaves = root.get_all_leaves()
-    leaf_texts = [n.state for n in leaves]
-    rewards = []
-    for leaf_text in leaf_texts:
-        reward = rwd_fn(config, batch_in, [leaf_text], models,
+    for leaf in leaves:
+        answer = '\n'.join(
+            [map_state(n) for n in leaf.get_path(None)][1:]
+        )
+        rwd_fn(config, batch_in, [answer], models,
             **get_cfg_json(config, 'reward_args', {})
         )
-        rewards.append(reward[0])
     if log_fn:
-        leaf2root_states = [
-            '\n'.join(
-                [map_state(p) for p in n.get_path(None)]
-            )
-            for n in leaves
-        ]
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
