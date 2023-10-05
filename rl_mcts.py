@@ -133,7 +133,7 @@ class Node():
         curr = self
         path = []
         while curr:
-            if curr.node_type in include:
+            if include is None or curr.node_type in include:
                 path.append(curr)
             curr = curr.parent
         return path[::-1]
@@ -319,69 +319,71 @@ def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,
     log_fn(step, path, root.json(), sol=solution)
 
 
-
-#def concat(tok_fn, batch_in, batch_out):
-#    dict_batch, batch_raw = batch_in
-#    if 'input_ids' in dict_batch:
-#        inp_texts = [
-#            tokenizer.decode(b)
-#            for b in dict_batch['input_ids']
-#        ]
-#    elif 'texts' in dict_batch:
-#        inp_texts = [
-#            t
-#            for t in dict_batch['texts']
-#        ]
-#    else:
-#        raise NotImplemented
-#
-#    concat_texts = [
-#        a + b.replace('</s>', '')
-#        for a, b in zip(inp_texts, batch_out)
-#    ]
-#    return tok_fn(concat_texts), batch_raw
+def get_batch_texts(dict_batch):
+    if 'input_ids' in dict_batch:
+        inp_texts = [
+            tokenizer.decode(b)
+            for b in dict_batch['input_ids']
+        ]
+    elif 'texts' in dict_batch:
+        inp_texts = [
+            t
+            for t in dict_batch['texts']
+        ]
+    else:
+        raise NotImplemented
+    return inp_texts
 
 
 def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
+    # prepare parameters
+    from rl import batch_tokenize
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
+    tok_fn = partial(batch_tokenize, config, tokenizer)
 
+    query_key = config.get('collate__query_key', 'query')
+    search_Q = batch_raw[0][query_key]
+    tool_map = {
+        'SEARCH': partial(
+            search_mux, 'mabowdor', search_Q
+        ),
+        'COMPUTE': sympy_solver
+    }
+
+    # start tree searching
+    root = Node('prompt', get_batch_texts(dict_batch)[0])
+
+    batch_out = res_fn(config, models, batch_in)
+    n = root.branch('generated', batch_out[0].replace('</s>', ''))
+
+    def map_state(n):
+        if n.node_type == 'result':
+            if isinstance(n.state, ToolError):
+                return multihop_err1()
+            else:
+                return multihop_results1(n.state)
+        else:
+            return n.state
+
+    if has_any_captured(n.state, tool_map):
+        _, tool_res = tool_invoke(n.state, tool_map)
+        if isinstance(tool_res, ToolError):
+            tool_res = [tool_res]
+        for res in tool_res:
+            rn = n.branch('result', res)
+            nodes = rn.get_path(None)
+            states = [map_state(n) for n in nodes]
+            inp = states[0] + states[1] + '\n' + states[2]
+            print(inp)
+            out = Node.gn(config, models, tok_fn, res_fn, inp)
+            out = out.replace('</s>', '')
+            print(out)
+            rn.branch('generated', out)
+
+    root.print_tree()
     breakpoint()
-
-    #from rl import batch_tokenize
-    #tok_fn = partial(batch_tokenize, config, tokenizer)
-
-    #query_key = config.get('collate__query_key', 'query')
-    #batch_out = res_fn(config, models, batch_in)
-    #
-    #root = Node('prompt', batch_in['input'][0])
-
-    #while True:
-    #    terminate = ['\\boxed' in o for o in batch_out]
-    #    if any(terminate): break
-    #    for i, out_str in enumerate(batch_out):
-    #        search_uri = 'mabowdor'
-    #        search_Q = batch_raw[i][query_key]
-    #        tool_map = {
-    #            'SEARCH': partial(
-    #                search_mux, search_uri, search_Q
-    #            ),
-    #            'COMPUTE': sympy_solver
-    #        }
-    #        if not has_any_captured(out_str, tool_map):
-    #            tool_res = ''
-    #        else:
-    #            _, tool_res = tool_invoke(out_str, tool_map)
-    #            if isinstance(tool_res, ToolError):
-    #                tool_res = multihop_err1()
-    #            else:
-    #                tool_res = multihop_results1(tool_res)
-    #        batch_out[i] = out_str.replace('</s>', '') + tool_res
-    #    breakpoint()
-    #    batch_in = concat(tok_fn, batch_in, batch_out)
-    #    batch_out = res_fn(config, models, batch_in)
-    #    breakpoint()
 
     #rewards = rwd_fn(config, batch_in, batch_out, models,
     #    **get_cfg_json(config, 'reward_args', {})
