@@ -56,10 +56,9 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 base_mark = marks_by_key['QA']
                 aug_mark = marks_by_key[key]
                 base_ratio = len(aug_mark) // len(base_mark)
-                true_ratio = sum(aug_mark) / (sum(base_mark) + 0.01)
-                true_pos = true_ratio > base_ratio and sum(base_mark) == 0
-                true_neg = true_ratio == 0 and sum(base_mark) > 0
-                relevance = round(true_ratio / base_ratio, 2)
+                true_pos = sum(aug_mark) >= base_ratio and sum(base_mark) == 0
+                true_neg = sum(aug_mark) == 0 and sum(base_mark) > 0
+                relevance = sum(aug_mark) - base_ratio + 1
 
                 if true_pos:
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
