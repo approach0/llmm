@@ -409,7 +409,6 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             for n in leaves
         ]
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
-    quit()
 
 
 if __name__ == '__main__':
