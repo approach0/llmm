@@ -178,19 +178,18 @@ def collate_prompt(config, batch_tok_fn, batch_data):
     return batch_tok_fn(prompts, eos=eos), batch_data
 
 
-def collate_input_cot(config, batch_tok_fn, batch_data):
-    from tools.prompt_factory import cot2, cot_mytrain
-    prompts = [cot_mytrain(d['input']) for d in batch_data]
+def collate_cot_mytrain(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import cot_mytrain
+    query_key = config.get('collate__query_key', 'query')
+    prompts = [cot_mytrain(d[query_key]) for d in batch_data]
     eos = config.getboolean('collate_add_eos', True)
     return batch_tok_fn(prompts, eos=eos), batch_data
 
 
-def collate_query_cot(config, batch_tok_fn, batch_data):
-    from tools.prompt_factory import cot_mytrain
-    prompts = [
-        cot_mytrain(d['query'])
-        for d in batch_data
-    ]
+def collate_cot_wizard(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import cot_wizard
+    query_key = config.get('collate__query_key', 'query')
+    prompts = [cot_wizard(d[query_key]) for d in batch_data]
     eos = config.getboolean('collate_add_eos', True)
     return batch_tok_fn(prompts, eos=eos), batch_data
 
