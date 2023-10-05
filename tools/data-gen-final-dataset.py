@@ -71,6 +71,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                             existing_aug_result.add(aug_result)
 
                         relevance = sum(aug_mark) - base_ratio + 1
+                        assert relevance > 0
                         print(aug_query, relevance)
                         d = {
                             'note': note,
@@ -86,7 +87,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         final_data.append(d)
                         n_pos_samples += 1
 
-                elif true_neg and n_neg_samples < n_pos_samples:
+                elif true_neg and n_neg_samples < 2 * n_pos_samples:
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
                         if correct: continue
                         aug_query = p[1].state.strip('\n')
