@@ -90,8 +90,6 @@ def infer_query_lm(step, K, config, models, batch_in, trainer,
 class Node():
     def __init__(self, node_type, state):
         self.node_type = node_type
-        if isinstance(state, str):
-            state = state.replace('</s>', '').replace('<s>', '')
         self.state = state
         self.children = []
         self.parent = None
@@ -330,15 +328,19 @@ def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,
     log_fn(step, path, root.json(), sol=solution)
 
 
+def clean_state(state):
+    return state.replace('</s>', '').replace('<s>', '').strip(' ')
+
+
 def get_batch_texts(tokenizer, dict_batch):
     if 'input_ids' in dict_batch:
         inp_texts = [
-            tokenizer.decode(b)
+            clean_state(tokenizer.decode(b))
             for b in dict_batch['input_ids']
         ]
     elif 'texts' in dict_batch:
         inp_texts = [
-            t
+            clean_state(t)
             for t in dict_batch['texts']
         ]
     else:
@@ -367,7 +369,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     root = Node('prompt', get_batch_texts(tokenizer, dict_batch)[0])
 
     batch_out = res_fn(config, models, batch_in)
-    n = root.branch('generated', batch_out[0])
+    n = root.branch('generated', clean_state(batch_out[0]))
 
     def map_state(n):
         if n.node_type == 'result':
@@ -388,7 +390,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
             out = Node.gn(config, models, tok_fn, res_fn, inp)
-            rn.branch('generated', out)
+            rn.branch('generated', clean_state(out))
 
     root.print_tree()
     leaves = root.get_all_leaves()
