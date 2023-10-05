@@ -609,6 +609,16 @@ def parse_metric_config(config):
     return K
 
 
+def skip_step(config, exp_outdir, step):
+    if config.getboolean('overwrite', False):
+        return False
+    for fname in os.listdir(exp_outdir):
+        if fname.startswith(f'{step:06}_'):
+            return True
+    else:
+        return False
+
+
 def do_experiment(config, inject_args):
     # inject arguments
     inject_arguments(config, inject_args)
@@ -657,7 +667,10 @@ def do_experiment(config, inject_args):
         if log_fn: log_fn = partial(log_fn, config, exp_outdir)
         save_steps = config.getint('rl_save_steps', 1000)
         for step, batch_in in enumerate(dataloader):
-            step  = step + data_offset
+            step = step + data_offset
+            if skip_step(config, exp_outdir, step):
+                print(f'Skip step#{step}...')
+                continue
             mcts_fn(step, K, config, models, batch_in, trainer,
                 res_fn=batch_respond, rwd_fn=rwd_fn,
                 stp_fn=stp_fn, log_fn=log_fn)
@@ -683,6 +696,9 @@ def do_experiment(config, inject_args):
         if log_fn: log_fn = partial(log_fn, config, exp_outdir)
         for step, batch_in in enumerate(dataloader):
             step  = step + data_offset
+            if skip_step(config, exp_outdir, step):
+                print(f'Skip step#{step}...')
+                continue
             with torch.no_grad():
                 mcts_fn(step, K, config, models, batch_in, None,
                     res_fn=batch_respond, rwd_fn=rwd_fn,
