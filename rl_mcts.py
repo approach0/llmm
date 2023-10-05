@@ -90,6 +90,8 @@ def infer_query_lm(step, K, config, models, batch_in, trainer,
 class Node():
     def __init__(self, node_type, state):
         self.node_type = node_type
+        if isinstance(state, str):
+            state = state.replace('</s>', '').replace('<s>', '')
         self.state = state
         self.children = []
         self.parent = None
@@ -146,6 +148,15 @@ class Node():
         else:
             paths.append(self.get_path(include))
         return paths
+
+    def get_all_leaves(self):
+        leaves = []
+        if len(self.children) > 0:
+            for child in self.children:
+                leaves += child.get_all_leaves()
+        else:
+            leaves.append(self)
+        return leaves
 
     @staticmethod
     def gn(config, models, tok_fn, res_fn, inp):
@@ -319,7 +330,7 @@ def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,
     log_fn(step, path, root.json(), sol=solution)
 
 
-def get_batch_texts(dict_batch):
+def get_batch_texts(tokenizer, dict_batch):
     if 'input_ids' in dict_batch:
         inp_texts = [
             tokenizer.decode(b)
@@ -353,10 +364,10 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     }
 
     # start tree searching
-    root = Node('prompt', get_batch_texts(dict_batch)[0])
+    root = Node('prompt', get_batch_texts(tokenizer, dict_batch)[0])
 
     batch_out = res_fn(config, models, batch_in)
-    n = root.branch('generated', batch_out[0].replace('</s>', ''))
+    n = root.branch('generated', batch_out[0])
 
     def map_state(n):
         if n.node_type == 'result':
@@ -376,20 +387,27 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             nodes = rn.get_path(None)
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
-            print(inp)
             out = Node.gn(config, models, tok_fn, res_fn, inp)
-            out = out.replace('</s>', '')
-            print(out)
             rn.branch('generated', out)
 
     root.print_tree()
-    breakpoint()
-
-    #rewards = rwd_fn(config, batch_in, batch_out, models,
-    #    **get_cfg_json(config, 'reward_args', {})
-    #)
-    #if log_fn:
-    #    log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
+    leaves = root.get_all_leaves()
+    leaf_texts = [n.state for n in leaves]
+    rewards = []
+    for leaf_text in leaf_texts:
+        reward = rwd_fn(config, batch_in, [leaf_text], models,
+            **get_cfg_json(config, 'reward_args', {})
+        )
+        rewards.append(reward[0])
+    if log_fn:
+        leaf2root_states = [
+            '\n'.join(
+                [map_state(p) for p in n.get_path(None)]
+            )
+            for n in leaves
+        ]
+        log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
+    quit()
 
 
 if __name__ == '__main__':

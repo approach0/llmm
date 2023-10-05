@@ -145,7 +145,7 @@ def textify_v1(items):
 
 
 def textify_v2(j_dict):
-    order = ['problem', 'query', 'ground_truth', 'prompt',
+    order = ['problem', 'query', 'ground_truth', 'prompt', 'output',
         'manual_rating', 'judge_buffer', 'solution']
     text_list = []
     for key in order:

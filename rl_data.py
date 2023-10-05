@@ -468,12 +468,13 @@ def rl_step_default(config, trainer, batch_in, batch_out, rewards):
 # log func
 ###############
 def log_problem(config, ex_output_dir, values,
-    problem_key='problem', query_key='query'):
+    problem_key='problem', query_key='query', output_var='batch_out'):
     step = values['step']
     for b, (inp, out) in enumerate(
-        zip(values['batch_in'][1], values['batch_out'])
+        zip(values['batch_in'][1], values[output_var])
     ):
         log = copy.deepcopy(inp)
+        log['output'] = out
         log_name = log[problem_key].strip('.').replace('/', '_')
         log_name = f'{step:06}_batch{b}-' + log_name + '.log'
         logpath = os.path.join(ex_output_dir, log_name)
