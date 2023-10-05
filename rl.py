@@ -613,7 +613,7 @@ def skip_step(config, exp_outdir, step):
     if config.getboolean('overwrite', False):
         return False
     for fname in os.listdir(exp_outdir):
-        if fname.startswith(f'{step:06}_'):
+        if fname.startswith(f'{step:06}'):
             return True
     else:
         return False
