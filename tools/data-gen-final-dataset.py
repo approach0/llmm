@@ -58,7 +58,6 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 base_ratio = len(aug_mark) // len(base_mark)
                 true_pos = sum(aug_mark) >= base_ratio and sum(base_mark) == 0
                 true_neg = sum(aug_mark) == 0 and sum(base_mark) > 0
-                relevance = sum(aug_mark) - base_ratio + 1
 
                 if true_pos:
                     for correct, p in zip(marks_by_key[key], paths_by_key[key]):
@@ -71,6 +70,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         else:
                             existing_aug_result.add(aug_result)
 
+                        relevance = sum(aug_mark) - base_ratio + 1
                         print(aug_query, relevance)
                         d = {
                             'note': note,
@@ -100,6 +100,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         else:
                             existing_aug_result.add(aug_result)
 
+                        relevance = 0
                         print(aug_query, relevance)
                         d = {
                             'note': note,
