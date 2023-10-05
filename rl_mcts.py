@@ -373,7 +373,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
 
     def map_state(n):
         if n.node_type == 'result':
-            if isinstance(n.state, ToolError):
+            if n.state == 'ToolError':
                 return multihop_err1()
             else:
                 return multihop_results1(n.state)
@@ -383,7 +383,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     if has_any_captured(n.state, tool_map):
         _, tool_res = tool_invoke(n.state, tool_map)
         if isinstance(tool_res, ToolError):
-            tool_res = [tool_res]
+            tool_res = ['ToolError']
         for res in tool_res:
             rn = n.branch('result', res)
             nodes = rn.get_path(None)
