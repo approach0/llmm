@@ -683,9 +683,10 @@ def do_experiment(config, inject_args):
         if log_fn: log_fn = partial(log_fn, config, exp_outdir)
         for step, batch_in in enumerate(dataloader):
             step  = step + data_offset
-            mcts_fn(step, K, config, models, batch_in, None,
-                res_fn=batch_respond, rwd_fn=rwd_fn,
-                stp_fn=None, log_fn=log_fn)
+            with torch.no_grad():
+                mcts_fn(step, K, config, models, batch_in, None,
+                    res_fn=batch_respond, rwd_fn=rwd_fn,
+                    stp_fn=None, log_fn=log_fn)
             print(f'Progress: {step+1} / {data_cutoff}')
 
     else:

@@ -343,6 +343,18 @@ def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
     return collate_pr(config, batch_tok_fn, sources, targets)
 
 
+def collate_generalist_infer(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import final_tool_augment_prompt1
+    query_key = config.get('collate__query_key', 'query')
+    for data in batch_data:
+        query = data[query_key]
+        data['prompt'] = final_tool_augment_prompt1(query)
+    inputs = [d['prompt'] for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    inputs_tokenized = batch_tok_fn(inputs, eos=eos)
+    return inputs_tokenized, batch_data
+
+
 ###############
 # stop func
 ###############
