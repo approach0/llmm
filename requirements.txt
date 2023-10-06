@@ -17,3 +17,10 @@ mpi4py
 accelerate
 bitsandbytes
 scipy
+nltk
+scikit-learn
+numba
+pandas
+numpy
+tqdm
+pyjnius

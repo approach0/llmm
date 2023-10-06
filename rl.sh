@@ -82,8 +82,8 @@ case $1 in
     ;;
 
     finetune3)
-        export WANDB_RUN_GROUP=basilisk
-        deepspeed_launch finetune_generalist_on_final_dataset 0,1,2,3 8992 ""
+        export WANDB_RUN_GROUP=watgpu-wizard
+        deepspeed_launch finetune_generalist_on_wizard 0,1,2,3 8993 "--run watgpu-wizard"
     ;;
 
     finetune4)
