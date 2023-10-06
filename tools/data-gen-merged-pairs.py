@@ -36,6 +36,7 @@ def sanity_check(repo):
     from datasets import load_dataset
     dataset = load_dataset(repo)
     print(dataset)
+    breakpoint()
 
 
 def data_generator_json(json_file):
