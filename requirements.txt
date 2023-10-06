@@ -17,3 +17,4 @@ mpi4py
 accelerate
 bitsandbytes
 scipy
+nltk
