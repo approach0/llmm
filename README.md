@@ -52,5 +52,5 @@ To see the time limit for a job:
 squeue
 scontrol show job -dd 483 | grep TimeLimit
 scontrol show job -dd 479 | grep TRES=
-salloc --account=rrg-jimmylin --gpus-per-node=v100l:1 --cpus-per-task=2 --time=0-01:10 --mem=80G
+salloc --gres=gpu:5 --cpus-per-task=8 --mem=250G --time=20:00:00
 ```
