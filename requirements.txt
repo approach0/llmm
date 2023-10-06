@@ -19,3 +19,8 @@ bitsandbytes
 scipy
 nltk
 scikit-learn
+numba
+pandas
+numpy
+tqdm
+pyjnius
