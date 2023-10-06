@@ -24,6 +24,8 @@ deepspeed_launch() {
 detached_rl() {
     ID="$1-$RANDOM"
     tmux new-session -c `pwd` -s $ID -d
+    tmux send-keys -t $ID "export CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+    tmux send-keys -t $ID Enter
     tmux send-keys -t $ID "conda activate $CONDA_DEFAULT_ENV"
     tmux send-keys -t $ID Enter
     tmux send-keys -t $ID "python rl.py "
@@ -105,5 +107,36 @@ case $1 in
         detached_rl inference__7b_mammoth "--run_uid collection --data_offset 300 --data_cutoff 400"
         detached_rl inference__7b_mammoth "--run_uid collection --data_offset 400 --data_cutoff 500"
         detached_rl inference__7b_mammoth "--run_uid collection --data_offset 500 --data_cutoff 550"
+    ;;
+
+    batch_infer_generalist_w_4gpus_and_specified_model)
+        #model=output/finetune_generalist_on_wizard-small-traindata/watgpu-wizard
+        #run_uid=wizard_ra
+
+        model=output/finetune_generalist_on_mammoth-small-traindata/watgpu
+        run_uid=mammoth_ra
+
+        export CUDA_VISIBLE_DEVICES=0
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset  0 --data_cutoff 35"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 35 --data_cutoff 70"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 105 --data_cutoff 140"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 140 --data_cutoff 175"
+
+        export CUDA_VISIBLE_DEVICES=1
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 175 --data_cutoff 210"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 210 --data_cutoff 245"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 245 --data_cutoff 280"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 280 --data_cutoff 315"
+
+        export CUDA_VISIBLE_DEVICES=2
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 315 --data_cutoff 350"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 350 --data_cutoff 385"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 385 --data_cutoff 420"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 420 --data_cutoff 455"
+
+        export CUDA_VISIBLE_DEVICES=3
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 455 --data_cutoff 490"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 490 --data_cutoff 525"
+        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 525 --data_cutoff 560"
     ;;
 esac
