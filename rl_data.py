@@ -366,6 +366,15 @@ def stop_on_common_stop_tokens(config, tokenizer, response):
     return False
 
 
+def stop_on_common_stop_and_boxed_tokens(config, tokenizer, response):
+    common_stop = stop_on_common_stop_tokens(config, tokenizer, reponse)
+    if common_stop:
+        return True
+    finished_lines = response.split('\n')[:-1]
+    boxed_lines = list(map(lambda x: '\\boxed' in x, finished_lines))
+    return any(boxed_lines)
+
+
 ###############
 # reward func
 ###############
