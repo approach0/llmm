@@ -16,3 +16,4 @@ flask
 mpi4py
 accelerate
 bitsandbytes
+scipy
