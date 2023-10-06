@@ -14,3 +14,5 @@ lion-pytorch
 wandb
 flask
 mpi4py
+accelerate
+bitsandbytes
