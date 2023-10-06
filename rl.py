@@ -644,6 +644,12 @@ def do_experiment(config, inject_args):
     )
     os.makedirs(exp_outdir, exist_ok=True)
 
+    # save the configs of this run
+    with open(os.path.join(exp_outdir, 'config.json'), 'w') as fh:
+        json.dump(dict(config.items()), fh)
+    with open(os.path.join(exp_outdir, 'inject.json'), 'w') as fh:
+        json.dump(dict(inject_args.items()), fh)
+
     # inject specials
     inject_specials(config, exp_outdir=exp_outdir)
 
