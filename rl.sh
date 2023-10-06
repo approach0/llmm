@@ -110,8 +110,11 @@ case $1 in
     ;;
 
     batch_infer_generalist_w_4gpus_and_specified_model)
-        model=output/finetune_generalist_on_wizard-small-traindata/watgpu-wizard
-        run_uid=wizard_ra
+        #model=output/finetune_generalist_on_wizard-small-traindata/watgpu-wizard
+        #run_uid=wizard_ra
+
+        model=output/finetune_generalist_on_mammoth-small-traindata/watgpu
+        run_uid=mammoth_ra
 
         export CUDA_VISIBLE_DEVICES=0
         detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset  0 --data_cutoff 35"
