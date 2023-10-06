@@ -224,7 +224,7 @@ def _output_html(logpath, verbose=True, query_key='query'):
             None, False, 100, html, create_parent_dir=False)
 
 
-def output_html(logdir):
+def output_html(logdir, query_key='query'):
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if os.path.isdir(logpath):
@@ -232,7 +232,7 @@ def output_html(logdir):
         if logpath.split('.')[-1] != 'log':
             continue
         print(logpath)
-        _output_html(logpath)
+        _output_html(logpath, query_key=query_key)
 
 
 def inspect_final_dataset(dataset_name, outdir='./output', filter_rel=0):
