@@ -367,7 +367,7 @@ def stop_on_common_stop_tokens(config, tokenizer, response):
 
 
 def stop_on_common_stop_and_boxed_tokens(config, tokenizer, response):
-    common_stop = stop_on_common_stop_tokens(config, tokenizer, reponse)
+    common_stop = stop_on_common_stop_tokens(config, tokenizer, response)
     if common_stop:
         return True
     finished_lines = response.split('\n')[:-1]
