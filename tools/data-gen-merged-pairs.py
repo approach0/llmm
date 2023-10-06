@@ -32,12 +32,10 @@ def merge_pairs(*json_paths, output_file='output/finetune-pairs.json',
         json.dump(output, fh, indent=2, ensure_ascii=False)
 
 
-def sanity_check(json_path):
-    with open(json_path, 'r') as fh:
-        j = json.load(fh)
-    for i, item in enumerate(j):
-        if 'boxed' in item['instruction']:
-            print(i)
+def sanity_check(repo):
+    from datasets import load_dataset
+    dataset = load_dataset(repo)
+    print(dataset)
 
 
 def data_generator_json(json_file):
