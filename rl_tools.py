@@ -245,7 +245,7 @@ if __name__ == '__main__':
 
     response = r'''I can invoke the search API here...
 
-    COMPUTE["solve y", "y = 1 - 2 y^2"]
+    COMPUTE["solve b", "y= a \\cos bx"]
 
     should it return some results here?'''
 

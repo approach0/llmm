@@ -382,8 +382,11 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
 
     if has_any_captured(n.state, tool_map):
         _, tool_res = tool_invoke(n.state, tool_map)
-        if isinstance(tool_res, ToolError):
+        if isinstance(tool_res, ToolError): # API failure
             tool_res = ['ToolError']
+        elif isinstance(tool_res, str): # for COMPUTE result
+            tool_res = [tool_res]
+
         for res in tool_res:
             rn = n.branch('result', res)
             nodes = rn.get_path(None)
