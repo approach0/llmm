@@ -915,6 +915,11 @@ Write a response that appropriately completes the request.
     return template.format(instr=instr, input=input)
 
 
+def prompt_tora(Q):
+    prompt = f"<|user|>\n{Q}\n<|assistant|>\n"
+    return prompt
+
+
 if __name__ == '__main__':
     #prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
     prompt = adapt_wizard('Q', 'k1', 'k2')
