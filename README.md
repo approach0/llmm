@@ -32,6 +32,9 @@ conda activate llmm
 
 pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu118
 python -c 'import torch; print(torch.cuda.is_available())'
+python -c 'import torch; print(torch.version.cuda)'
+python -c 'import torch; print(torch.__version__)'
+
 
 conda install cuda -c nvidia/label/cuda-11.8.0 # must match torch version!
 pip3 install packaging
