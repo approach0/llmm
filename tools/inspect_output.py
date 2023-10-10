@@ -207,7 +207,11 @@ def html(fh, query, hit, page, idx):
 def _output_html(logpath, verbose=True, query_key='query'):
     import sys
     sys.path.insert(0, './pya0')
-    from pya0.visualize import output_html as output
+    try:
+        from pya0.visualize import output_html as output
+    except Exception as e:
+        print(e)
+        return
     with open(logpath, 'r') as fh:
         j = json.load(fh)
         if 'agent_answer' in j:
