@@ -71,6 +71,15 @@ case $1 in
         detached_rl mcts_explore_fulltopics_using_chatgpt "--run_uid collection --data_offset 5000 --data_cutoff 6300"
     ;;
 
+    batch_chatgpt_gen_trees_on_querylm)
+        detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 0    --data_cutoff 2000"
+        detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 2000 --data_cutoff 4000"
+        detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 4000 --data_cutoff 6000"
+        detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 6000 --data_cutoff 8000"
+        detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 8000 --data_cutoff 10000"
+        detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 10000 --data_cutoff 12000"
+    ;;
+
     finetune1)
         # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
         export WANDB_RUN_GROUP=finetune_mathy_fft_as_querylm
