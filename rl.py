@@ -180,6 +180,7 @@ def get_models(config):
         elif config.get('mode') == 'vllm':
             from vllm import LLM
             model = LLM(model=model_path)
+            ref_model = None
 
         else:
             raise NotImplemented
@@ -442,6 +443,16 @@ def batch_respond(config, models, batch_in, trainer=None):
         else:
             print('Error code:', res.status_code)
             quit(1)
+
+    elif config.get('mode') == 'vllm':
+        from vllm import SamplingParams
+        inp_texts = batch_in[0]['texts']
+        gen_kwargs = get_cfg_json(config, 'gen_kwargs', {})
+        outputs = model.generate(inp_texts, SamplingParams(**gen_kwargs), use_tqdm=False)
+        outputs = [outputs[0].outputs[0].text]
+        print_if_verbose(inp_texts, outputs)
+        return outputs
+
     else:
         device = model.device
         dict_batch, batch_raw = adapt_inputs(config, tokenizer, batch_in)
@@ -545,7 +556,7 @@ def prepare_experiment(config):
     _, collate_fn = wrapup_collate(config, tokenizer)
 
     # prepare dataset loader
-    if config.get('mode') in ['rl', 'inference']:
+    if config.get('mode') in ['rl', 'inference', 'vllm']:
         ds_key = config.get('dataset_key', 'train')
         print('Use dataset key:', ds_key)
         data = dataset[ds_key]
@@ -701,7 +712,7 @@ def do_experiment(config, inject_args):
             trainer.train()
         trainer.save_model(exp_outdir)
 
-    elif config.get('mode') == 'inference':
+    elif config.get('mode') in ['inference', 'vllm']:
         mcts_fn = getattr(rl_mcts, config.get('mcts_fn'))
         rwd_fn = getattr(rl_data, config.get('reward_fn', '_'), None)
         log_fn = getattr(rl_data, config.get('log_fn', '_'), None)
