@@ -23,4 +23,3 @@ numba
 pandas
 numpy
 tqdm
-pyjnius
