@@ -325,6 +325,8 @@ def mcts_explore_on_trees(step, K, config, models, batch_in, trainer,
             dfs(child)
 
     dfs(root)
+
+    root.print_tree()
     log_fn(step, path, root.json(), sol=solution)
 
 
