@@ -147,5 +147,8 @@ case $1 in
         detached_rl inference__generalist "--run_uid $run_uid --data_offset 490 --data_cutoff 525"
         export CUDA_VISIBLE_DEVICES=14
         detached_rl inference__generalist "--run_uid $run_uid --data_offset 525 --data_cutoff 560"
+
+        export CUDA_VISIBLE_DEVICES=15
+        detached_rl inference__generalist "--run_uid $run_uid --data_offset 70 --data_cutoff 105"
     ;;
 esac
