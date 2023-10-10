@@ -177,6 +177,10 @@ def get_models(config):
                     model.print_trainable_parameters()
             ref_model = None
 
+        elif config.get('mode') == 'vllm':
+            from vllm import LLM
+            model = LLM(model=model_path)
+
         else:
             raise NotImplemented
 
