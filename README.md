@@ -46,6 +46,10 @@ pip3 install deepspeed==0.10.3
 pip3 install peft==0.4.0
 
 pip3 install -r requirements.txt
+
+cd ..
+git clone git@github.com:w32zhong/Progressive-Hint.git
+git clone git@github.com:hendrycks/math.git
 ```
 
 ## Slurm
