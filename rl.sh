@@ -19,6 +19,7 @@ deepspeed_launch() {
         --master_port $port \
         --no_local_rank \
         rl.py $experiment $opts
+    set +x
 }
 
 detached_rl() {
