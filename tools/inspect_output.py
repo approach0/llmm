@@ -518,6 +518,17 @@ def output_flips(logdir):
         _output_html(logpath, query_key='path')
 
 
+def find_missing(logdir, n=547):
+    expected = set(range(n))
+    for fname in os.listdir(logdir):
+        if fname.split('.')[-1] != 'log':
+            continue
+        numstr = fname.split('_')[0]
+        num = int(numstr)
+        expected.discard(num)
+    print(expected)
+
+
 if __name__ == '__main__':
     import fire
     os.environ["PAGER"] = 'cat'
@@ -526,6 +537,7 @@ if __name__ == '__main__':
         'diff': compare_differences,
         'find': find_correct_samples,
         'get': get_json_val,
+        'missing': find_missing,
         'output_html': _output_html,
         'output_htmls': output_html,
         'output_flips': output_flips,
