@@ -389,7 +389,6 @@ def stop_on_common_stop_and_boxed_tokens(config, tokenizer, response):
 def reward_by_answer(config, inp, out, models, sol_key='solution'):
     from main_clean import extract_math_answer
     from math_equivalence import is_equiv
-    from rich import print as rich_print
 
     rewards = []
     for raw, out_str in zip(inp[1], out):
@@ -406,11 +405,11 @@ def reward_by_answer(config, inp, out, models, sol_key='solution'):
         })
         rewards.append(1. if equiv else 0.)
 
-        rich_print('[blue]ground truth:[/blue]', ground_truth)
+        print('ground truth:', ground_truth)
         if equiv:
-            rich_print('[green]correct![/green]')
+            print('correct!')
         else:
-            rich_print('[red]wrong:[/red]', out_boxed)
+            print('wrong:', out_boxed)
 
     return rewards
 
