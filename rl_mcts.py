@@ -17,10 +17,11 @@ def direct_answering(step, K, config, models, batch_in, trainer,
     res_fn, rwd_fn, stp_fn=None, log_fn=None):
     tokenizer, model, ref_model = models
     dict_batch, batch_raw = batch_in
-    batch_out = res_fn(config, models, batch_in)
-    rewards = rwd_fn(config, batch_in, batch_out, models,
-        **get_cfg_json(config, 'reward_args', {})
-    )
+    for _ in range(K):
+        batch_out = res_fn(config, models, batch_in)
+        rwd_fn(config, batch_in, batch_out, models,
+            **get_cfg_json(config, 'reward_args', {})
+        )
     if log_fn:
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
