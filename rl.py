@@ -186,7 +186,10 @@ def get_models(config):
             raise NotImplemented
 
     tokenizer_path = config.get('tokenizer', None)
-    if tokenizer_path:
+    if config.get('mode') == 'vllm':
+        tokenizer = None
+
+    elif tokenizer_path:
         from transformers import AutoTokenizer
         tokenizer_init_kwargs = get_cfg_json(config,
             'tokenizer_init_kwargs', {})
