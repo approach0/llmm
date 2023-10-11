@@ -97,9 +97,9 @@ case $1 in
     ;;
 
     batch_infer_w_16v100s)
-        experiment=inference_baseline_using_vllm
-        model=WizardLM/WizardMath-13B-V1.0
-        run_uid=13b_wizardmath_baseline
+        experiment=inference_baseline
+        model=TIGER-Lab/MAmmoTH-13B
+        run_uid=13b_mammoth_baseline
 
         export CUDA_VISIBLE_DEVICES=0
         detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset  0 --data_cutoff 35"
