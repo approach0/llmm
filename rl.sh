@@ -24,6 +24,7 @@ deepspeed_launch() {
 
 detached_rl() {
     ID="$1-$RANDOM"
+    echo "new-session: $ID"
     tmux new-session -c `pwd` -s $ID -d
     tmux send-keys -t $ID "export CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
     tmux send-keys -t $ID Enter
@@ -135,5 +136,20 @@ case $1 in
         detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 525 --data_cutoff 560"
         export CUDA_VISIBLE_DEVICES=15
         detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 70 --data_cutoff 105"
+    ;;
+
+    batch_infer_missing_w_16v100s)
+        experiment=inference__generalist
+        model=WizardLM/WizardMath-13B-V1.0
+        run_uid=mathy-wizardmath-13b-highlora
+
+        cnt=0
+        for i in 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104; do
+            target=$(echo $i|sed -e 's/,//g')
+            echo $cnt $target
+            export CUDA_VISIBLE_DEVICES=$cnt
+            detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset $target"
+            (( cnt++ ))
+        done
     ;;
 esac
