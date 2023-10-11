@@ -518,7 +518,7 @@ def output_flips(logdir):
         _output_html(logpath, query_key='path')
 
 
-def find_missing(logdir, n=547):
+def find_missing(logdir, n=546):
     expected = set(range(n))
     for fname in os.listdir(logdir):
         if fname.split('.')[-1] != 'log':
