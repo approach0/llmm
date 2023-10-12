@@ -56,7 +56,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 base_mark = marks_by_key['QA']
                 aug_mark = marks_by_key[key]
                 base_ratio = len(aug_mark) // len(base_mark)
-                true_pos = sum(aug_mark) >= base_ratio and sum(base_mark) == 0
+                true_pos = sum(aug_mark) > base_ratio and sum(base_mark) == 0
                 true_neg = sum(aug_mark) == 0 and sum(base_mark) > 0
 
                 if true_pos:
@@ -118,7 +118,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         n_neg_samples += 1
                         break
 
-    print(f'Writing {len(final_data)} rows to {output_json}...')
+    print(f'Writing {len(final_data)} rows (-{n_neg_samples}/+{n_pos_samples}) to {output_json}...')
     with open(output_json, 'w') as fh:
         json.dump(final_data, fh)
 
