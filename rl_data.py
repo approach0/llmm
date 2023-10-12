@@ -335,11 +335,19 @@ def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
             data['prompt'] += data['aug_query'] + '\n' 
             data['prompt'] += multihop_results1(data['aug_result'])
 
-            if data['correct']:
-                data['target'] = 'The result looks relevant, I will use it to answer the question.\n\n'
+            if data['relevance'] == 2:
+                assert data['correct']
+                data['target'] = 'The result looks highly relevant! I will absolutely use it to answer the question.\n\n'
                 data['target'] += data['answer']
+
+            elif data['relevance'] == 1:
+                assert data['correct']
+                data['target'] = 'The result might be helpful, I will try using it to answer the question only if it is useful.\n\n'
+                data['target'] += data['answer']
+
             else:
-                data['target'] = 'The result looks irrelevant, I will ignore it and answer the question directly.\n\n'
+                assert not data['correct'] and data['relevance'] == 0
+                data['target'] = 'The result looks irrelevant, I will completely ignore it and answer the question directly.\n\n'
                 data['target'] += data['solution']
 
         else:

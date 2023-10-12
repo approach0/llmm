@@ -83,28 +83,6 @@ case $1 in
         detached_rl mcts_explore_trees_using_chatgpt "--run_uid collection --data_offset 10000 --data_cutoff 12000"
     ;;
 
-    finetune1)
-        # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-        export WANDB_RUN_GROUP=finetune_mathy_fft_as_querylm
-        deepspeed_launch finetune_mathy_fft_as_querylm 4,5,6,7 8989 ""
-    ;;
-
-    finetune2)
-        # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-        export WANDB_RUN_GROUP=finetune_mathy_fft_as_judger
-        deepspeed_launch finetune_mathy_fft_as_judger 4,5,6,7 8991 ""
-    ;;
-
-    finetune3)
-        export WANDB_RUN_GROUP=watgpu-wizard
-        deepspeed_launch finetune_generalist_on_wizard 0,1,2,3 8993 "--run watgpu-wizard"
-    ;;
-
-    finetune4)
-        export WANDB_RUN_GROUP=GCR-try2
-        deepspeed_launch finetune_generalist_on_final_dataset 0 8992 "--run GCR-try2"
-    ;;
-
     batch_infer_w_16v100s)
         #experiment=inference_baseline
         #model=TIGER-Lab/MAmmoTH-13B
@@ -164,5 +142,17 @@ case $1 in
             detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset $target"
             (( cnt++ ))
         done
+    ;;
+
+    batch_finetune_on_final_dataset)
+        rm -rf ~/.cache/huggingface/datasets/
+
+        export WANDB_RUN_GROUP=GCR-13B-wizardmath-generalist
+        export model=WizardLM/WizardMath-13B-V1.0
+        deepspeed_launch finetune_generalist_13b_lora_1A100 0 8992 "--model $model --tokenizer $model --run $WANDB_RUN_GROUP"
+
+        export WANDB_RUN_GROUP=GCR-13B-mammoth-generalist
+        export model=TIGER-Lab/MAmmoTH-13B
+        deepspeed_launch finetune_generalist_13b_lora_1A100 0 8992 "--model $model --tokenizer $model --run $WANDB_RUN_GROUP"
     ;;
 esac
