@@ -12,7 +12,7 @@ from main_clean import extract_math_answer
 from math_equivalence import is_equiv
 
 
-def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
+def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json', minrel=1):
     final_data = []
     n_pos_samples = 0
     n_neg_samples = 0
@@ -78,7 +78,8 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                             existing_aug_result.add(aug_result)
 
                         relevance = sum(aug_mark) - base_ratio
-                        assert relevance > 0
+                        if relevance < minrel:
+                            continue
                         print(aug_query, relevance)
                         d = {
                             'note': note,
