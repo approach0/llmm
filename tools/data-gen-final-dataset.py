@@ -33,11 +33,14 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
             problem = root.state
             sol = j['solution']
             paths = root.get_all_paths(['Q', 'K', 'R', 'A', 'E', 'C'])
-            paths_by_key = defaultdict(list)
+            paths_by_evidence = defaultdict(list)
             for path in paths:
                 path_type = ''.join([n.node_type for n in path])
-                if path_type in ['QA', 'QKRA', 'QECA']:
-                    paths_by_key[path_type].append(path)
+                if path_type == 'QA':
+                    paths_by_evidence['none'].append(path)
+                elif path_type in ['QKRA', 'QECA']:
+                    evidence = path[-2].state
+                    paths_by_evidence[evidence].append(path)
 
             def mark(ans):
                 boxed_ans = extract_math_answer(ans)
@@ -45,22 +48,26 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 equiv = is_equiv(boxed_sol, boxed_ans)
                 return equiv
 
-            marks_by_key = {}
-            for key, path in paths_by_key.items():
-                marks_by_key[key] = map(mark, [p[-1].state for p in path])
-                marks_by_key[key] = list(marks_by_key[key])
+            marks_by_evidence = {}
+            for evidence, path in paths_by_evidence.items():
+                marks_by_evidence[evidence] = list(map(mark, [p[-1].state for p in path]))
+
+            #if problem_id == 'train/number_theory/7009.json':
+            #    print(marks_by_evidence.values())
+            #    breakpoint()
 
             existing_aug_result = set()
-            for key in paths_by_key.keys():
-                if key == 'QA': continue
-                base_mark = marks_by_key['QA']
-                aug_mark = marks_by_key[key]
+            for evidence, paths in paths_by_evidence.items():
+                if evidence == 'none': continue
+
+                base_mark = marks_by_evidence['none']
+                aug_mark = marks_by_evidence[evidence]
                 base_ratio = len(aug_mark) // len(base_mark)
                 true_pos = sum(aug_mark) > base_ratio and sum(base_mark) == 0
                 true_neg = sum(aug_mark) == 0 and sum(base_mark) > 0
 
                 if true_pos:
-                    for correct, p in zip(marks_by_key[key], paths_by_key[key]):
+                    for correct, p in zip(aug_mark, paths):
                         if not correct: continue
                         aug_query = p[1].state.strip('\n')
                         aug_result = p[2].state.strip('\n')
@@ -70,7 +77,7 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         else:
                             existing_aug_result.add(aug_result)
 
-                        relevance = sum(aug_mark) - base_ratio + 1
+                        relevance = sum(aug_mark) - base_ratio
                         assert relevance > 0
                         print(aug_query, relevance)
                         d = {
@@ -87,8 +94,8 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         final_data.append(d)
                         n_pos_samples += 1
 
-                elif true_neg and n_neg_samples < 2 * n_pos_samples:
-                    for correct, p in zip(marks_by_key[key], paths_by_key[key]):
+                elif true_neg and n_neg_samples < n_pos_samples:
+                    for correct, p in zip(aug_mark, paths):
                         if correct: continue
                         aug_query = p[1].state.strip('\n')
                         aug_result = p[2].state.strip('\n')
