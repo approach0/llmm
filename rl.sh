@@ -19,10 +19,12 @@ deepspeed_launch() {
         --master_port $port \
         --no_local_rank \
         rl.py $experiment $opts
+    set +x
 }
 
 detached_rl() {
     ID="$1-$RANDOM"
+    echo "new-session: $ID"
     tmux new-session -c `pwd` -s $ID -d
     tmux send-keys -t $ID "export CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
     tmux send-keys -t $ID Enter
@@ -33,6 +35,7 @@ detached_rl() {
         tmux send-keys -t $ID "\"$arg\" "
     done
     tmux send-keys -t $ID Enter
+    sleep 1m
 }
 
 case $1 in
@@ -102,50 +105,64 @@ case $1 in
         deepspeed_launch finetune_generalist_on_final_dataset 0 8992 "--run GCR-try2"
     ;;
 
-    batch_infer_generalist)
-        detached_rl inference__generalist "--run_uid collection --data_offset 0   --data_cutoff 100"
-        detached_rl inference__generalist "--run_uid collection --data_offset 200 --data_cutoff 300"
-        detached_rl inference__generalist "--run_uid collection --data_offset 300 --data_cutoff 400"
-        detached_rl inference__generalist "--run_uid collection --data_offset 400 --data_cutoff 500"
-        detached_rl inference__generalist "--run_uid collection --data_offset 500 --data_cutoff 550"
-    ;;
+    batch_infer_w_16v100s)
+        #experiment=inference_baseline
+        #model=TIGER-Lab/MAmmoTH-13B
+        #run_uid=13b_mammoth_baseline
 
-    batch_infer_mammoth)
-        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 0   --data_cutoff 100"
-        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 200 --data_cutoff 300"
-        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 300 --data_cutoff 400"
-        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 400 --data_cutoff 500"
-        detached_rl inference__7b_mammoth "--run_uid collection --data_offset 500 --data_cutoff 550"
-    ;;
-
-    batch_infer_generalist_w_4gpus_and_specified_model)
-        #model=output/finetune_generalist_on_wizard-small-traindata/watgpu-wizard
-        #run_uid=wizard_ra
-
-        model=output/finetune_generalist_on_mammoth-small-traindata/watgpu
-        run_uid=mammoth_ra
+        experiment=inference_baseline_using_vllm
+        model=WizardLM/WizardMath-13B-V1.0
+        run_uid=13b_wizardmath_baseline
 
         export CUDA_VISIBLE_DEVICES=0
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset  0 --data_cutoff 35"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 35 --data_cutoff 70"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 105 --data_cutoff 140"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 140 --data_cutoff 175"
-
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset  0 --data_cutoff 35"
         export CUDA_VISIBLE_DEVICES=1
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 175 --data_cutoff 210"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 210 --data_cutoff 245"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 245 --data_cutoff 280"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 280 --data_cutoff 315"
-
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 35 --data_cutoff 70"
         export CUDA_VISIBLE_DEVICES=2
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 315 --data_cutoff 350"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 350 --data_cutoff 385"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 385 --data_cutoff 420"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 420 --data_cutoff 455"
-
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 105 --data_cutoff 140"
         export CUDA_VISIBLE_DEVICES=3
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 455 --data_cutoff 490"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 490 --data_cutoff 525"
-        detached_rl inference__generalist "--model $model --run_uid $run_uid --data_offset 525 --data_cutoff 560"
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 140 --data_cutoff 175"
+
+        export CUDA_VISIBLE_DEVICES=4
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 175 --data_cutoff 210"
+        export CUDA_VISIBLE_DEVICES=5
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 210 --data_cutoff 245"
+        export CUDA_VISIBLE_DEVICES=6
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 245 --data_cutoff 280"
+        export CUDA_VISIBLE_DEVICES=7
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 280 --data_cutoff 315"
+
+        export CUDA_VISIBLE_DEVICES=8
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 315 --data_cutoff 350"
+        export CUDA_VISIBLE_DEVICES=9
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 350 --data_cutoff 385"
+        export CUDA_VISIBLE_DEVICES=10
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 385 --data_cutoff 420"
+        export CUDA_VISIBLE_DEVICES=11
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 420 --data_cutoff 455"
+
+        export CUDA_VISIBLE_DEVICES=12
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 455 --data_cutoff 490"
+        export CUDA_VISIBLE_DEVICES=13
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 490 --data_cutoff 525"
+        export CUDA_VISIBLE_DEVICES=14
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 525 --data_cutoff 560"
+        export CUDA_VISIBLE_DEVICES=15
+        detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset 70 --data_cutoff 105"
+    ;;
+
+    batch_infer_missing_w_16v100s)
+        experiment=inference__generalist
+        model=WizardLM/WizardMath-13B-V1.0
+        run_uid=mathy-wizardmath-13b-highlora
+
+        cnt=0
+        for i in 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104; do
+            target=$(echo $i|sed -e 's/,//g')
+            echo $cnt $target
+            export CUDA_VISIBLE_DEVICES=$cnt
+            detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset $target"
+            (( cnt++ ))
+        done
     ;;
 esac

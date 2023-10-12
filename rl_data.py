@@ -194,6 +194,14 @@ def collate_cot_wizard(config, batch_tok_fn, batch_data):
     return batch_tok_fn(prompts, eos=eos), batch_data
 
 
+def collate_tora(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import prompt_tora
+    query_key = config.get('collate__query_key', 'query')
+    prompts = [prompt_tora(d[query_key]) for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
+
+
 def collate_query_state_prompt(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import cot2, multihop_results1
     query_key = config.get('collate__query_key', 'query')
@@ -381,7 +389,6 @@ def stop_on_common_stop_and_boxed_tokens(config, tokenizer, response):
 def reward_by_answer(config, inp, out, models, sol_key='solution'):
     from main_clean import extract_math_answer
     from math_equivalence import is_equiv
-    from rich import print as rich_print
 
     rewards = []
     for raw, out_str in zip(inp[1], out):
@@ -398,11 +405,11 @@ def reward_by_answer(config, inp, out, models, sol_key='solution'):
         })
         rewards.append(1. if equiv else 0.)
 
-        rich_print('[blue]ground truth:[/blue]', ground_truth)
+        print('ground truth:', ground_truth)
         if equiv:
-            rich_print('[green]correct![/green]')
+            print('correct!')
         else:
-            rich_print('[red]wrong:[/red]', out_boxed)
+            print('wrong:', out_boxed)
 
     return rewards
 

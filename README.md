@@ -32,9 +32,13 @@ conda activate llmm
 
 pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu118
 python -c 'import torch; print(torch.cuda.is_available())'
+python -c 'import torch; print(torch.version.cuda)'
+python -c 'import torch; print(torch.__version__)'
+
 
 conda install cuda -c nvidia/label/cuda-11.8.0 # must match torch version!
 pip3 install packaging
+unset CUDA_HOME
 pip3 install flash-attn==2.3.0
 
 pip3 install transformers==4.31.0
@@ -42,6 +46,10 @@ pip3 install deepspeed==0.10.3
 pip3 install peft==0.4.0
 
 pip3 install -r requirements.txt
+
+cd ..
+git clone git@github.com:w32zhong/Progressive-Hint.git
+git clone git@github.com:hendrycks/math.git
 ```
 
 ## Slurm
