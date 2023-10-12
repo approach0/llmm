@@ -1,3 +1,4 @@
+set -e
 rm -rf ~/.cache/huggingface/datasets
 rm -rf output/final-*
 rm -rf output/retrieval-augment-finetune/

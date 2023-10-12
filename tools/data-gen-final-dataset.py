@@ -1,5 +1,6 @@
 import os
 import json
+import difflib
 from datasets import load_dataset
 from collections import defaultdict
 
@@ -64,12 +65,14 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                 aug_mark = marks_by_evidence[evidence]
                 if len(base_mark) < 2: continue
                 if len(aug_mark) < 2: continue
-                true_pos = sum(aug_mark) == len(aug_mark) and sum(base_mark) == 0
+                ratio = len(aug_mark) // len(aug_mark)
+                true_pos = sum(aug_mark) > ratio and sum(base_mark) == 0
                 true_neg = sum(aug_mark) == 0 and sum(base_mark) > 0
 
                 if true_pos:
                     for correct, p in zip(aug_mark, paths):
                         if not correct: continue
+                        question = p[0].state.strip('\n')
                         aug_query = p[1].state.strip('\n')
                         aug_result = p[2].state.strip('\n')
                         answer = p[3].state.strip('\n')
@@ -78,7 +81,35 @@ def gen_final_dataset(corpus_dir, output_json='output/final-dataset.json'):
                         else:
                             existing_aug_result.add(aug_result)
 
-                        relevance = 1
+                        if p[1].node_type == 'K':
+                            sim1 = difflib.SequenceMatcher(lambda x: x in " \t",
+                                aug_result, answer)
+                            sim2 = difflib.SequenceMatcher(lambda x: x in " \t",
+                                aug_result, question)
+                            relevance = max(sim1.ratio(), sim2.ratio())
+                            if relevance < 0.26 and sum(aug_mark) == len(aug_mark):
+                                relevance = 1
+                            elif relevance >= 0.26:
+                                relevance = 2
+                            else:
+                                continue
+
+                        elif p[1].node_type == 'E':
+                            sim1 = difflib.SequenceMatcher(lambda x: x in " \t",
+                                aug_result, answer)
+                            sim2 = difflib.SequenceMatcher(lambda x: x in " \t",
+                                aug_result, sol)
+                            relevance = max(sim1.ratio(), sim2.ratio())
+                            if relevance < 0.35 and sum(aug_mark) == len(aug_mark):
+                                relevance = 1
+                            elif relevance >= 0.35:
+                                relevance = 2
+                            else:
+                                continue
+
+                        else:
+                            continue
+
                         print(aug_query, relevance)
                         d = {
                             'note': note,
