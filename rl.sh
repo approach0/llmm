@@ -130,7 +130,8 @@ case $1 in
     ;;
 
     batch_infer_w_16v100s_all_topics)
-        model=WizardLM/WizardMath-13B-V1.0
+        #model=WizardLM/WizardMath-13B-V1.0
+        model=TIGER-Lab/MAmmoTH-13B
         cnt=0
         for topic in 'intermediate_algebra' 'counting_and_probability' 'geometry' 'precalculus' 'prealgebra' 'number_theory' 'algebra'; do
             run_uid=$(echo $model | sed -e 's-/-_-g' -e 's-\.-_-g')__$topic
@@ -138,7 +139,7 @@ case $1 in
             export CUDA_VISIBLE_DEVICES=$((cnt+0))
             detached_rl inference_baseline_using_vllm "--topic $topic --run_uid $run_uid --model $model --data_offset 0"
             export CUDA_VISIBLE_DEVICES=$((cnt+1))
-            detached_rl inference_baseline_using_vllm "--topic $topic --run_uid $run_uid --model $model --data_offset 300"
+            detached_rl inference_baseline_using_vllm "--topic $topic --run_uid $run_uid --model $model --data_offset 500"
 
             ((cnt=cnt+2))
         done
