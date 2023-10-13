@@ -68,7 +68,7 @@ def get_topic_stats(logdir, detail=0, metric='pass'):
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if os.path.isdir(logpath):
-            c, t = get_topic_stats(logpath)
+            c, t = get_topic_stats(logpath, detail=detail, metric=metric)
             correct_cnt += c
             total_cnt += t
         if logpath.split('.')[-1] != 'log':
@@ -90,7 +90,7 @@ def get_topic_stats(logdir, detail=0, metric='pass'):
         label_percentage = gt_cnt / total_cnt * 100
         print(f'Total manual labels: {gt_cnt} / {total_cnt} = {label_percentage:.2f}%')
     accuracy_percentage = correct_cnt / total_cnt * 100
-    print(f'{logdir}: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
+    print(f'{logdir} {metric}: {correct_cnt} / {total_cnt} = {accuracy_percentage:.2f}%')
     return correct_cnt, total_cnt
 
 
