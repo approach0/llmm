@@ -1,6 +1,6 @@
 from vllm import LLM, SamplingParams
 
-sampling_params = SamplingParams(temperature=0.3, top_p=0.95)
+sampling_params = SamplingParams(temperature=0.3, top_p=0.95, max_tokens=32)
 
 llm = LLM(model="WizardLM/WizardMath-13B-V1.0")
 print('model loaded.')
