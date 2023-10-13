@@ -130,8 +130,8 @@ case $1 in
     ;;
 
     batch_infer_w_16v100s_all_topics)
-        #model=WizardLM/WizardMath-13B-V1.0
-        model=TIGER-Lab/MAmmoTH-13B
+        model=WizardLM/WizardMath-13B-V1.0
+        #model=TIGER-Lab/MAmmoTH-13B
         cnt=0
         for topic in 'intermediate_algebra' 'counting_and_probability' 'geometry' 'precalculus' 'prealgebra' 'number_theory' 'algebra'; do
             run_uid=$(echo $model | sed -e 's-/-_-g' -e 's-\.-_-g')__$topic
