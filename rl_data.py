@@ -103,6 +103,7 @@ def datamap_perfect_rating(config, dataset):
 
 
 def datamap_topic_filter(config, dataset, topic='precalculus', topic_key='src_path'):
+    # topic in {'intermediate_algebra', 'counting_and_probability', 'geometry', 'precalculus', 'prealgebra', 'number_theory', 'algebra'}
     dataset['train'] = dataset['train'].filter(lambda x: topic in x[topic_key])
     dataset['test'] = dataset['test'].filter(lambda x: topic in x[topic_key])
     return dataset

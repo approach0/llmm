@@ -543,7 +543,8 @@ def prepare_experiment(config):
 
     dataset_map_fn = getattr(rl_data, config.get('dataset_map_fn', '_'), None)
     if dataset_map_fn:
-        dataset = dataset_map_fn(config, dataset)
+        args = get_cfg_json(config, 'dataset_map_fn_args', {})
+        dataset = dataset_map_fn(config, dataset, **args)
 
     if config.getboolean('dataset_shuffle', False):
         dataset = dataset.shuffle(seed=config.getint('seed'))
