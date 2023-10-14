@@ -232,7 +232,7 @@ def output_html(logdir, query_key='query'):
     for fname in os.listdir(logdir):
         logpath = os.path.join(logdir, fname)
         if os.path.isdir(logpath):
-            output_html(logpath)
+            output_html(logpath, query_key=query_key)
         if logpath.split('.')[-1] != 'log':
             continue
         print(logpath)
