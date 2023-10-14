@@ -170,9 +170,6 @@ def get_models(config):
                     model = PeftModel.from_pretrained(
                         model, adapter_path, **peft_existing_kwargs)
                     model = model.merge_and_unload()
-                    if save_dir := config.get('merge_and_save', False):
-                        model.save_pretrained(save_dir)
-                        quit()
                 else:
                     # new LoRA
                     from peft import get_peft_model
