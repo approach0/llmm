@@ -476,6 +476,10 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
     return rewards
 
 
+def reward_by_retrieval_rank_and_answer_correctness(config, batch_in, batch_out, models):
+    quit(1)
+
+
 ###############
 # step func
 ###############

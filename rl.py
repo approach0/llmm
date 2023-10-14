@@ -409,21 +409,21 @@ def batch_respond(config, models, batch_in, trainer=None):
         assert trainer is not None
         device = model.pretrained_model.device
         dict_batch, batch_raw = adapt_inputs(config, tokenizer, batch_in)
-        list_batch = dict_batch
-        input_ids = [d['input_ids'][0].to(device) for d in list_batch]
+        input_ids = dict_batch['input_ids'].to(device)
+        input_ids = [ids for ids in input_ids]
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
         response = trainer.generate(
             input_ids, return_prompt=False,
             **rl_respond_kwargs
         )
         if get_cfg_json(config, 'model_as_server', {}):
-            res = [
+            res_texts = [
                 tokenizer.decode(response[b], **decode_kwargs)
                 for b in range(bs)
             ] # texts
             in_texts = tokenizer.decode(input_ids, **decode_kwargs)
-            print_if_verbose(in_texts, res)
-            return res
+            print_if_verbose(in_texts, res_texts)
+            return res_texts
         else:
             return response # logits
 
