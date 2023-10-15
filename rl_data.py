@@ -4,6 +4,7 @@ import sys
 import copy
 import json
 import torch
+import random
 from functools import partial
 from datasets import load_dataset
 from datasets import Dataset, concatenate_datasets
@@ -324,6 +325,26 @@ def collate_final_dataset_for_judger(config, batch_tok_fn, batch_data):
     return collate_pr(config, batch_tok_fn, sources, targets)
 
 
+def unwrap_boxed(s):
+    pre, boxed = s.split('\\boxed')
+    stack = 0
+    post = ''
+    for i, c in enumerate(boxed):
+        if c == '{':
+            stack += 1
+            if stack == 1:
+                continue
+        elif c == '}':
+            stack -= 1
+
+        if stack == 0:
+            i += 1
+            break
+        else:
+            post += c
+    return pre, post, boxed[i:]
+
+
 def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import final_tool_augment_prompt1, multihop_results1
     for data in batch_data:
@@ -333,22 +354,36 @@ def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
 
         elif data['train_for'] == 'answer':
             data['prompt'] = final_tool_augment_prompt1(data['problem'])
-            data['prompt'] += data['aug_query'] + '\n' 
-            data['prompt'] += multihop_results1(data['aug_result'])
+            data['prompt'] += data['aug_query'] + '\n'
 
-            if data['relevance'] == 2:
-                assert data['correct']
+            relevance = data['relevance']
+            if 'SEARCH' in data['aug_query'] and random.random() < 0.1:
+                if random.random() < 0.5:
+                    res = data['aug_result']
+                    pure_res = '\n'.join(res.split('####')[-1].split('\n')[1:])
+                    data['prompt'] += multihop_results1(pure_res)
+                else:
+                    relevance = 3
+                    sol_pieces = unwrap_boxed(data['solution'])
+                    data['prompt'] += multihop_results1(''.join(sol_pieces))
+                    boxed_answer = '\\boxed{' + sol_pieces[1] + '}'
+            else:
+                data['prompt'] += multihop_results1(data['aug_result'])
+
+            if relevance == 3:
+                data['target'] = 'The result contains the exact solution! I will extract the answer directly.\n\n'
+                data['target'] += boxed_answer
+
+            elif relevance == 2:
                 data['target'] = 'The result looks highly relevant! I will absolutely use it to answer the question.\n\n'
                 data['target'] += data['answer']
 
-            elif data['relevance'] == 1:
-                assert data['correct']
-                data['target'] = 'The result might be helpful, I will try using it to answer the question only if it is useful.\n\n'
+            elif relevance == 1:
+                data['target'] = 'The result might be helpful, I will try using it to answer only when it is useful.\n\n'
                 data['target'] += data['answer']
 
             else:
-                assert not data['correct'] and data['relevance'] == 0
-                data['target'] = 'The result looks irrelevant, I will completely ignore it and answer the question directly.\n\n'
+                data['target'] = 'The result looks irrelevant, I will completely ignore it and answer directly.\n\n'
                 data['target'] += data['solution']
 
         else:
