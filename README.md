@@ -51,6 +51,9 @@ pip3 install peft==0.4.0
 
 pip3 install -r requirements.txt
 
+git submodule init
+git submodule update
+
 cd ..
 git clone git@github.com:w32zhong/Progressive-Hint.git
 git clone git@github.com:hendrycks/math.git
