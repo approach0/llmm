@@ -372,7 +372,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     root = Node('prompt', get_batch_texts(tokenizer, dict_batch)[0])
 
     batch_out = res_fn(config, models, batch_in, trainer=trainer)
-    breakpoint()
+    #breakpoint()
     n = root.branch('generated', clean_state(batch_out[0]))
 
     def map_state(n):

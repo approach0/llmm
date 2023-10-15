@@ -134,7 +134,7 @@ case $1 in
         #model=TIGER-Lab/MAmmoTH-13B
         #experiment=inference_baseline_using_vllm
 
-        model=output/merged-mathy-wizard-13b-highlora
+        model=output/merged-extractor-wizard-13b-highlora
         experiment=inference__generalist_using_vllm
 
         cnt=0
