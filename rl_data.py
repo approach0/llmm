@@ -326,23 +326,27 @@ def collate_final_dataset_for_judger(config, batch_tok_fn, batch_data):
 
 
 def unwrap_boxed(s):
-    pre, boxed = s.split('\\boxed')
-    stack = 0
-    post = ''
-    for i, c in enumerate(boxed):
-        if c == '{':
-            stack += 1
-            if stack == 1:
-                continue
-        elif c == '}':
-            stack -= 1
+    boxed_segs = s.split('\\boxed')
+    unwrap_str = boxed_segs[0]
+    for boxed in boxed_segs[1:]:
+        last_unwarp = ''
+        stack = 0
+        for i, c in enumerate(boxed):
+            if c == '{':
+                stack += 1
+                if stack == 1:
+                    continue
+            elif c == '}':
+                stack -= 1
 
-        if stack == 0:
-            i += 1
-            break
-        else:
-            post += c
-    return pre, post, boxed[i:]
+            if stack == 0:
+                i += 1
+                break
+            else:
+                last_unwarp += c
+        unwrap_str += last_unwarp
+        unwrap_str += boxed[i:]
+    return unwrap_str, last_unwarp
 
 
 def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
@@ -364,9 +368,9 @@ def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
                     data['prompt'] += multihop_results1(pure_res)
                 else:
                     relevance = 3
-                    sol_pieces = unwrap_boxed(data['solution'])
-                    data['prompt'] += multihop_results1(''.join(sol_pieces))
-                    boxed_answer = '\\boxed{' + sol_pieces[1] + '}'
+                    unwrap_str, last_unwarp = unwrap_boxed(data['solution'])
+                    data['prompt'] += multihop_results1(unwrap_str)
+                    boxed_answer = '\\boxed{' + last_unwarp + '}'
             else:
                 data['prompt'] += multihop_results1(data['aug_result'])
 
