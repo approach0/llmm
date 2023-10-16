@@ -361,7 +361,7 @@ def collate_final_dataset_for_generalist(config, batch_tok_fn, batch_data):
             data['prompt'] += data['aug_query'] + '\n'
 
             relevance = data['relevance']
-            if 'SEARCH' in data['aug_query'] and random.random() < 0.1:
+            if 'SEARCH' in data['aug_query'] and random.random() < -0.1:
                 if random.random() < 0.5:
                     res = data['aug_result']
                     pure_res = '\n'.join(res.split('####')[-1].split('\n')[1:])
