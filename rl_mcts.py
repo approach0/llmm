@@ -382,8 +382,9 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
         root_state = tokenizer.decode(batch_out[0])
 
     n = root.branch('generated', clean_state(root_state))
-    n.prompt = batch_in[0]['input_ids'][0]
-    n.logits = batch_out[0]
+    if trainer:
+        n.prompt = batch_in[0]['input_ids'][0]
+        n.logits = batch_out[0]
 
     def map_state(n):
         if n.node_type == 'result':
@@ -406,7 +407,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             nodes = rn.get_path(None)
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
-            print(inp, '\n', datetime.datetime.now()) #########
+            print(datetime.datetime.now()) #########
             out = Node.gn(config, models, tok_fn, res_fn, inp, trainer=trainer)
             print(datetime.datetime.now()) #########
             if isinstance(out, str):
@@ -414,9 +415,9 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             else:
                 child_state = tokenizer.decode(out)
             gn = rn.branch('generated', clean_state(child_state))
-            gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
-            gn.logits = out
-            #break #########
+            if trainer:
+                gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
+                gn.logits = out
 
     root.print_tree()
     leaves = root.get_all_leaves()
@@ -428,10 +429,11 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
         reward = rwd_fn(config, batch_in, [answer], models,
             **get_cfg_json(config, 'reward_args', {})
         )
-        for gn in leaf.get_path(['generated']):
-            rl_inps.append(gn.prompt)
-            rl_outs.append(gn.logits)
-            rewards.append(reward[0])
+        if trainer:
+            for gn in leaf.get_path(['generated']):
+                rl_inps.append(gn.prompt)
+                rl_outs.append(gn.logits)
+                rewards.append(reward[0])
 
     if stp_fn and trainer:
         device = model.pretrained_model.device
