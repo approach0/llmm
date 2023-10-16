@@ -522,12 +522,9 @@ def reward_by_retrieval_rank_and_answer_correctness(config, batch_in, batch_out,
 ###############
 # step func
 ###############
-def rl_step_default(config, trainer, batch_in, batch_out, rewards):
-    list_batch, batch_raw = batch_in
-    inps = [d['input_ids'][0] for d in list_batch]
-    outs = [ids for ids in batch_out]
+def rl_step_default(config, trainer, inp_ids, out_ids, rewards):
     rewards = list(map(torch.tensor, rewards))
-    stats = trainer.step(inps, outs, rewards)
+    stats = trainer.step(inp_ids, out_ids, rewards)
     return stats
 
 

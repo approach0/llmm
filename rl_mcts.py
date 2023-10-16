@@ -95,6 +95,7 @@ class Node():
         self.children = []
         self.parent = None
         self.prompt = None
+        self.logits = None
 
     def branch(self, node_type, child_state):
         node = Node(node_type, child_state)
@@ -158,9 +159,9 @@ class Node():
         return leaves
 
     @staticmethod
-    def gn(config, models, tok_fn, res_fn, inp):
+    def gn(config, models, tok_fn, res_fn, inp, trainer=None):
         prompts = tok_fn([inp], eos=False)
-        out = res_fn(config, models, (prompts, {'gn': inp}))
+        out = res_fn(config, models, (prompts, {'gn': inp}), trainer=trainer)
         return out[0]
 
     def calc_enter(self, config, models, tok_fn, res_fn, tm):
@@ -372,8 +373,17 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     root = Node('prompt', get_batch_texts(tokenizer, dict_batch)[0])
 
     batch_out = res_fn(config, models, batch_in, trainer=trainer)
-    #breakpoint()
-    n = root.branch('generated', clean_state(batch_out[0]))
+
+    if isinstance(batch_out[0], str):
+        root_state = batch_out[0]
+    else:
+        root_state = tokenizer.decode(batch_out[0])
+
+    n = root.branch('generated', clean_state(root_state))
+    n.prompt = batch_in[0]['input_ids'][0]
+    n.logits = batch_out
+    print(n.prompt)
+    print(n.state)
 
     def map_state(n):
         if n.node_type == 'result':
@@ -396,8 +406,14 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             nodes = rn.get_path(None)
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
-            out = Node.gn(config, models, tok_fn, res_fn, inp)
-            rn.branch('generated', clean_state(out))
+            out = Node.gn(config, models, tok_fn, res_fn, inp, trainer=trainer)
+            if isinstance(out, str):
+                child_state = out
+            else:
+                child_state = tokenizer.decode(out)
+            gn = rn.branch('generated', clean_state(child_state))
+            gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
+            gn.logits = out
 
     root.print_tree()
     leaves = root.get_all_leaves()
@@ -405,9 +421,12 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
         answer = '\n'.join(
             [map_state(n) for n in leaf.get_path(None)][1:]
         )
+        breakpoint()
         rwd_fn(config, batch_in, [answer], models,
             **get_cfg_json(config, 'reward_args', {})
         )
+        if stp_fn and trainer:
+            stats = stp_fn(config, trainer, batch_in, batch_out, rewards)
     if log_fn:
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
