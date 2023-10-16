@@ -166,14 +166,15 @@ case $1 in
     ;;
 
     batch_finetune_on_final_dataset)
+        set -e
         rm -rf ~/.cache/huggingface/datasets/
 
-        export WANDB_RUN_GROUP=GCR-13B-wizardmath-generalist
+        export WANDB_RUN_GROUP=13B-wizardmath-generalist-complete_data
         export model=WizardLM/WizardMath-13B-V1.0
-        deepspeed_launch finetune_generalist_13b_lora_1A100 0 8992 "--model $model --tokenizer $model --run $WANDB_RUN_GROUP"
+        deepspeed_launch finetune_generalist_13b_lora_4A6000 0,1,2,3 8992 "--model $model --tokenizer $model --run $WANDB_RUN_GROUP"
 
-        export WANDB_RUN_GROUP=GCR-13B-mammoth-generalist
+        export WANDB_RUN_GROUP=13B-mammoth-generalist-complete_data
         export model=TIGER-Lab/MAmmoTH-13B
-        deepspeed_launch finetune_generalist_13b_lora_1A100 0 8992 "--model $model --tokenizer $model --run $WANDB_RUN_GROUP"
+        deepspeed_launch finetune_generalist_13b_lora_4A6000 0,1,2,3 8992 "--model $model --tokenizer $model --run $WANDB_RUN_GROUP"
     ;;
 esac
