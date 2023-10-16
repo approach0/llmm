@@ -515,15 +515,10 @@ def reward_by_retriever_score(config, batch_in, batch_out, models):
     return rewards
 
 
-def reward_by_retrieval_rank_and_answer_correctness(config, batch_in, batch_out, models):
-    quit(1)
-
-
 ###############
 # step func
 ###############
 def rl_step_default(config, trainer, inp_ids, out_ids, rewards):
-    rewards = list(map(torch.tensor, rewards))
     stats = trainer.step(inp_ids, out_ids, rewards)
     return stats
 
@@ -557,9 +552,12 @@ def log_rl_default(config, ex_output_dir, values):
         'timestep': [
             f'step={step}, b={b}'
             for b in range(len(rewards))
-        ],
-        'response': [out for out in values['batch_outstr']]
+        ]
     }
+    if 'batch_inpstr' in values:
+        logs['batch_inpstr'] = [x for x in values['batch_inpstr']]
+    if 'batch_outstr' in values:
+        logs['batch_outstr'] = [x for x in values['batch_outstr']]
     from rl import get_cfg_json
     for col in get_cfg_json(config, 'log_columns', []):
         logs[col] = [inp[col] for inp in values['batch_in'][1]]

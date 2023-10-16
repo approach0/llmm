@@ -1,3 +1,5 @@
+import torch
+import datetime
 from tools.prompt_factory import *
 from functools import partial
 
@@ -381,9 +383,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
 
     n = root.branch('generated', clean_state(root_state))
     n.prompt = batch_in[0]['input_ids'][0]
-    n.logits = batch_out
-    print(n.prompt)
-    print(n.state)
+    n.logits = batch_out[0]
 
     def map_state(n):
         if n.node_type == 'result':
@@ -406,7 +406,9 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             nodes = rn.get_path(None)
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
+            print(inp, '\n', datetime.datetime.now()) #########
             out = Node.gn(config, models, tok_fn, res_fn, inp, trainer=trainer)
+            print(datetime.datetime.now()) #########
             if isinstance(out, str):
                 child_state = out
             else:
@@ -414,20 +416,35 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             gn = rn.branch('generated', clean_state(child_state))
             gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
             gn.logits = out
+            #break #########
 
     root.print_tree()
     leaves = root.get_all_leaves()
+    rl_inps, rl_outs, rewards = [], [], []
     for leaf in leaves:
         answer = '\n'.join(
             [map_state(n) for n in leaf.get_path(None)][1:]
         )
-        breakpoint()
-        rwd_fn(config, batch_in, [answer], models,
+        reward = rwd_fn(config, batch_in, [answer], models,
             **get_cfg_json(config, 'reward_args', {})
         )
-        if stp_fn and trainer:
-            stats = stp_fn(config, trainer, batch_in, batch_out, rewards)
-    if log_fn:
+        for gn in leaf.get_path(['generated']):
+            rl_inps.append(gn.prompt)
+            rl_outs.append(gn.logits)
+            rewards.append(reward[0])
+
+    if stp_fn and trainer:
+        device = model.pretrained_model.device
+        rewards = [torch.tensor(r, device=device) for r in rewards]
+        rl_inps = [x.to(device) for x in rl_inps]
+        for inp, out, reward in zip(rl_inps, rl_outs, rewards):
+            stats = stp_fn(config, trainer, [inp], [out], [reward])
+            batch_inpstr = [tokenizer.decode(inp)]
+            batch_outstr = [tokenizer.decode(out)]
+            if log_fn:
+                log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
+
+    elif log_fn:
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
