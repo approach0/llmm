@@ -108,7 +108,7 @@ def search_mux(api_name, question, keywords, docid=None):
 
     elif api_name == 'MATH':
         from tools.test_mabowdor import search
-        return search('MATH', question, None)
+        return search('MATH', None, keywords)
 
     elif api_name == 'dups':
         from tools.test_mabowdor import search

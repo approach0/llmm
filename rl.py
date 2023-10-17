@@ -112,6 +112,7 @@ def get_models(config):
             if config.get('load_in_8bit', False):
                 model = M.from_pretrained(
                     model_path, peft_config=lora_config,
+                    use_cache=not config.getboolean('flash_atten', False),
                     cache_dir=cache_dir,
                     device_map=config.get('device_map', 'auto'),
                     load_in_8bit=True,  quantization_config=BitsAndBytesConfig(
@@ -123,6 +124,7 @@ def get_models(config):
             else:
                 model = M.from_pretrained(
                     model_path, peft_config=lora_config,
+                    use_cache=not config.getboolean('flash_atten', False),
                     torch_dtype=torch.float16,
                     device_map=config.get('device_map', 'auto'),
                     cache_dir=cache_dir
@@ -411,6 +413,7 @@ def batch_respond(config, models, batch_in, trainer=None):
         rl_respond_kwargs = get_cfg_json(config, 'rl_respond_kwargs', {})
         response = trainer.generate(
             input_ids, return_prompt=False,
+            use_cache=not config.getboolean('flash_atten', False),
             **rl_respond_kwargs
         )
         if get_cfg_json(config, 'model_as_server', {}):

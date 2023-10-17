@@ -548,19 +548,22 @@ def log_rl_default(config, ex_output_dir, values):
     step = values['step']
     stats = values['stats']
     rewards = values['rewards']
+
     logs = {
         'timestep': [
             f'step={step}, b={b}'
             for b in range(len(rewards))
         ]
     }
+    # "query" and "response" are the required field name in trl.
     if 'batch_inpstr' in values:
-        logs['batch_inpstr'] = [x for x in values['batch_inpstr']]
+        logs['query'] = [x for x in values['batch_inpstr']]
     if 'batch_outstr' in values:
-        logs['batch_outstr'] = [x for x in values['batch_outstr']]
+        logs['response'] = [x for x in values['batch_outstr']]
     from rl import get_cfg_json
     for col in get_cfg_json(config, 'log_columns', []):
         logs[col] = [inp[col] for inp in values['batch_in'][1]]
+
     values['trainer'].log_stats(stats, logs, rewards,
         columns_to_log=logs.keys())
 

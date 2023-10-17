@@ -362,11 +362,14 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     dict_batch, batch_raw = batch_in
     tok_fn = partial(batch_tokenize, config, tokenizer)
 
+    import os
+    local_rank = int(os.getenv("LOCAL_RANK", "0"))
+
     query_key = config.get('collate__query_key', 'query')
     search_Q = batch_raw[0][query_key]
     tool_map = {
         'SEARCH': partial(
-            search_mux, 'mabowdor', search_Q
+            search_mux, 'MATH', None
         ),
         'COMPUTE': sympy_solver
     }
@@ -418,6 +421,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             if trainer:
                 gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
                 gn.logits = out
+                #break ###########
 
     root.print_tree()
     leaves = root.get_all_leaves()
