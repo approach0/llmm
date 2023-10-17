@@ -406,7 +406,8 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             tool_res = [tool_res]
 
         for res in tool_res:
-            rn = n.branch('result', res)
+            unboxed_res, _ = rl_data.unwrap_boxed(res)
+            rn = n.branch('result', unboxed_res)
             nodes = rn.get_path(None)
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
