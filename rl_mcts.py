@@ -421,6 +421,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             if trainer:
                 gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
                 gn.logits = out
+                #break ####
 
     root.print_tree()
     leaves = root.get_all_leaves()
