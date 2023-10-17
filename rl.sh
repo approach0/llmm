@@ -12,7 +12,7 @@ deepspeed_launch() {
     devices=${2-0}
     port=${3-8921}
     opts=${4}
-    
+
     set -x
     deepspeed \
         --include=localhost:$devices \
@@ -63,6 +63,16 @@ case $1 in
         # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
         export WANDB_RUN_GROUP=baremin_dpo_training
         deepspeed_launch dpo__prm_vs_chatgpt 1,2,3,4,5,6,7 8986 ""
+    ;;
+
+    batch_rl_space_explore)
+        #export CUDA_VISIBLE_DEVICES=0,1
+        #export model=./output/merged-extractor-mammoth-13b-highlora
+        export run=$(echo $model | sed -e 's-/-_-g' -e 's-\.-_-g')
+        export WANDB_RUN_GROUP=group_$run
+
+        set -x
+        python rl.py rl_generalist_space_explore --run $run --model $model
     ;;
 
     batch_chatgpt_gen_trees)
