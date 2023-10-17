@@ -410,9 +410,9 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             nodes = rn.get_path(None)
             states = [map_state(n) for n in nodes]
             inp = states[0] + states[1] + '\n' + states[2]
-            print(datetime.datetime.now()) #########
+            print('BEGIN', datetime.datetime.now()) #########
             out = Node.gn(config, models, tok_fn, res_fn, inp, trainer=trainer)
-            print(datetime.datetime.now()) #########
+            print('END', datetime.datetime.now()) #########
             if isinstance(out, str):
                 child_state = out
             else:
@@ -421,7 +421,6 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             if trainer:
                 gn.prompt = tok_fn(inp, eos=False)['input_ids'][0]
                 gn.logits = out
-                break ###########
 
     root.print_tree()
     leaves = root.get_all_leaves()
