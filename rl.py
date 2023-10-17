@@ -109,7 +109,7 @@ def get_models(config):
         if config.get('mode') == 'rl':
             from trl import AutoModelForCausalLMWithValueHead as M
             from transformers import BitsAndBytesConfig
-            if config.get('load_in_8bit', False):
+            if config.getboolean('load_in_8bit', False):
                 model = M.from_pretrained(
                     model_path, peft_config=lora_config,
                     use_cache=not config.getboolean('flash_atten', False),
