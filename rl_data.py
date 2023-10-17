@@ -328,6 +328,7 @@ def collate_final_dataset_for_judger(config, batch_tok_fn, batch_data):
 def unwrap_boxed(s):
     boxed_segs = s.split('\\boxed')
     unwrap_str = boxed_segs[0]
+    last_unwarp = None
     for boxed in boxed_segs[1:]:
         last_unwarp = ''
         stack = 0
