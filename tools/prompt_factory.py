@@ -926,9 +926,9 @@ def prompt_abel(Q):
 
 
 def prompt_metamath(Q):
-    prompt = (f"Below is an instruction that describes a task. "
+    prompt = ("Below is an instruction that describes a task. "
         "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{Q}\n\n### Response: Let's think step by step.")
+        f"### Instruction:\n{Q}\n\n### Response: Let's think step by step.")
     return prompt
 
 
