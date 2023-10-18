@@ -68,4 +68,5 @@ squeue
 scontrol show job -dd 483 | grep TimeLimit
 scontrol show job -dd 479 | grep TRES=
 salloc --gres=gpu:5 --cpus-per-task=8 --mem=250G --time=20:00:00
+sacct --starttime=2023-10-18 # list pass/revoked jobs
 ```
