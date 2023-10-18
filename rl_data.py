@@ -592,7 +592,7 @@ def log_rl_default(config, ex_output_dir, values):
     logpath = os.path.join(ex_output_dir, logs['log_file'][0])
     with open(logpath, 'w') as fh:
         ex_logs = copy.deepcopy(logs)
-        ex_logs['rewards'] = rewards
+        ex_logs['rewards'] = [r.item() for r in rewards]
         json.dump(ex_logs, fh, indent=2)
 
     values['trainer'].log_stats(stats, logs, rewards,
