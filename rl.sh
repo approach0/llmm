@@ -161,8 +161,12 @@ case $1 in
     ;;
 
     batch_infer_missing_w_16v100s)
+        # TEST: export CUDA_VISIBLE_DEVICES=0; python rl.py inference__generalist_using_vllm --topic precalculus --run test $model_args
         experiment=inference__generalist
-        model=WizardLM/WizardMath-13B-V1.0
+        #model_args="--model WizardLM/WizardMath-13B-V1.0 --collate_fn collate_cot_wizard"
+        #model_args="--model EleutherAI/llemma_7b --collate_fn collate_llemma"
+        #model_args="--model meta-math/MetaMath-13B-V1.0 --collate_fn collate_metamath"
+        model_args="--model GAIR/GAIRMath-Abel-13b --collate_fn collate_abel"
         run_uid=mathy-wizardmath-13b-highlora
 
         cnt=0
@@ -170,7 +174,7 @@ case $1 in
             target=$(echo $i|sed -e 's/,//g')
             echo $cnt $target
             export CUDA_VISIBLE_DEVICES=$cnt
-            detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset $target"
+            detached_rl $experiment "--run_uid $run_uid $model_args --tokenizer $model --data_offset $target"
             (( cnt++ ))
         done
     ;;
