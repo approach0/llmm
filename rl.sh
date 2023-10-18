@@ -146,7 +146,7 @@ case $1 in
         #model_args="--model meta-math/MetaMath-13B-V1.0 --collate_fn collate_metamath"
         model_args="--model GAIR/GAIRMath-Abel-13b --collate_fn collate_abel"
         #experiment=inference__generalist_using_vllm
-        experiment=inference_baseline
+        experiment=inference_baseline_using_vllm
 
         cnt=0
         for topic in 'intermediate_algebra' 'counting_and_probability' 'geometry' 'precalculus' 'prealgebra' 'number_theory' 'algebra'; do
