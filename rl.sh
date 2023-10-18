@@ -140,21 +140,22 @@ case $1 in
     ;;
 
     batch_infer_w_16v100s_all_topics)
-        #model=WizardLM/WizardMath-13B-V1.0
-        #model=TIGER-Lab/MAmmoTH-13B
-        #experiment=inference_baseline_using_vllm
-
-        model=output/merged-extractor-wizard-13b-highlora
-        experiment=inference__generalist_using_vllm
+        # TEST: export CUDA_VISIBLE_DEVICES=0; python rl.py inference__generalist_using_vllm --topic precalculus --run test $model_args
+        #model_args="--model WizardLM/WizardMath-13B-V1.0 --collate_fn collate_cot_wizard"
+        #model_args="--model EleutherAI/llemma_7b --collate_fn collate_llemma"
+        #model_args="--model meta-math/MetaMath-13B-V1.0 --collate_fn collate_metamath"
+        model_args="--model GAIR/GAIRMath-Abel-13b --collate_fn collate_abel"
+        #experiment=inference__generalist_using_vllm
+        experiment=inference_baseline_using_vllm
 
         cnt=0
         for topic in 'intermediate_algebra' 'counting_and_probability' 'geometry' 'precalculus' 'prealgebra' 'number_theory' 'algebra'; do
-            run_uid=$(echo $model | sed -e 's-/-_-g' -e 's-\.-_-g')__$topic
+            run_uid=$(echo $model_args | awk '{print $2}' | sed -e 's-/-_-g' -e 's-\.-_-g')__$topic
 
             export CUDA_VISIBLE_DEVICES=$((cnt+0))
-            detached_rl $experiment "--topic $topic --run_uid $run_uid --model $model --data_offset 0"
+            detached_rl $experiment "--topic $topic --run_uid $run_uid $model_args --data_offset 0"
             export CUDA_VISIBLE_DEVICES=$((cnt+1))
-            detached_rl $experiment "--topic $topic --run_uid $run_uid --model $model --data_offset 500"
+            detached_rl $experiment "--topic $topic --run_uid $run_uid $model_args --data_offset 500"
 
             ((cnt=cnt+2))
         done
@@ -162,15 +163,15 @@ case $1 in
 
     batch_infer_missing_w_16v100s)
         experiment=inference__generalist
-        model=WizardLM/WizardMath-13B-V1.0
-        run_uid=mathy-wizardmath-13b-highlora
+        model_args="--model GAIR/GAIRMath-Abel-13b --collate_fn collate_abel"
+        run_uid=$(echo $model_args | awk '{print $2}' | sed -e 's-/-_-g' -e 's-\.-_-g')__$topic
 
         cnt=0
         for i in 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104; do
             target=$(echo $i|sed -e 's/,//g')
             echo $cnt $target
             export CUDA_VISIBLE_DEVICES=$cnt
-            detached_rl $experiment "--run_uid $run_uid --model $model --tokenizer $model --data_offset $target"
+            detached_rl $experiment "--run_uid $run_uid $model_args --tokenizer $model --data_offset $target"
             (( cnt++ ))
         done
     ;;

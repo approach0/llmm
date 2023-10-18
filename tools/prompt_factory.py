@@ -920,6 +920,23 @@ def prompt_tora(Q):
     return prompt
 
 
+def prompt_abel(Q):
+    prompt = f"Question:\n{Q}\nAnswer:\nLet's think step by step.\n"
+    return prompt
+
+
+def prompt_metamath(Q):
+    prompt = (f"Below is an instruction that describes a task. "
+        "Write a response that appropriately completes the request.\n\n"
+        "### Instruction:\n{Q}\n\n### Response: Let's think step by step.")
+    return prompt
+
+
+def prompt_Llemma(Q):
+    prompt = "Problem:\n" + Q + "\n\nSolution:"
+    return prompt
+
+
 if __name__ == '__main__':
     #prompt = ia_mytrain('Q', ['k1', 'k2 + k3'], 'foo', 'bar')
     prompt = adapt_wizard('Q', 'k1', 'k2')
