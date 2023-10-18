@@ -204,6 +204,30 @@ def collate_tora(config, batch_tok_fn, batch_data):
     return batch_tok_fn(prompts, eos=eos), batch_data
 
 
+def collate_abel(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import prompt_abel
+    query_key = config.get('collate__query_key', 'query')
+    prompts = [prompt_abel(d[query_key]) for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
+
+
+def collate_metamath(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import prompt_metamath
+    query_key = config.get('collate__query_key', 'query')
+    prompts = [prompt_metamath(d[query_key]) for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
+
+
+def collate_llemma(config, batch_tok_fn, batch_data):
+    from tools.prompt_factory import prompt_Llemma
+    query_key = config.get('collate__query_key', 'query')
+    prompts = [prompt_Llemma(d[query_key]) for d in batch_data]
+    eos = config.getboolean('collate_add_eos', True)
+    return batch_tok_fn(prompts, eos=eos), batch_data
+
+
 def collate_query_state_prompt(config, batch_tok_fn, batch_data):
     from tools.prompt_factory import cot2, multihop_results1
     query_key = config.get('collate__query_key', 'query')
