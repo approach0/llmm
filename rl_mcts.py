@@ -388,6 +388,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     if trainer:
         n.prompt = batch_in[0]['input_ids'][0]
         n.logits = batch_out[0]
+        curr_id = '/'.join(batch_raw[0]['src_path'].split('/')[-2:])
 
     def map_state(n):
         if n.node_type == 'result':
@@ -435,23 +436,34 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             **get_cfg_json(config, 'reward_args', {})
         )
         if trainer:
+            correct_reward = reward[0] # initial reward: answer correctness.
+            search_reward = 0
+            for gn in leaf.get_path(['result']):
+                if curr_id in gn.state:
+                    search_reward = 1.0
             for gn in leaf.get_path(['generated']):
                 rl_inps.append(gn.prompt)
                 rl_outs.append(gn.logits)
-                rewards.append(reward[0])
+                if 'SEARCH' in gn.state:
+                    rewards.append(max(correct_reward, search_reward))
+                else:
+                    rewards.append(correct_reward)
 
     if stp_fn and trainer:
+        # stepping
         device = model.pretrained_model.device
         rewards = [torch.tensor(r, device=device) for r in rewards]
         rl_inps = [x.to(device) for x in rl_inps]
         for inp, out, reward in zip(rl_inps, rl_outs, rewards):
             stats = stp_fn(config, trainer, [inp], [out], [reward])
-            batch_inpstr = [tokenizer.decode(inp)]
-            batch_outstr = [tokenizer.decode(out)]
-            if log_fn:
-                log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
+        # RL logging
+        batch_inpstr = [tokenizer.decode(inp) for inp in rl_inps]
+        batch_outstr = [tokenizer.decode(out) for out in rl_outs]
+        if log_fn:
+            log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
     elif log_fn:
+        # inference logging
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 

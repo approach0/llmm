@@ -66,9 +66,9 @@ case $1 in
     ;;
 
     batch_rl_space_explore)
-        #export CUDA_VISIBLE_DEVICES=0,1
+        export CUDA_VISIBLE_DEVICES=0,1
         #export model=./output/merged-extractor-mammoth-13b-highlora
-        export run=$(echo $model | sed -e 's-/-_-g' -e 's-\.-_-g')
+        export run=$(echo $model | sed -e 's-/-_-g' -e 's-\.-_-g')__dense_reward_and_logs
         export WANDB_RUN_GROUP=group_$run
 
         set -x
