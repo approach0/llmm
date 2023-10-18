@@ -141,8 +141,12 @@ case $1 in
 
     batch_infer_w_16v100s_all_topics)
         # TEST: export CUDA_VISIBLE_DEVICES=0; python rl.py inference__generalist_using_vllm --topic precalculus --run test $model_args
+        #model_args="--model WizardLM/WizardMath-13B-V1.0 --collate_fn collate_cot_wizard"
+        #model_args="--model EleutherAI/llemma_7b --collate_fn collate_llemma"
+        #model_args="--model meta-math/MetaMath-13B-V1.0 --collate_fn collate_metamath"
         model_args="--model GAIR/GAIRMath-Abel-13b --collate_fn collate_abel"
-        experiment=inference__generalist_using_vllm
+        #experiment=inference__generalist_using_vllm
+        experiment=inference_baseline
 
         cnt=0
         for topic in 'intermediate_algebra' 'counting_and_probability' 'geometry' 'precalculus' 'prealgebra' 'number_theory' 'algebra'; do
@@ -159,9 +163,6 @@ case $1 in
 
     batch_infer_missing_w_16v100s)
         experiment=inference__generalist
-        #model_args="--model WizardLM/WizardMath-13B-V1.0 --collate_fn collate_cot_wizard"
-        #model_args="--model EleutherAI/llemma_7b --collate_fn collate_llemma"
-        #model_args="--model meta-math/MetaMath-13B-V1.0 --collate_fn collate_metamath"
         model_args="--model GAIR/GAIRMath-Abel-13b --collate_fn collate_abel"
         run_uid=$(echo $model_args | awk '{print $2}' | sed -e 's-/-_-g' -e 's-\.-_-g')__$topic
 
