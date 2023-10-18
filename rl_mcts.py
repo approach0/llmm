@@ -388,6 +388,7 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     if trainer:
         n.prompt = batch_in[0]['input_ids'][0]
         n.logits = batch_out[0]
+        curr_id = '/'.join(batch_raw[0]['src_path'].split('/')[-2:])
 
     def map_state(n):
         if n.node_type == 'result':
@@ -435,10 +436,18 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
             **get_cfg_json(config, 'reward_args', {})
         )
         if trainer:
+            correct_reward = reward[0] # initial reward: answer correctness.
+            search_reward = 0
+            for gn in leaf.get_path(['result']):
+                if curr_id in gn.state:
+                    search_reward = 1.0
             for gn in leaf.get_path(['generated']):
                 rl_inps.append(gn.prompt)
                 rl_outs.append(gn.logits)
-                rewards.append(reward[0])
+                if 'SEARCH' in gn.state:
+                    rewards.append(max(correct_reward, search_reward))
+                else:
+                    rewards.append(correct_reward)
 
     if stp_fn and trainer:
         device = model.pretrained_model.device
