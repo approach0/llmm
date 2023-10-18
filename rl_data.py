@@ -588,6 +588,9 @@ def log_rl_default(config, ex_output_dir, values):
     from rl import get_cfg_json
     for col in get_cfg_json(config, 'log_columns', []):
         logs[col] = [inp[col] for inp in values['batch_in'][1]]
+        L = len(logs[col])
+        if L == 1 and L != len(rewards):
+            logs[col] = logs[col] * len(rewards)
 
     logpath = os.path.join(ex_output_dir, logs['log_file'][0])
     with open(logpath, 'w') as fh:

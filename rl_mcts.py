@@ -450,17 +450,20 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
                     rewards.append(correct_reward)
 
     if stp_fn and trainer:
+        # stepping
         device = model.pretrained_model.device
         rewards = [torch.tensor(r, device=device) for r in rewards]
         rl_inps = [x.to(device) for x in rl_inps]
         for inp, out, reward in zip(rl_inps, rl_outs, rewards):
             stats = stp_fn(config, trainer, [inp], [out], [reward])
-            batch_inpstr = [tokenizer.decode(inp)]
-            batch_outstr = [tokenizer.decode(out)]
-            if log_fn:
-                log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
+        # RL logging
+        batch_inpstr = [tokenizer.decode(inp) for inp in rl_inps]
+        batch_outstr = [tokenizer.decode(out) for out in rl_outs]
+        if log_fn:
+            log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
     elif log_fn:
+        # inference logging
         log_fn(locals(), **get_cfg_json(config, 'log_args', {}))
 
 
