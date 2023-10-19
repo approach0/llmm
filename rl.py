@@ -175,6 +175,7 @@ def get_models(config):
                 else:
                     # new LoRA
                     from peft import get_peft_model
+                    model.enable_input_require_grads()
                     model = get_peft_model(model, lora_config)
                     model.print_trainable_parameters()
             ref_model = None
