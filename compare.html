@@ -20,7 +20,7 @@ html {
 }
 
 .header {
-  margin-left: 12px;
+  width: 100%;
 }
 </style>
 
@@ -52,15 +52,15 @@ const app = createApp({
     return {
       path1: '/basilisk/GCRHYPC027/method/output_merged-mathy-mammoth-13b-rl-explored__algebra/',
       path2: '/basilisk/GCRHYPC027/method/output_merged-mathy-mammoth-13b-rl-explored__algebra/',
-      filename: '000597_batch0-test_algebra_1553.json.log_____p001.html',
+      filename: '000597_batch0-test_algebra_1553.json.log',
     }
   },
   methods: {
     cur_url(which) {
       if (which == 'baseline') {
-        return this.path1 + this.filename
+        return this.path1 + this.filename + '_____p001.html'
       } else {
-        return this.path2 + this.filename
+        return this.path2 + this.filename + '_____p001.html'
       }
     }
   }
