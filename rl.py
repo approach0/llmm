@@ -31,7 +31,7 @@ def set_seed(seed):
 
 def get_cfg_json(config, name, default):
     value = config.get(name, default)
-    if value:
+    if value and isinstance(value, str):
         try:
             return json.loads(value)
         except Exception as e:
