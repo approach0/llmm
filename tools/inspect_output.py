@@ -94,8 +94,27 @@ def get_topic_stats(logdir, detail=0, metric='pass'):
     return correct_cnt, total_cnt
 
 
-def compare_differences(logdir1, logdir2, metric='pass'):
+def get_agent_self_judge(j):
+    judge_buffer = j['judge_buffer']
+    relevances = []
+    for judge in judge_buffer:
+        answer = judge['answer']
+        if '--- RESULTS END ---' not in answer:
+            relevances.append(-1)
+        elif 'The result looks irrelevant' in answer:
+            relevances.append(0)
+        elif 'The result might be helpful' in answer:
+            relevances.append(1)
+        elif 'The result looks highly relevant' in answer:
+            relevances.append(2)
+        else:
+            relevances.append(-2)
+    return max(relevances)
+
+def compare_differences(logdir1, logdir2, metric='pass', verbose=True):
     win1, win2 = 0, 0
+    self_judge_when_win = []
+    self_judge_when_loss = []
     for fname in os.listdir(logdir1):
         logpath1 = os.path.join(logdir1, fname)
         logpath2 = os.path.join(logdir2, fname)
@@ -111,15 +130,31 @@ def compare_differences(logdir1, logdir2, metric='pass'):
             assert not 'agent_answer' in j2
         good1, _ = get_stats_v2(j1, 0, None, metric)
         good2, _ = get_stats_v2(j2, 0, None, metric)
+        agent_judge = get_agent_self_judge(j2)
         if good1 != good2:
             if good1:
                 win1 += 1
+                if agent_judge >= 0:
+                    self_judge_when_loss.append(agent_judge)
             else:
                 win2 += 1
-            print(fname, good1, good2)
+                if agent_judge >= 0:
+                    self_judge_when_win.append(agent_judge)
+            if verbose: print(fname, good1, good2, agent_judge)
+    from collections import Counter
+    print('self_judge when win:', Counter(self_judge_when_win))
+    print('self_judge when loss:', Counter(self_judge_when_loss))
     def name(path):
         return os.path.basename(os.path.normpath(path))
-    return name(logdir1), win1, name(logdir2), win2
+    print(name(logdir1), win1, name(logdir2), win2)
+
+
+def compare_differences_alltopics(dir_prefix1, dir_prefix2, metric='pass'):
+    for topic in ['algebra', 'counting_and_probability', 'geometry', 'intermediate_algebra', 'number_theory', 'prealgebra', 'precalculus']:
+        dir1 = dir_prefix1 + '__' + topic
+        dir2 = dir_prefix2 + '__' + topic
+        compare_differences(dir1, dir2, metric=metric, verbose=False)
+        print()
 
 
 def find_correct_samples(logdir):
@@ -535,6 +570,7 @@ if __name__ == '__main__':
     fire.Fire({
         'get_stats': get_topic_stats,
         'diff': compare_differences,
+        'diff_all': compare_differences_alltopics,
         'find': find_correct_samples,
         'get': get_json_val,
         'missing': find_missing,
