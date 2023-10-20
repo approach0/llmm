@@ -140,7 +140,7 @@ def compare_differences(logdir1, logdir2, metric='pass', verbose=True):
                 win2 += 1
                 if agent_judge >= 0:
                     self_judge_when_win.append(agent_judge)
-            if verbose: print(fname, good1, good2, agent_judge)
+            if verbose: print(fname, good1, good2, '*' if agent_judge == 2 else '')
     from collections import Counter
     print('self_judge when win:', Counter(self_judge_when_win))
     print('self_judge when loss:', Counter(self_judge_when_loss))
