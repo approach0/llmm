@@ -26,56 +26,43 @@ html {
 
 <body>
 
-<select class="header" v-model="path">
-  <option disabled value="{{path}}">model</option>
-  <option>chatgpt-2023-03-15</option>
-  <option>vicuna-7b</option>
-  <option>vicuna-13b</option>
-  <option>vicuna-33b</option>
-</select>
-<input class="header" v-model="problem_id"/>
-<span class="header"> (fisrt: {{Math.min(...keys.map(Number))}}, last: {{Math.max(...keys.map(Number))}}) </span>
-<button class="header" @click="move(-1)">prev</button>
-<button class="header" @click="move(+1)">next</button>
+<input class="header" v-model="path1"/>
+<input class="header" v-model="path2"/>
+<input class="header" v-model="filename"/>
 
 <div>
   <div class="box">
-    <h3>Baseline (direct)</h3>
-    <p>URL: <a :href="cur_url('cot')">{{cur_url('cot')}}</a></p>
-    <iframe :src="cur_url('cot')" frameborder="1" align="left"></iframe>
+    <h3>Baseline</h3>
+    <p>URL: <a :href="cur_url('baseline')">{{cur_url('baseline')}}</a></p>
+    <iframe :src="cur_url('baseline')" frameborder="1" align="left"></iframe>
   </div>
 
   <div class="box">
-    <h3>Retrieval-augmented</h3>
-    <p>URL: <a :href="cur_url('ia')">{{cur_url('cot')}}</a></p>
-    <iframe :src="cur_url('ia')" frameborder="1" align="right"></iframe>
+    <h3>Method</h3>
+    <p>URL: <a :href="cur_url('method')">{{cur_url('method')}}</a></p>
+    <iframe :src="cur_url('method')" frameborder="1" align="right"></iframe>
   </div>
 </div>
 
 <script>
 const { createApp, ref } = Vue
 
-const keys =
-["235", "439", "470", "1193", "59"]
-
 const app = createApp({
   data() {
     return {
-      keys: keys,
-      path: 'chatgpt-2023-03-15',
-      problem_id: keys[0],
+      path1: '/basilisk/GCRHYPC027/method/output_merged-mathy-mammoth-13b-rl-explored__algebra/',
+      path2: '/basilisk/GCRHYPC027/method/output_merged-mathy-mammoth-13b-rl-explored__algebra/',
+      filename: '000597_batch0-test_algebra_1553.json.log_____p001.html',
     }
   },
   methods: {
-    cur_url(prefix) {
-      return './run__' + prefix + '-' + this.path + '-w_groundtruth_query.10/' + this.problem_id + '.json.log_____p001.html'
-      //return './precalculus/logname__' + prefix + '-' + this.path + '/' + this.problem_id + '.json.log_____p001.html'
-    },
-
-    move(incr) {
-      const idx = keys.indexOf(this.problem_id)
-      this.problem_id = keys[(idx + incr) % keys.length]
-    },
+    cur_url(which) {
+      if (which == 'baseline') {
+        return this.path1 + this.filename
+      } else {
+        return this.path2 + this.filename
+      }
+    }
   }
 })
 
