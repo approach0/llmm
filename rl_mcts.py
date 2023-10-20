@@ -362,15 +362,12 @@ def mcts_generalist_infer(step, K, config, models, batch_in, trainer,
     dict_batch, batch_raw = batch_in
     tok_fn = partial(batch_tokenize, config, tokenizer)
 
-    import os
-    local_rank = int(os.getenv("LOCAL_RANK", "0"))
-
     query_key = config.get('collate__query_key', 'query')
     search_Q = batch_raw[0][query_key]
+    search_mux_args = get_cfg_json(config, 'search_mux_args', {'mabowdor', search_Q})
+
     tool_map = {
-        'SEARCH': partial(
-            search_mux, 'MATH', None
-        ),
+        'SEARCH': partial(search_mux, *search_mux_args)
         'COMPUTE': sympy_solver
     }
 
