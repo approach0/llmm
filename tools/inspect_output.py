@@ -413,49 +413,6 @@ def get_json_val(logpath, key='prompt'):
     print(j[key])
 
 
-def test_lr_query(logdir):
-    import matplotlib.pyplot as plt
-    import numpy as np
-    stats = {}
-    all_keys = [
-        'ppo/std_scores',
-        'ppo/mean_scores',
-        'ppo/mean_non_score_reward',
-        'ppo/loss/total',
-    ]
-    kernel_size = 5
-    kernel = np.ones(kernel_size) / kernel_size
-    logdir = os.path.normpath(logdir)
-    run_name = os.path.basename(logdir)
-    for fname in os.listdir(logdir):
-        logpath = os.path.join(logdir, fname)
-        if not logpath.endswith('.log'):
-            continue
-        print(logpath)
-        m = re.search(r'step([0-9]+)_', logpath)
-        step = int(m.group(1))
-        with open(logpath, 'r') as fh:
-            j = json.load(fh)
-            #print(j.keys()); quit()
-            stats_item = {}
-            for key in j.keys():
-                if key in all_keys:
-                    stats_item[key] = j[key]
-            stats[step] = stats_item
-    fig, axes = plt.subplots(len(all_keys), 1)
-    xpoints = np.array(sorted(stats.keys()))
-    for i, key in enumerate(all_keys):
-        ypoints = np.array([stats[x][key] for x in xpoints])
-        avg_ypoints = np.convolve(ypoints, kernel, mode='same')
-        fig.axes[i].plot(
-            xpoints[kernel_size:-kernel_size],
-            avg_ypoints[kernel_size:-kernel_size]
-        )
-        fig.axes[i].set_title(key)
-    fig.tight_layout()
-    plt.savefig(f'output-{run_name}.png')
-
-
 def traverse_tree(problem, tree, path, answers, debug=False):
     node_type = tree['node_type']
     state = tree['state']
@@ -580,7 +537,6 @@ if __name__ == '__main__':
         'get_class_hist': get_class_hist,
         'auto_judge_stats': get_auto_judge_stats,
         'test_np': test_np,
-        'test_lr_query': test_lr_query,
         'get_flips': get_flips_in_trees,
         'final_dataset': inspect_final_dataset,
     })
