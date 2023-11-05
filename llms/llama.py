@@ -6,6 +6,8 @@ if distributed:
     from bmtrain import DistributedModule as DistributedModule
     from bmtrain import DistributedParameter as DistributedParameter
     from bmtrain import TransformerBlockList as ModuleList
+    import sys
+    sys.path.insert(0, './ModelCenter')
     from model_center.layer import Linear as DistributedLinear
     from model_center.layer import Embedding as DistributedEmbedding
 else:
