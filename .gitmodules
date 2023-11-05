@@ -4,3 +4,6 @@
 [submodule "trl"]
 	path = trl
 	url = git@github.com:w32zhong/trl.git
+[submodule "ModelCenter"]
+	path = ModelCenter
+	url = git@github.com:OpenBMB/ModelCenter.git
