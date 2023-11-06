@@ -299,22 +299,22 @@ class LlamaModel(Module):
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def _prepare_decoder_attention_mask(self,
-        attention_mask, inputs_embeds, past_seq_len):
-        bsz, seq_len, _ = inputs_embeds.shape
+        attention_mask, static_embeds, past_seq_len):
+        bsz, seq_len, _ = static_embeds.shape
         # make a rectangular causal mask with past history
         combined_attention_mask = _make_causal_mask(
             bsz, seq_len, past_seq_len,
-            inputs_embeds.dtype,
-            inputs_embeds.device,
+            static_embeds.dtype,
+            static_embeds.device,
         )
 
         if attention_mask is not None:
             # add (expanded) attention_mask to causal mask
             expanded_mask = _expand_mask(
                 attention_mask,
-                inputs_embeds.dtype,
+                static_embeds.dtype,
                 seq_len
-            ).to(inputs_embeds.device)
+            ).to(static_embeds.device)
             combined_attention_mask += expanded_mask
 
         return combined_attention_mask
@@ -325,6 +325,7 @@ class LlamaModel(Module):
         past_caches=None,
         use_cache=None,
         timestep=0):
+        #breakpoint()
         # calculate various lengths
         batch_size, seq_length = input_ids.shape
         tot_seq_len = seq_length
@@ -346,15 +347,15 @@ class LlamaModel(Module):
             position_ids = position_ids.view(-1, seq_length).long()
         # position_ids: [B, seq_len] using this timestep as the start pos
 
-        # [B, seq_len, H] non-contextual work embeddings
-        inputs_embeds = self.embed_tokens(input_ids)
+        # [B, seq_len, H] non-contextual word embeddings
+        static_embeds = self.embed_tokens(input_ids)
 
         assert attention_mask.shape == (batch_size, tot_seq_len)
         # convert linear attention mask to causal (rectangular) attention
         # print(attention_mask) # ones means unmasked
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, # [B, tot_seq_len]
-            inputs_embeds, # [B, seq_len, H]
+            static_embeds, # [B, seq_len, H]
             past_seq_len
         )
         assert attention_mask.shape == (batch_size, 1,
@@ -366,7 +367,7 @@ class LlamaModel(Module):
         # | 0  0 ... 0  0   0  |
 
         # decoder layers
-        hidden_states = inputs_embeds # [B, seq_len, H]
+        hidden_states = static_embeds # [B, seq_len, H]
         new_cache = () if use_cache else None
         for idx, decoder_layer in enumerate(self.layers):
             # get "past_cache" at this idx-th layer
