@@ -354,7 +354,6 @@ class LlamaModel(Module):
         )
         assert attention_mask.shape == (batch_size, 1,
             seq_length, tot_seq_len)
-        breakpoint()
         # Example causal attention_mask:
         #
         # Case 1 (when timestep = 0, tot_seq_len = seq_len):
