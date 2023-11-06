@@ -44,10 +44,10 @@ class Generater:
         return result
 
     def _generate(self, inputs, debug=False,
-        max_length=128, top_k=40, top_p=0.9, temperature=0.9,
+        max_new_tokens=128, top_k=40, top_p=0.9, temperature=0.9,
         **kwargs):
         # length + 1 for EOS token
-        max_length += 1
+        max_new_tokens += 1
         # initially, input_ids and attention_mask is the inputs length
         input_ids = inputs["input_ids"]
         attention_mask = inputs["attention_mask"]
@@ -59,7 +59,7 @@ class Generater:
         done = [False for _ in range(batch_size)]
         results = [None for _ in range(batch_size)]
         # generate token by token ...
-        for i in range(max_length):
+        for i in range(max_new_tokens):
             if i == 0:
                 # start with all input_ids and all attention_mask
                 logits, past_caches = self.model(
@@ -80,8 +80,6 @@ class Generater:
                 )
             # get the last-token logits
             logits = logits[:, -1, :]
-            if i == 0: # let us not stop at the first step
-                logits[:, self.tokenizer.eos_token_id] = -float("inf")
             # filter next tokens
             logits = top_k_top_p_filtering(logits,
                 temperature=temperature, top_k=top_k, top_p=top_p)
@@ -98,7 +96,7 @@ class Generater:
                 next_tok_of_b = next_token[b].item()
                 if not done[b] and (
                     next_tok_of_b == self.tokenizer.eos_token_id or
-                    i == max_length - 1
+                    i == max_new_tokens - 1
                 ):
                     done[b] = True
                     results[b] = input_ids[b, start_idx:].tolist()
