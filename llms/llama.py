@@ -125,6 +125,7 @@ class LlamaMLP(DistributedModule):
         self.act_fn = SiLUActivation()
 
     def forward(self, x):
+        # SwiGLU: https://arxiv.org/abs/2002.05202v1
         return self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
 
 
