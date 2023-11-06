@@ -177,6 +177,7 @@ class LlamaAttention(DistributedModule):
             K = torch.cat([past_key, K], dim=2)
             V = torch.cat([past_val, V], dim=2)
             # new K or V: [B, heads, tot_seq_len, head_H]
+        # set either the initial or concatenated past_cache
         past_cache = (K, V) if use_cache else None
 
         # apply scaled dot-product self-attention
@@ -189,12 +190,6 @@ class LlamaAttention(DistributedModule):
         if attention_mask is not None:
             assert attention_mask.size() == (bsz, 1, seq_len, tot_seq_len)
             attn_W = attn_W + attention_mask
-            neg_infinity = torch.tensor(
-                torch.finfo(attn_W.dtype).min,
-                device=attn_W.device,
-                dtype=attn_W.dtype
-            )
-            attn_W = torch.max(attn_W, neg_infinity)
 
         # upcast to fp32 before softmax and downcast back to the original dtype
         attn_W = softmax(attn_W, dim=-1, dtype=torch.float32).to(Q.dtype)
@@ -352,7 +347,6 @@ class LlamaModel(Module):
 
         assert attention_mask.shape == (batch_size, tot_seq_len)
         # convert linear attention mask to causal (rectangular) attention
-        # print(attention_mask) # ones means unmasked
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, # [B, tot_seq_len]
             static_embeds, # [B, seq_len, H]
@@ -360,11 +354,18 @@ class LlamaModel(Module):
         )
         assert attention_mask.shape == (batch_size, 1,
             seq_length, tot_seq_len)
-        # print(attention_mask) # zero means unmasked
-        # Example causal attention_mask (when seq_length = 3):
-        # | 0  0 ... 0 inf inf |
-        # | 0  0 ... 0  0  inf |
-        # | 0  0 ... 0  0   0  |
+        breakpoint()
+        # Example causal attention_mask:
+        #
+        # Case 1 (when timestep = 0, tot_seq_len = seq_len):
+        # |  0  -inf ... -inf -inf -inf | (q_{t=0})
+        # |  0    0  ... -inf -inf -inf |
+        # ...
+        # |  0    0  ...   0    0  -inf |
+        # |  0    0  ...   0    0    0  | (q_{t=seq_len})
+        #
+        # Case 2 (when timestep > 0, tot_seq_len = past_seq_len + 1):
+        # |  0    0  ...   0    0    0   0 | (all zeros)
 
         # decoder layers
         hidden_states = static_embeds # [B, seq_len, H]
