@@ -35,7 +35,7 @@ def main(token_path, model_path,
     rank_print('Prompt:', prompt)
 
     model = Generater(model, tokenizer)
-    answer = model.generate([prompt], debug=debug, max_length=12)
+    answer = model.generate([prompt], debug=debug, max_new_tokens=16)
     rank_print('Answer:', answer)
 
 

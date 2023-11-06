@@ -325,7 +325,6 @@ class LlamaModel(Module):
         past_caches=None,
         use_cache=None,
         timestep=0):
-        #breakpoint()
         # calculate various lengths
         batch_size, seq_length = input_ids.shape
         tot_seq_len = seq_length
@@ -368,7 +367,7 @@ class LlamaModel(Module):
 
         # decoder layers
         hidden_states = static_embeds # [B, seq_len, H]
-        new_cache = () if use_cache else None
+        new_caches = () if use_cache else None
         for idx, decoder_layer in enumerate(self.layers):
             # get "past_cache" at this idx-th layer
             past_cache = (past_caches[idx]
@@ -390,11 +389,10 @@ class LlamaModel(Module):
             hidden_states = layer_outputs[0] # next recurrent states
             if use_cache:
                 layer_cache = layer_outputs[1]
-                new_cache += (layer_cache,)
+                new_caches += (layer_cache,)
 
         hidden_states = self.norm(hidden_states)
-        new_cache = new_cache if use_cache else None
-        return hidden_states, new_cache
+        return hidden_states, new_caches
 
 
 class LlamaForCausalLM(Module):
@@ -413,7 +411,7 @@ class LlamaForCausalLM(Module):
         use_cache=None,
         timestep=0):
         # invoke Llama model
-        hidden_states, new_cache = self.model(
+        hidden_states, new_caches = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -423,4 +421,4 @@ class LlamaForCausalLM(Module):
         )
         # convert to sparse logits
         logits = self.lm_head(hidden_states) # [B, seq_len, vocab]
-        return logits, new_cache
+        return logits, new_caches
