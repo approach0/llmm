@@ -72,42 +72,93 @@ class LlamaRotaryEmbedding(DistributedModule):
         max_position_embeddings=2048, base=10000, device=None):
         super().__init__()
 
-        inv_freq = 1.0 / (base ** (
+        theta = 1.0 / (base ** (
             torch.arange(0, dim, 2).float().to(device) / dim)
         )
-        # Buffer will show up in state_dict(), no need to save this one.
-        # self.register_buffer("inv_freq", inv_freq, persistent=False)
-        t = torch.arange(max_position_embeddings,
-            device=inv_freq.device, dtype=inv_freq.dtype)
-        # t: [max_seq_len],  inv_freq: [head_H // 2]
-        freqs = torch.einsum("i,j->ij", t, inv_freq)
-        # freqs: [max_seq_len, head_H // 2]
-        emb = torch.cat((freqs, freqs), dim=-1)
-        # emb: [max_seq_len, head_H]
-        dtype = torch.get_default_dtype()
-        self.cos_cached = emb.cos()[None, None, :, :].to(dtype)
-        self.sin_cached = emb.sin()[None, None, :, :].to(dtype)
+        # theta: [head_H // 2]
 
-    def forward(self, x, tot_seq_len):
-        cos = self.cos_cached.to(x.device)
-        sin = self.sin_cached.to(x.device)
+        # Buffer will show up in state_dict(), no need to save it here.
+        # self.register_buffer("theta", theta, persistent=False)
+
+        t = torch.arange(max_position_embeddings,
+            device=theta.device, dtype=theta.dtype)
+        # t: [max_seq_len]
+
+        cache = torch.einsum("i,j->ij", t, theta)
+        # cache_{i,j} = t_i * theta_j
+        # cache: [max_seq_len, head_H // 2]
+
+        cache = torch.cat((cache, cache), dim=-1)
+        # cache: [max_seq_len, head_H]
+
+        dtype = torch.get_default_dtype()
+        self.cos_cached = cache.cos().to(dtype)
+        self.sin_cached = cache.sin().to(dtype)
+        # {sin, cos}_cached: [max_seq_len, head_H]
+
+    def forward(self, tot_seq_len):
+        # get partial cache that matches the input tot_seq_len
         return (
-            cos[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
-            sin[:, :, :tot_seq_len, ...].to(dtype=x.dtype),
+            self.cos_cached[:tot_seq_len, ...],
+            self.sin_cached[:tot_seq_len, ...]
         )
 
     @staticmethod
-    def apply(q, k, cos, sin, position_ids):
-        cos = cos.squeeze(1).squeeze(0)  # [seq_len, dim]
-        sin = sin.squeeze(1).squeeze(0)  # [seq_len, dim]
-        cos = cos[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
-        sin = sin[position_ids].unsqueeze(1)  # [bs, 1, seq_len, dim]
+    def apply(q, k, cos, sin, position_ids, timestep=0):
+        cos = cos.to(device=q.device, dtype=q.dtype)
+        sin = sin.to(device=q.device, dtype=q.dtype)
+        # {sin, cos}: [tot_seq_len, head_H]
+
+        # position_ids: [bs, seq_len]
+        sin = sin[position_ids].unsqueeze(1)
+        cos = cos[position_ids].unsqueeze(1)
+        # Because position_ids are either full initial ids
+        # or the current decoding index, the {sin, cos} now
+        # becomes of partial tot_seq_len, i.e., seq_len:
+        # {sin, cos}: [bs, 1, seq_len, head_H]
+        # Now, {sin, cos} @ [bs, 1, m, k] is:
+        #   cos(m * theta_k) when k < head_H//2
+        #   cos(m * theta_{k - head_H//2}) when otherwise
+
+        # split the head_H dimension, so that
+        # x @ [bs, heads, m, :] is: [-x_m[mid:]; x_m[:mid]]
         def rotate_half(x):
             x1 = x[..., : x.shape[-1] // 2]
             x2 = x[..., x.shape[-1] // 2 :]
             return torch.cat((-x2, x1), dim=-1)
+
+        # Now, apply RoPE using element-wise product...
+        # Different original author blog post, HuggingFace Llama
+        # implementation apply rotation on the 2-D slice
+        #   [x_{d}, x_{head_H//2 + d}]
+        # instead of
+        #   [x_{2d+0}, x_{2d+1}]
+
+        # given a 4-D vector x for example (x can be q or k):
+        #
+        # | cos(m θ_0) -sin(m θ_0)                      |   |x0|
+        # | sin(m θ_0)  cos(m θ_0)                      | * |x2|
+        # |                      cos(m θ_1) -sin(m θ_1) |   |x1|
+        # |                      sin(m θ_1)  cos(m θ_1) |   |x3|
+        #
+        # which equals
+        #
+        # | x0 cos(m θ_0) - x2 sin(m θ_0) |
+        # | x2 cos(m θ_0) + x0 sin(m θ_0) |
+        # | x1 cos(m θ_1) - x3 sin(m θ_1) |
+        # | x3 cos(m θ_1) + x1 sin(m θ_1) |
+        #
+        # and if we reorder it back, the transformed vector is:
+        #
+        # | x0 cos(m θ_0) - x2 sin(m θ_0) |
+        # | x1 cos(m θ_1) - x3 sin(m θ_1) |
+        # | x2 cos(m θ_0) + x0 sin(m θ_0) |
+        # | x3 cos(m θ_1) + x1 sin(m θ_1) |
+        #
+        # which is essentially what is written below:
         q_embed = (q * cos) + (rotate_half(q) * sin)
         k_embed = (k * cos) + (rotate_half(k) * sin)
+
         return q_embed, k_embed
 
 
@@ -163,11 +214,11 @@ class LlamaAttention(DistributedModule):
         if past_cache is not None:
             tot_seq_len += past_cache[0].shape[-2]
 
-        # apply rotary embeddings to Value
-        cos, sin = self.rotary_emb(V, tot_seq_len=tot_seq_len)
+        # get rotary position embedding
+        cos, sin = self.rotary_emb(tot_seq_len)
         # cos, sin: [1, 1, tot_seq_len, head_H]
         Q, K = LlamaRotaryEmbedding.apply(
-            Q, K, cos, sin, position_ids)
+            Q, K, cos, sin, position_ids, timestep=timestep)
         # Q, K: [B, heads, tot_seq_len, head_H]
 
         if past_cache is not None:
