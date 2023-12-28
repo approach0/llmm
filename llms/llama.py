@@ -303,7 +303,6 @@ class LlamaDecoderLayer(Module):
 
         residual = hidden_states
         hidden_states = self.norm1(hidden_states)
-
         hidden_states, present_key_value = self.self_attn(
             hidden_states=hidden_states,
             attention_mask=attention_mask,
@@ -318,6 +317,7 @@ class LlamaDecoderLayer(Module):
         hidden_states = self.norm2(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
+
         outputs = (hidden_states,)
         if use_cache:
             outputs += (present_key_value,)
