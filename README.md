@@ -38,7 +38,7 @@ if true; then
   python -c 'import torch; print(torch.backends.cudnn.enabled)'
   python -c 'import torch; print(torch.__version__)'
   python -c 'import torch; d = torch.device("cuda"); print(torch.cuda.get_device_properties(d))'
-  
+  python -c 'import torch; print(torch.cuda.get_arch_list())'
   
   conda install cuda -c nvidia/label/cuda-11.8.0 # must match torch version!
   pip3 install packaging
