@@ -34,7 +34,10 @@ if true; then
   pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu118
   python -c 'import torch; print(torch.cuda.is_available())'
   python -c 'import torch; print(torch.version.cuda)'
+  python -c 'import sys; print(sys.version)'
+  python -c 'import torch; print(torch.backends.cudnn.enabled)'
   python -c 'import torch; print(torch.__version__)'
+  python -c 'import torch; d = torch.device("cuda"); print(torch.cuda.get_device_properties(d))'
   
   
   conda install cuda -c nvidia/label/cuda-11.8.0 # must match torch version!
